@@ -11,10 +11,12 @@ D:\RV\EMU\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.Form1.resources
 D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\bin\Debug\JokiAutomation.exe.config
 D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\bin\Debug\JokiAutomation.exe
 D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\bin\Debug\JokiAutomation.pdb
-D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.csprojAssemblyReference.cache
+D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\bin\Debug\Renci.SshNet.dll
+D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\bin\Debug\Renci.SshNet.xml
 D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.Form1.resources
 D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.Properties.Resources.resources
 D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.csproj.GenerateResource.cache
 D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.csproj.CoreCompileInputs.cache
+D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.csproj.CopyComplete
 D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.exe
 D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.pdb

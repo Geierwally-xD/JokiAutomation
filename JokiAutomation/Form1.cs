@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+
 namespace JokiAutomation
 {
     public partial class Form1 : Form
@@ -15,6 +16,10 @@ namespace JokiAutomation
         public Form1()
         {
             InitializeComponent();
+            _logDat.initLogData(this);
+            _infraredControl.initIR(this);
+            listBox1.SelectedIndex = 0;
+            listBox2.SelectedIndex = 0;
         }
 
         // interprets command line arguments 
@@ -25,11 +30,31 @@ namespace JokiAutomation
                 string cmd = commands[1];
                 if ((cmd == "Pause") && (commands.Length == 4))
                 {
-                    eventTimer.sendPause("\""+commands[2]+"\"", "\"" + commands[3]+"\"");
+                    _eventTimer.sendPause("\""+commands[2]+"\"", "\"" + commands[3]+"\"");
                 }
                 else if (cmd == "Timer")
                 {
-                    eventTimer.sendEventTime("\"" + commands[2] + "\"");
+                    _eventTimer.sendEventTime("\"" + commands[2] + "\"");
+                }
+                else if (cmd == "Band")
+                {
+                    _infraredControl.executeIR(0);
+                }
+                else if (cmd == "Altar")
+                {
+                    _infraredControl.executeIR(1);
+                }
+                else if (cmd == "Predigt")
+                {
+                    _infraredControl.executeIR(2);
+                }
+                else if (cmd == "GoPro")
+                {
+                    _infraredControl.executeIR(3);
+                }
+                else if (cmd == "Gebet")
+                {
+                    _infraredControl.executeIR(4);
                 }
                 else
                 {
@@ -47,17 +72,34 @@ namespace JokiAutomation
         {
             if(this.listBox1.Text == "Pause")
             {
-                eventTimer.sendPause("\"" + textBox1.Text +"\"" , "\"" + textBox2.Text+"\"" );
+                _eventTimer.sendPause("\"" + textBox1.Text +"\"" , "\"" + textBox2.Text+"\"" );
             }
             else
             {
                 string eventTime = dateTimePicker1.Value.TimeOfDay.Hours.ToString("00") + ":" + dateTimePicker1.Value.TimeOfDay.Minutes.ToString("00");
-                eventTimer.sendEventTime(eventTime);
+                _eventTimer.sendEventTime(eventTime);
             }
         }
 
-        private EventTimer eventTimer = new EventTimer();
-        private AudioMix audioMix = new AudioMix();
-        private RasPi rasPi = new RasPi();
+
+        // eventhandler Start button InfraredControl
+        private void button2_Click(object sender, EventArgs e)
+        {
+            _infraredControl.executeIR(listBox2.SelectedIndex);
+        }
+
+        // eventhandler Teach buton InfraredControl
+        private void button3_Click(object sender, EventArgs e)
+        {
+            _infraredControl.teachIR(listBox2.SelectedIndex);
+        }
+
+        private EventTimer _eventTimer = new EventTimer();
+        private AudioMix _audioMix = new AudioMix();
+        private InfraredControl _infraredControl = new InfraredControl();
+        public  LogData _logDat = new LogData();
+
     }
+
+
 }
