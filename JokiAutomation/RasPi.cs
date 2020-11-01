@@ -84,7 +84,6 @@ namespace JokiAutomation
             }
             try
             {
-                rasPiStop();
                 if (_threadResultString[0] != "")
                 {
                     _rasPiForm._logDat.sendInfoMessage(_threadResultString[0]);
