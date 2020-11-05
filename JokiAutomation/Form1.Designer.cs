@@ -46,10 +46,28 @@
             this.label5 = new System.Windows.Forms.Label();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.tabPage3 = new System.Windows.Forms.TabPage();
+            this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.button9 = new System.Windows.Forms.Button();
+            this.listBox4 = new System.Windows.Forms.ListBox();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.button8 = new System.Windows.Forms.Button();
+            this.button7 = new System.Windows.Forms.Button();
+            this.button6 = new System.Windows.Forms.Button();
+            this.button5 = new System.Windows.Forms.Button();
+            this.button4 = new System.Windows.Forms.Button();
+            this.listBox3 = new System.Windows.Forms.ListBox();
+            this.richTextBox2 = new System.Windows.Forms.RichTextBox();
             this.tabPage4 = new System.Windows.Forms.TabPage();
+            this.richTextBox3 = new System.Windows.Forms.RichTextBox();
+            this.button10 = new System.Windows.Forms.Button();
+            this.button11 = new System.Windows.Forms.Button();
             this.TabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
+            this.tabPage3.SuspendLayout();
+            this.groupBox2.SuspendLayout();
+            this.groupBox1.SuspendLayout();
+            this.tabPage4.SuspendLayout();
             this.SuspendLayout();
             // 
             // TabControl1
@@ -63,6 +81,7 @@
             this.TabControl1.SelectedIndex = 0;
             this.TabControl1.Size = new System.Drawing.Size(776, 531);
             this.TabControl1.TabIndex = 0;
+            this.TabControl1.SelectedIndexChanged += new System.EventHandler(this.TabControl1_SelectedIndexChanged);
             // 
             // tabPage1
             // 
@@ -175,6 +194,7 @@
             // 
             // tabPage2
             // 
+            this.tabPage2.Controls.Add(this.button10);
             this.tabPage2.Controls.Add(this.listBox2);
             this.tabPage2.Controls.Add(this.button3);
             this.tabPage2.Controls.Add(this.button2);
@@ -234,7 +254,7 @@
             this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
             this.label5.Location = new System.Drawing.Point(15, 35);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(122, 20);
+            this.label5.Size = new System.Drawing.Size(133, 22);
             this.label5.TabIndex = 1;
             this.label5.Text = "Infrarotsequenz";
             // 
@@ -248,6 +268,10 @@
             // 
             // tabPage3
             // 
+            this.tabPage3.Controls.Add(this.button11);
+            this.tabPage3.Controls.Add(this.groupBox2);
+            this.tabPage3.Controls.Add(this.groupBox1);
+            this.tabPage3.Controls.Add(this.richTextBox2);
             this.tabPage3.Location = new System.Drawing.Point(4, 22);
             this.tabPage3.Name = "tabPage3";
             this.tabPage3.Padding = new System.Windows.Forms.Padding(3);
@@ -256,8 +280,134 @@
             this.tabPage3.Text = "Audiomix";
             this.tabPage3.UseVisualStyleBackColor = true;
             // 
+            // groupBox2
+            // 
+            this.groupBox2.Controls.Add(this.button9);
+            this.groupBox2.Controls.Add(this.listBox4);
+            this.groupBox2.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.groupBox2.Location = new System.Drawing.Point(6, 6);
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.Size = new System.Drawing.Size(377, 319);
+            this.groupBox2.TabIndex = 4;
+            this.groupBox2.TabStop = false;
+            this.groupBox2.Text = "Audiosequenz";
+            // 
+            // button9
+            // 
+            this.button9.Location = new System.Drawing.Point(134, 147);
+            this.button9.Name = "button9";
+            this.button9.Size = new System.Drawing.Size(87, 28);
+            this.button9.TabIndex = 3;
+            this.button9.Text = "Start";
+            this.button9.UseVisualStyleBackColor = true;
+            this.button9.Click += new System.EventHandler(this.button9_Click);
+            // 
+            // listBox4
+            // 
+            this.listBox4.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F);
+            this.listBox4.FormattingEnabled = true;
+            this.listBox4.ItemHeight = 20;
+            this.listBox4.Items.AddRange(new object[] {
+            "Diashow",
+            "Gottesdienst"});
+            this.listBox4.Location = new System.Drawing.Point(68, 40);
+            this.listBox4.Name = "listBox4";
+            this.listBox4.Size = new System.Drawing.Size(227, 84);
+            this.listBox4.TabIndex = 0;
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.button8);
+            this.groupBox1.Controls.Add(this.button7);
+            this.groupBox1.Controls.Add(this.button6);
+            this.groupBox1.Controls.Add(this.button5);
+            this.groupBox1.Controls.Add(this.button4);
+            this.groupBox1.Controls.Add(this.listBox3);
+            this.groupBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.groupBox1.Location = new System.Drawing.Point(389, 6);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(373, 319);
+            this.groupBox1.TabIndex = 3;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Eingangssignale";
+            // 
+            // button8
+            // 
+            this.button8.Location = new System.Drawing.Point(208, 207);
+            this.button8.Name = "button8";
+            this.button8.Size = new System.Drawing.Size(87, 28);
+            this.button8.TabIndex = 6;
+            this.button8.Text = ">>>";
+            this.button8.UseVisualStyleBackColor = true;
+            this.button8.Click += new System.EventHandler(this.button8_Click);
+            // 
+            // button7
+            // 
+            this.button7.Location = new System.Drawing.Point(82, 207);
+            this.button7.Name = "button7";
+            this.button7.Size = new System.Drawing.Size(87, 28);
+            this.button7.TabIndex = 5;
+            this.button7.Text = "<<<";
+            this.button7.UseVisualStyleBackColor = true;
+            this.button7.Click += new System.EventHandler(this.button7_Click);
+            // 
+            // button6
+            // 
+            this.button6.Location = new System.Drawing.Point(208, 272);
+            this.button6.Name = "button6";
+            this.button6.Size = new System.Drawing.Size(87, 28);
+            this.button6.TabIndex = 4;
+            this.button6.Text = "Reset";
+            this.button6.UseVisualStyleBackColor = true;
+            this.button6.Click += new System.EventHandler(this.button6_Click);
+            // 
+            // button5
+            // 
+            this.button5.Location = new System.Drawing.Point(208, 147);
+            this.button5.Name = "button5";
+            this.button5.Size = new System.Drawing.Size(87, 28);
+            this.button5.TabIndex = 3;
+            this.button5.Text = "Init";
+            this.button5.UseVisualStyleBackColor = true;
+            this.button5.Click += new System.EventHandler(this.button5_Click);
+            // 
+            // button4
+            // 
+            this.button4.Location = new System.Drawing.Point(82, 147);
+            this.button4.Name = "button4";
+            this.button4.Size = new System.Drawing.Size(87, 28);
+            this.button4.TabIndex = 2;
+            this.button4.Text = "aktivieren";
+            this.button4.UseVisualStyleBackColor = true;
+            this.button4.Click += new System.EventHandler(this.button4_Click);
+            // 
+            // listBox3
+            // 
+            this.listBox3.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F);
+            this.listBox3.FormattingEnabled = true;
+            this.listBox3.ItemHeight = 20;
+            this.listBox3.Items.AddRange(new object[] {
+            "Laptop Audioausgang",
+            "Summensignal Verstärker",
+            "Audiokanal 3",
+            "Audiokanal 4"});
+            this.listBox3.Location = new System.Drawing.Point(82, 40);
+            this.listBox3.Name = "listBox3";
+            this.listBox3.Size = new System.Drawing.Size(213, 84);
+            this.listBox3.TabIndex = 1;
+            this.listBox3.SelectedIndexChanged += new System.EventHandler(this.listBox3_SelectedIndexChanged);
+            // 
+            // richTextBox2
+            // 
+            this.richTextBox2.Location = new System.Drawing.Point(6, 341);
+            this.richTextBox2.Name = "richTextBox2";
+            this.richTextBox2.Size = new System.Drawing.Size(756, 154);
+            this.richTextBox2.TabIndex = 0;
+            this.richTextBox2.Text = "";
+            // 
             // tabPage4
             // 
+            this.tabPage4.Controls.Add(this.richTextBox3);
             this.tabPage4.Location = new System.Drawing.Point(4, 22);
             this.tabPage4.Name = "tabPage4";
             this.tabPage4.Padding = new System.Windows.Forms.Padding(3);
@@ -265,6 +415,36 @@
             this.tabPage4.TabIndex = 3;
             this.tabPage4.Text = "Position Camcorder";
             this.tabPage4.UseVisualStyleBackColor = true;
+            // 
+            // richTextBox3
+            // 
+            this.richTextBox3.Location = new System.Drawing.Point(6, 341);
+            this.richTextBox3.Name = "richTextBox3";
+            this.richTextBox3.Size = new System.Drawing.Size(756, 154);
+            this.richTextBox3.TabIndex = 0;
+            this.richTextBox3.Text = "";
+            // 
+            // button10
+            // 
+            this.button10.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.button10.Location = new System.Drawing.Point(659, 467);
+            this.button10.Name = "button10";
+            this.button10.Size = new System.Drawing.Size(103, 32);
+            this.button10.TabIndex = 5;
+            this.button10.Text = "Stop RasPi";
+            this.button10.UseVisualStyleBackColor = true;
+            this.button10.Click += new System.EventHandler(this.button10_Click);
+            // 
+            // button11
+            // 
+            this.button11.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.button11.Location = new System.Drawing.Point(659, 467);
+            this.button11.Name = "button11";
+            this.button11.Size = new System.Drawing.Size(103, 28);
+            this.button11.TabIndex = 7;
+            this.button11.Text = "Stop RasPi";
+            this.button11.UseVisualStyleBackColor = true;
+            this.button11.Click += new System.EventHandler(this.button11_Click);
             // 
             // Form1
             // 
@@ -279,6 +459,10 @@
             this.tabPage1.PerformLayout();
             this.tabPage2.ResumeLayout(false);
             this.tabPage2.PerformLayout();
+            this.tabPage3.ResumeLayout(false);
+            this.groupBox2.ResumeLayout(false);
+            this.groupBox1.ResumeLayout(false);
+            this.tabPage4.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -304,6 +488,20 @@
         private System.Windows.Forms.ListBox listBox2;
         private System.Windows.Forms.Button button3;
         private System.Windows.Forms.Button button2;
+        public System.Windows.Forms.RichTextBox richTextBox2;
+        public System.Windows.Forms.RichTextBox richTextBox3;
+        private System.Windows.Forms.ListBox listBox3;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.Button button7;
+        private System.Windows.Forms.Button button6;
+        private System.Windows.Forms.Button button5;
+        private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.GroupBox groupBox2;
+        private System.Windows.Forms.Button button8;
+        private System.Windows.Forms.Button button9;
+        private System.Windows.Forms.ListBox listBox4;
+        private System.Windows.Forms.Button button10;
+        private System.Windows.Forms.Button button11;
     }
 }
 

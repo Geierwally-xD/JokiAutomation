@@ -30,13 +30,13 @@ namespace JokiAutomation
                 }
                 else if (logDatForm.TabControl1.SelectedIndex == 2)
                 {
-                   // logDatForm.richTextBox2.Focus();
-                   // WinFormsExtensions.AppendLine(logDatForm.richTextBox2, message);
+                    logDatForm.richTextBox2.Focus();
+                    WinFormsExtensions.AppendLine(logDatForm.richTextBox2, message);
                 }
                 else if (logDatForm.TabControl1.SelectedIndex == 3)
                 {
-                   // logDatForm.richTextBox3.Focus();
-                   // WinFormsExtensions.AppendLine(logDatForm.richTextBox3, message);
+                    logDatForm.richTextBox3.Focus();
+                    WinFormsExtensions.AppendLine(logDatForm.richTextBox3, message);
                 }
             }
             else

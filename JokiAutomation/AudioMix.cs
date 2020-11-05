@@ -6,7 +6,21 @@
         {
             _rasPi.initRasPi(winForm);
         }
-        private const int AM_EXECUTE = 30;// Audio Mix command
-        private RasPi _rasPi = new RasPi(); // Raspberry Pi functionality
+
+        //executes audio mix command
+        public void executeAudio(int ID)
+        {
+            _rasPi.rasPiExecute(AM_EXECUTE, ID);
+        }
+
+        public bool[] channelActive_ = new bool[] {true,true,false,false };
+        public const int AM_ACTIVE       = 0x10;
+        public const int AM_VOLUME       = 0x20;
+        public const int AM_FADEUP       = 0x30;
+        public const int AM_FADEDOWN     = 0x40;
+        public const int AM_FADESTOP     = 0x50;
+        public const int AM_AUDIO_RESET  = 0x60;
+        public RasPi _rasPi = new RasPi();      // Raspberry Pi functionality
+        private const int AM_EXECUTE     = 30;   // Audio Mix command
     }
 }
