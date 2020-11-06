@@ -40,12 +40,14 @@
             this.label1 = new System.Windows.Forms.Label();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.button10 = new System.Windows.Forms.Button();
             this.listBox2 = new System.Windows.Forms.ListBox();
             this.button3 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
             this.label5 = new System.Windows.Forms.Label();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.tabPage3 = new System.Windows.Forms.TabPage();
+            this.button11 = new System.Windows.Forms.Button();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.button9 = new System.Windows.Forms.Button();
             this.listBox4 = new System.Windows.Forms.ListBox();
@@ -59,8 +61,6 @@
             this.richTextBox2 = new System.Windows.Forms.RichTextBox();
             this.tabPage4 = new System.Windows.Forms.TabPage();
             this.richTextBox3 = new System.Windows.Forms.RichTextBox();
-            this.button10 = new System.Windows.Forms.Button();
-            this.button11 = new System.Windows.Forms.Button();
             this.TabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
@@ -130,7 +130,7 @@
             this.dateTimePicker1.Format = System.Windows.Forms.DateTimePickerFormat.Time;
             this.dateTimePicker1.Location = new System.Drawing.Point(143, 236);
             this.dateTimePicker1.Name = "dateTimePicker1";
-            this.dateTimePicker1.Size = new System.Drawing.Size(83, 27);
+            this.dateTimePicker1.Size = new System.Drawing.Size(98, 27);
             this.dateTimePicker1.TabIndex = 7;
             // 
             // label3
@@ -171,7 +171,7 @@
             "Timer"});
             this.listBox1.Location = new System.Drawing.Point(143, 53);
             this.listBox1.Name = "listBox1";
-            this.listBox1.Size = new System.Drawing.Size(90, 48);
+            this.listBox1.Size = new System.Drawing.Size(98, 48);
             this.listBox1.TabIndex = 3;
             // 
             // label1
@@ -207,6 +207,17 @@
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Infrarot Fernbedienung";
             this.tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // button10
+            // 
+            this.button10.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.button10.Location = new System.Drawing.Point(643, 467);
+            this.button10.Name = "button10";
+            this.button10.Size = new System.Drawing.Size(122, 32);
+            this.button10.TabIndex = 5;
+            this.button10.Text = "Stop RasPi";
+            this.button10.UseVisualStyleBackColor = true;
+            this.button10.Click += new System.EventHandler(this.button10_Click);
             // 
             // listBox2
             // 
@@ -262,7 +273,7 @@
             // 
             this.richTextBox1.Location = new System.Drawing.Point(6, 303);
             this.richTextBox1.Name = "richTextBox1";
-            this.richTextBox1.Size = new System.Drawing.Size(756, 196);
+            this.richTextBox1.Size = new System.Drawing.Size(634, 196);
             this.richTextBox1.TabIndex = 0;
             this.richTextBox1.Text = "";
             // 
@@ -279,6 +290,17 @@
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "Audiomix";
             this.tabPage3.UseVisualStyleBackColor = true;
+            // 
+            // button11
+            // 
+            this.button11.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.button11.Location = new System.Drawing.Point(643, 467);
+            this.button11.Name = "button11";
+            this.button11.Size = new System.Drawing.Size(122, 32);
+            this.button11.TabIndex = 7;
+            this.button11.Text = "Stop RasPi";
+            this.button11.UseVisualStyleBackColor = true;
+            this.button11.Click += new System.EventHandler(this.button11_Click);
             // 
             // groupBox2
             // 
@@ -399,9 +421,9 @@
             // 
             // richTextBox2
             // 
-            this.richTextBox2.Location = new System.Drawing.Point(6, 341);
+            this.richTextBox2.Location = new System.Drawing.Point(6, 331);
             this.richTextBox2.Name = "richTextBox2";
-            this.richTextBox2.Size = new System.Drawing.Size(756, 154);
+            this.richTextBox2.Size = new System.Drawing.Size(631, 168);
             this.richTextBox2.TabIndex = 0;
             this.richTextBox2.Text = "";
             // 
@@ -423,28 +445,6 @@
             this.richTextBox3.Size = new System.Drawing.Size(756, 154);
             this.richTextBox3.TabIndex = 0;
             this.richTextBox3.Text = "";
-            // 
-            // button10
-            // 
-            this.button10.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
-            this.button10.Location = new System.Drawing.Point(659, 467);
-            this.button10.Name = "button10";
-            this.button10.Size = new System.Drawing.Size(103, 32);
-            this.button10.TabIndex = 5;
-            this.button10.Text = "Stop RasPi";
-            this.button10.UseVisualStyleBackColor = true;
-            this.button10.Click += new System.EventHandler(this.button10_Click);
-            // 
-            // button11
-            // 
-            this.button11.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
-            this.button11.Location = new System.Drawing.Point(659, 467);
-            this.button11.Name = "button11";
-            this.button11.Size = new System.Drawing.Size(103, 28);
-            this.button11.TabIndex = 7;
-            this.button11.Text = "Stop RasPi";
-            this.button11.UseVisualStyleBackColor = true;
-            this.button11.Click += new System.EventHandler(this.button11_Click);
             // 
             // Form1
             // 
