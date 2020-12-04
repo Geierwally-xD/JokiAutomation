@@ -22,5 +22,11 @@
         public const int AM_AUDIO_RESET  = 0x60;
         public RasPi _rasPi = new RasPi();      // Raspberry Pi functionality
         private const int AM_EXECUTE     = 30;   // Audio Mix command
+
+        // IDs for command line interpreter
+        public const int AM_AUDIO_SUMARY = 8;    // audioswitch activate sumary signal(channel 2)
+        public const int AM_AUDIO_INPUT_3 = 9;   // audioswitch activate channel 3
+        public const int AM_AUDIO_INPUT_4 = 10;  // audioswitch activate channel 4
+        public const int AM_SEQUENCE = 50;       // command sequence raspberry pi
     }
 }

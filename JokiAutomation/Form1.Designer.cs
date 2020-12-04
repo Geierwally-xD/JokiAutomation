@@ -30,6 +30,7 @@
         {
             this.TabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.button15 = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
             this.label4 = new System.Windows.Forms.Label();
             this.dateTimePicker1 = new System.Windows.Forms.DateTimePicker();
@@ -40,6 +41,8 @@
             this.label1 = new System.Windows.Forms.Label();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.button13 = new System.Windows.Forms.Button();
+            this.button12 = new System.Windows.Forms.Button();
             this.button10 = new System.Windows.Forms.Button();
             this.listBox2 = new System.Windows.Forms.ListBox();
             this.button3 = new System.Windows.Forms.Button();
@@ -49,6 +52,7 @@
             this.tabPage3 = new System.Windows.Forms.TabPage();
             this.button11 = new System.Windows.Forms.Button();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.button14 = new System.Windows.Forms.Button();
             this.button9 = new System.Windows.Forms.Button();
             this.listBox4 = new System.Windows.Forms.ListBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
@@ -85,6 +89,7 @@
             // 
             // tabPage1
             // 
+            this.tabPage1.Controls.Add(this.button15);
             this.tabPage1.Controls.Add(this.button1);
             this.tabPage1.Controls.Add(this.label4);
             this.tabPage1.Controls.Add(this.dateTimePicker1);
@@ -101,6 +106,18 @@
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Event Timer";
             this.tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // button15
+            // 
+            this.button15.BackColor = System.Drawing.Color.Red;
+            this.button15.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.button15.Location = new System.Drawing.Point(143, 360);
+            this.button15.Name = "button15";
+            this.button15.Size = new System.Drawing.Size(83, 31);
+            this.button15.TabIndex = 10;
+            this.button15.Text = "Reset";
+            this.button15.UseVisualStyleBackColor = false;
+            this.button15.Click += new System.EventHandler(this.button15_Click);
             // 
             // button1
             // 
@@ -194,6 +211,8 @@
             // 
             // tabPage2
             // 
+            this.tabPage2.Controls.Add(this.button13);
+            this.tabPage2.Controls.Add(this.button12);
             this.tabPage2.Controls.Add(this.button10);
             this.tabPage2.Controls.Add(this.listBox2);
             this.tabPage2.Controls.Add(this.button3);
@@ -207,6 +226,29 @@
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Infrarot Fernbedienung";
             this.tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // button13
+            // 
+            this.button13.BackColor = System.Drawing.Color.Red;
+            this.button13.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.button13.Location = new System.Drawing.Point(659, 239);
+            this.button13.Name = "button13";
+            this.button13.Size = new System.Drawing.Size(103, 32);
+            this.button13.TabIndex = 7;
+            this.button13.Text = "Reset";
+            this.button13.UseVisualStyleBackColor = false;
+            this.button13.Click += new System.EventHandler(this.button13_Click);
+            // 
+            // button12
+            // 
+            this.button12.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.button12.Location = new System.Drawing.Point(659, 303);
+            this.button12.Name = "button12";
+            this.button12.Size = new System.Drawing.Size(103, 32);
+            this.button12.TabIndex = 6;
+            this.button12.Text = "Test Sequ";
+            this.button12.UseVisualStyleBackColor = true;
+            this.button12.Click += new System.EventHandler(this.button12_Click);
             // 
             // button10
             // 
@@ -224,17 +266,22 @@
             this.listBox2.FormattingEnabled = true;
             this.listBox2.Items.AddRange(new object[] {
             "HDMI Switch Laptop",
-            "HDMI Switch Camcorder Schwenkneiger ",
-            "HDMI Switch Camcorder Empore",
             "HDMI Switch GoPro Actionkamera",
-            "HDMI Switch Kombination Laptop + Camcorder Schwenkneiger",
+            "HDMI Switch Camcorder Schwenkneiger",
+            "HDMI Switch Camcorder Empore",
+            "HDMI Switch Kombination Laptop + GoPro",
             "Beamer HDMI 1",
             "Beamer HDMI 2",
             "Beamer Analogeingang",
-            "Beamer Muten"});
-            this.listBox2.Location = new System.Drawing.Point(19, 69);
+            "Beamer Muten",
+            "Beamer ausschalten",
+            "HDMI Switch ausschalten",
+            "Backup Recorder ausschalten",
+            "Backup Recorder Aufnahme start",
+            "Backup Recorder Aufnahme stop"});
+            this.listBox2.Location = new System.Drawing.Point(19, 43);
             this.listBox2.Name = "listBox2";
-            this.listBox2.Size = new System.Drawing.Size(398, 121);
+            this.listBox2.Size = new System.Drawing.Size(398, 186);
             this.listBox2.TabIndex = 4;
             // 
             // button3
@@ -263,7 +310,7 @@
             // 
             this.label5.AutoSize = true;
             this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
-            this.label5.Location = new System.Drawing.Point(15, 35);
+            this.label5.Location = new System.Drawing.Point(15, 18);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(133, 22);
             this.label5.TabIndex = 1;
@@ -304,6 +351,7 @@
             // 
             // groupBox2
             // 
+            this.groupBox2.Controls.Add(this.button14);
             this.groupBox2.Controls.Add(this.button9);
             this.groupBox2.Controls.Add(this.listBox4);
             this.groupBox2.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
@@ -313,6 +361,17 @@
             this.groupBox2.TabIndex = 4;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Audiosequenz";
+            // 
+            // button14
+            // 
+            this.button14.BackColor = System.Drawing.Color.Red;
+            this.button14.Location = new System.Drawing.Point(134, 224);
+            this.button14.Name = "button14";
+            this.button14.Size = new System.Drawing.Size(87, 28);
+            this.button14.TabIndex = 4;
+            this.button14.Text = "Reset";
+            this.button14.UseVisualStyleBackColor = false;
+            this.button14.Click += new System.EventHandler(this.button14_Click);
             // 
             // button9
             // 
@@ -331,7 +390,9 @@
             this.listBox4.ItemHeight = 20;
             this.listBox4.Items.AddRange(new object[] {
             "Diashow",
-            "Gottesdienst"});
+            "Gottesdienst",
+            "Raum Mikrofon",
+            "Audio Kanal 4"});
             this.listBox4.Location = new System.Drawing.Point(68, 40);
             this.listBox4.Name = "listBox4";
             this.listBox4.Size = new System.Drawing.Size(227, 84);
@@ -502,6 +563,10 @@
         private System.Windows.Forms.ListBox listBox4;
         private System.Windows.Forms.Button button10;
         private System.Windows.Forms.Button button11;
+        private System.Windows.Forms.Button button12;
+        private System.Windows.Forms.Button button13;
+        private System.Windows.Forms.Button button14;
+        private System.Windows.Forms.Button button15;
     }
 }
 

@@ -11,6 +11,7 @@ using System.Windows.Forms;
 
 namespace JokiAutomation
 {
+
     public partial class Form1 : Form
     {
         public Form1()
@@ -26,57 +27,70 @@ namespace JokiAutomation
         }
 
         // interprets command line arguments 
+
         public void CommandInterpreter(string[] commands)
         {
             try
             {
-                int commandID = 0;
                 string cmd = commands[1];
                 if ((cmd == "Pause") && (commands.Length == 4))
                 {
-                    commandID = AudioMix.AM_ACTIVE + 0x03;
-                    _audioMix.executeAudio(commandID); // activate audio channels 1 and 2 
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PAUSE);
                     _eventTimer.sendPause("\""+commands[2]+"\"", "\"" + commands[3]+"\""); // start slide show
-                    commandID = AudioMix.AM_FADEUP + 0x01; // fade up audio channel 1 and fade down 2 - 4
-                    _audioMix.executeAudio(commandID); 
                 }
                 else if (cmd == "Timer")
                 {
-                    commandID = AudioMix.AM_ACTIVE + 0x03;
-                    _audioMix.executeAudio(commandID); // activate audio channels 1 and 2 
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_TIMER);
                     _eventTimer.sendEventTime("\"" + commands[2] + "\"");                // start event timer
-                    commandID = AudioMix.AM_FADEUP + 0x01; // fade up audio channel 1 and fade down 2 - 4
-                    _audioMix.executeAudio(commandID);
                 }
                 else if (cmd == "Band")
                 {
-                    _infraredControl.executeIR(0);
-                    commandID = AudioMix.AM_FADEUP + 0x02; // fade up audio channel 2 and fade down 1, 3 and 4
-                    _audioMix.executeAudio(commandID); 
-                }
-                else if (cmd == "Altar")
-                {
-                    _infraredControl.executeIR(1);
-                    commandID = AudioMix.AM_FADEUP + 0x02; // fade up audio channel 2 and fade down 1, 3 and 4
-                    _audioMix.executeAudio(commandID);
-                }
-                else if (cmd == "Predigt")
-                {
-                    _infraredControl.executeIR(2);
-                    commandID = AudioMix.AM_FADEUP + 0x02; // fade up audio channel 2 and fade down 1, 3 and 4
-                    _audioMix.executeAudio(commandID);
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PPP_VIEW);
                 }
                 else if (cmd == "GoPro")
                 {
-                    _infraredControl.executeIR(3);
-                    commandID = AudioMix.AM_FADEUP + 0x02; // fade up audio channel 2 and fade down 1, 3 and 4
-                    _audioMix.executeAudio(commandID);
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_GOPRO_VIEW);
+                }
+                else if (cmd == "Altar")
+                {
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_POSCAM_VIEW);
+                }
+                else if (cmd == "Predigt")
+                {
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PREACHER_VIEW);
                 }
                 else if (cmd == "Gebet")
                 {
-                    _infraredControl.executeIR(4);
-                    commandID = AudioMix.AM_FADEUP + 0x02; // fade up audio channel 2 and fade down 1, 3 and 4
-                    _audioMix.executeAudio(commandID);
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PRAYER_VIEW);
+                }
+                else if (cmd == "Audio_Summensignal")
+                {
+                    _audioMix._rasPi.rasPiExecute(AudioMix.AM_SEQUENCE, AudioMix.AM_AUDIO_SUMARY);
+                }
+                else if (cmd == "Audio_RaumMikro")
+                {
+                    _audioMix._rasPi.rasPiExecute(AudioMix.AM_SEQUENCE, AudioMix.AM_AUDIO_INPUT_3);
+                }
+                else if (cmd == "Audio_Kanal4")
+                {
+                    _audioMix._rasPi.rasPiExecute(AudioMix.AM_SEQUENCE, AudioMix.AM_AUDIO_INPUT_4);
+                }
+                else if (cmd == "BEAMER_PPP")  // switch Beamer to HDMI 1 (PPP View)
+                {
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_HDMI_1);
+                }
+                else if (cmd == "BEAMER_LiveStream") // switch Beamer to HDMI 2 (live stream View)
+                {
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_HDMI_2);
+                }
+                else if (cmd == "BEAMER_VideoClip") // switch Beamer to analog input (video from CD)
+                {
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_ANALOG);
+                    _eventTimer.sendPause("\"" + commands[2] + "\"", "\"" + commands[3] + "\""); // start slide show
+                }
+                else if (cmd == "Ausschaltsequenz") // switch Beamer, HDMI switch, Backuprecorder off and shut down Raspberry Pi
+                {
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SHUTDOWN);
                 }
                 else
                 {
@@ -88,6 +102,7 @@ namespace JokiAutomation
                 MessageBox.Show("JokiAutomation\nFormatfehler in Kommandozeilenaufruf");
             }
         }
+
 
         // eventhandler Start button, start timer or pause slide show depending on selected listbox item
         private void button1_Click(object sender, EventArgs e)
@@ -217,12 +232,41 @@ namespace JokiAutomation
         {
             _audioMix._rasPi.rasPiStop();
         }
+        // button handler start/stop sequencer test
+        private void button12_Click(object sender, EventArgs e)
+        {
+            CI_test_active_ = !CI_test_active_; // start stop test IR sequencer
+            if(CI_test_active_)
+            {
+                button12.BackColor = Color.Green;
+            }
+            else
+            {
+                button12.BackColor = Color.Transparent;
+            }
+            _infraredControl.IRTest(CI_test_active_);
+        }
+
+        private void button13_Click(object sender, EventArgs e)
+        {
+            _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_RESET);
+        }
+
+        private void button14_Click(object sender, EventArgs e)
+        {
+            _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_RESET);
+        }
+
+        private void button15_Click(object sender, EventArgs e)
+        {
+            _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_RESET);
+        }
 
         private EventTimer _eventTimer = new EventTimer();
         private AudioMix _audioMix = new AudioMix();
         private InfraredControl _infraredControl = new InfraredControl();
         public  LogData _logDat = new LogData();
-
+        private bool CI_test_active_ = false;
     }
 
 
