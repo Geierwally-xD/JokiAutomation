@@ -52,6 +52,15 @@
             this.tabPage3 = new System.Windows.Forms.TabPage();
             this.button11 = new System.Windows.Forms.Button();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.label9 = new System.Windows.Forms.Label();
+            this.label8 = new System.Windows.Forms.Label();
+            this.label7 = new System.Windows.Forms.Label();
+            this.label6 = new System.Windows.Forms.Label();
+            this.button16 = new System.Windows.Forms.Button();
+            this.trackBar4 = new System.Windows.Forms.TrackBar();
+            this.trackBar3 = new System.Windows.Forms.TrackBar();
+            this.trackBar2 = new System.Windows.Forms.TrackBar();
+            this.trackBar1 = new System.Windows.Forms.TrackBar();
             this.button14 = new System.Windows.Forms.Button();
             this.button9 = new System.Windows.Forms.Button();
             this.listBox4 = new System.Windows.Forms.ListBox();
@@ -70,6 +79,10 @@
             this.tabPage2.SuspendLayout();
             this.tabPage3.SuspendLayout();
             this.groupBox2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBar4)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBar3)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBar2)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).BeginInit();
             this.groupBox1.SuspendLayout();
             this.tabPage4.SuspendLayout();
             this.SuspendLayout();
@@ -113,7 +126,7 @@
             this.button15.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
             this.button15.Location = new System.Drawing.Point(143, 360);
             this.button15.Name = "button15";
-            this.button15.Size = new System.Drawing.Size(83, 31);
+            this.button15.Size = new System.Drawing.Size(83, 33);
             this.button15.TabIndex = 10;
             this.button15.Text = "Reset";
             this.button15.UseVisualStyleBackColor = false;
@@ -351,6 +364,15 @@
             // 
             // groupBox2
             // 
+            this.groupBox2.Controls.Add(this.label9);
+            this.groupBox2.Controls.Add(this.label8);
+            this.groupBox2.Controls.Add(this.label7);
+            this.groupBox2.Controls.Add(this.label6);
+            this.groupBox2.Controls.Add(this.button16);
+            this.groupBox2.Controls.Add(this.trackBar4);
+            this.groupBox2.Controls.Add(this.trackBar3);
+            this.groupBox2.Controls.Add(this.trackBar2);
+            this.groupBox2.Controls.Add(this.trackBar1);
             this.groupBox2.Controls.Add(this.button14);
             this.groupBox2.Controls.Add(this.button9);
             this.groupBox2.Controls.Add(this.listBox4);
@@ -362,12 +384,94 @@
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Audiosequenz";
             // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(237, 135);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(52, 22);
+            this.label9.TabIndex = 13;
+            this.label9.Text = "Kan4";
+            // 
+            // label8
+            // 
+            this.label8.AutoSize = true;
+            this.label8.Location = new System.Drawing.Point(183, 135);
+            this.label8.Name = "label8";
+            this.label8.Size = new System.Drawing.Size(57, 22);
+            this.label8.TabIndex = 12;
+            this.label8.Text = "Raum";
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(136, 135);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(46, 22);
+            this.label7.TabIndex = 11;
+            this.label7.Text = "Sum";
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(90, 135);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(35, 22);
+            this.label6.TabIndex = 10;
+            this.label6.Text = "PC";
+            // 
+            // button16
+            // 
+            this.button16.Location = new System.Drawing.Point(238, 279);
+            this.button16.Name = "button16";
+            this.button16.Size = new System.Drawing.Size(87, 28);
+            this.button16.TabIndex = 9;
+            this.button16.Text = "Teach";
+            this.button16.UseVisualStyleBackColor = true;
+            this.button16.Click += new System.EventHandler(this.button16_Click);
+            // 
+            // trackBar4
+            // 
+            this.trackBar4.Location = new System.Drawing.Point(187, 158);
+            this.trackBar4.Name = "trackBar4";
+            this.trackBar4.Orientation = System.Windows.Forms.Orientation.Vertical;
+            this.trackBar4.Size = new System.Drawing.Size(50, 118);
+            this.trackBar4.TabIndex = 8;
+            this.trackBar4.Scroll += new System.EventHandler(this.trackBar4_Scroll);
+            // 
+            // trackBar3
+            // 
+            this.trackBar3.Location = new System.Drawing.Point(238, 158);
+            this.trackBar3.Name = "trackBar3";
+            this.trackBar3.Orientation = System.Windows.Forms.Orientation.Vertical;
+            this.trackBar3.Size = new System.Drawing.Size(50, 118);
+            this.trackBar3.TabIndex = 7;
+            this.trackBar3.Scroll += new System.EventHandler(this.trackBar3_Scroll);
+            // 
+            // trackBar2
+            // 
+            this.trackBar2.Location = new System.Drawing.Point(136, 158);
+            this.trackBar2.Name = "trackBar2";
+            this.trackBar2.Orientation = System.Windows.Forms.Orientation.Vertical;
+            this.trackBar2.Size = new System.Drawing.Size(50, 118);
+            this.trackBar2.TabIndex = 6;
+            this.trackBar2.Scroll += new System.EventHandler(this.trackBar2_Scroll);
+            // 
+            // trackBar1
+            // 
+            this.trackBar1.Location = new System.Drawing.Point(85, 158);
+            this.trackBar1.Name = "trackBar1";
+            this.trackBar1.Orientation = System.Windows.Forms.Orientation.Vertical;
+            this.trackBar1.Size = new System.Drawing.Size(50, 118);
+            this.trackBar1.TabIndex = 5;
+            this.trackBar1.Scroll += new System.EventHandler(this.trackBar1_Scroll);
+            // 
             // button14
             // 
             this.button14.BackColor = System.Drawing.Color.Red;
-            this.button14.Location = new System.Drawing.Point(134, 224);
+            this.button14.Location = new System.Drawing.Point(140, 279);
             this.button14.Name = "button14";
-            this.button14.Size = new System.Drawing.Size(87, 28);
+            this.button14.Size = new System.Drawing.Size(87, 31);
             this.button14.TabIndex = 4;
             this.button14.Text = "Reset";
             this.button14.UseVisualStyleBackColor = false;
@@ -375,7 +479,7 @@
             // 
             // button9
             // 
-            this.button9.Location = new System.Drawing.Point(134, 147);
+            this.button9.Location = new System.Drawing.Point(38, 282);
             this.button9.Name = "button9";
             this.button9.Size = new System.Drawing.Size(87, 28);
             this.button9.TabIndex = 3;
@@ -391,12 +495,14 @@
             this.listBox4.Items.AddRange(new object[] {
             "Diashow",
             "Gottesdienst",
-            "Raum Mikrofon",
-            "Audio Kanal 4"});
-            this.listBox4.Location = new System.Drawing.Point(68, 40);
+            "Predigt",
+            "Text",
+            "Band"});
+            this.listBox4.Location = new System.Drawing.Point(90, 25);
             this.listBox4.Name = "listBox4";
-            this.listBox4.Size = new System.Drawing.Size(227, 84);
+            this.listBox4.Size = new System.Drawing.Size(198, 104);
             this.listBox4.TabIndex = 0;
+            this.listBox4.SelectedIndexChanged += new System.EventHandler(this.listBox4_SelectedIndexChanged);
             // 
             // groupBox1
             // 
@@ -416,7 +522,7 @@
             // 
             // button8
             // 
-            this.button8.Location = new System.Drawing.Point(208, 207);
+            this.button8.Location = new System.Drawing.Point(208, 216);
             this.button8.Name = "button8";
             this.button8.Size = new System.Drawing.Size(87, 28);
             this.button8.TabIndex = 6;
@@ -426,7 +532,7 @@
             // 
             // button7
             // 
-            this.button7.Location = new System.Drawing.Point(82, 207);
+            this.button7.Location = new System.Drawing.Point(82, 216);
             this.button7.Name = "button7";
             this.button7.Size = new System.Drawing.Size(87, 28);
             this.button7.TabIndex = 5;
@@ -436,11 +542,11 @@
             // 
             // button6
             // 
-            this.button6.Location = new System.Drawing.Point(208, 272);
+            this.button6.Location = new System.Drawing.Point(208, 282);
             this.button6.Name = "button6";
             this.button6.Size = new System.Drawing.Size(87, 28);
             this.button6.TabIndex = 4;
-            this.button6.Text = "Reset";
+            this.button6.Text = "Reset Audiomix";
             this.button6.UseVisualStyleBackColor = true;
             this.button6.Click += new System.EventHandler(this.button6_Click);
             // 
@@ -472,7 +578,7 @@
             this.listBox3.Items.AddRange(new object[] {
             "Laptop Audioausgang",
             "Summensignal Verstärker",
-            "Audiokanal 3",
+            "Raum Mikrofon",
             "Audiokanal 4"});
             this.listBox3.Location = new System.Drawing.Point(82, 40);
             this.listBox3.Name = "listBox3";
@@ -522,6 +628,11 @@
             this.tabPage2.PerformLayout();
             this.tabPage3.ResumeLayout(false);
             this.groupBox2.ResumeLayout(false);
+            this.groupBox2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBar4)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBar3)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBar2)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).EndInit();
             this.groupBox1.ResumeLayout(false);
             this.tabPage4.ResumeLayout(false);
             this.ResumeLayout(false);
@@ -567,6 +678,15 @@
         private System.Windows.Forms.Button button13;
         private System.Windows.Forms.Button button14;
         private System.Windows.Forms.Button button15;
+        private System.Windows.Forms.TrackBar trackBar4;
+        private System.Windows.Forms.TrackBar trackBar3;
+        private System.Windows.Forms.TrackBar trackBar2;
+        private System.Windows.Forms.TrackBar trackBar1;
+        private System.Windows.Forms.Button button16;
+        private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.Label label8;
+        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.Label label6;
     }
 }
 

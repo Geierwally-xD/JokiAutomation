@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 
+
 namespace JokiAutomation
 {
 
@@ -24,6 +25,10 @@ namespace JokiAutomation
             listBox2.SelectedIndex = 0;
             listBox3.SelectedIndex = 0;
             listBox4.SelectedIndex = 0;
+            trackBar1.Value = _audioMix.audioProfile[listBox4.SelectedIndex, 0];
+            trackBar2.Value = _audioMix.audioProfile[listBox4.SelectedIndex, 1];
+            trackBar3.Value = _audioMix.audioProfile[listBox4.SelectedIndex, 2];
+            trackBar4.Value = _audioMix.audioProfile[listBox4.SelectedIndex, 3];
         }
 
         // interprets command line arguments 
@@ -63,18 +68,6 @@ namespace JokiAutomation
                 {
                     _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PRAYER_VIEW);
                 }
-                else if (cmd == "Audio_Summensignal")
-                {
-                    _audioMix._rasPi.rasPiExecute(AudioMix.AM_SEQUENCE, AudioMix.AM_AUDIO_SUMARY);
-                }
-                else if (cmd == "Audio_RaumMikro")
-                {
-                    _audioMix._rasPi.rasPiExecute(AudioMix.AM_SEQUENCE, AudioMix.AM_AUDIO_INPUT_3);
-                }
-                else if (cmd == "Audio_Kanal4")
-                {
-                    _audioMix._rasPi.rasPiExecute(AudioMix.AM_SEQUENCE, AudioMix.AM_AUDIO_INPUT_4);
-                }
                 else if (cmd == "BEAMER_PPP")  // switch Beamer to HDMI 1 (PPP View)
                 {
                     _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_HDMI_1);
@@ -87,6 +80,10 @@ namespace JokiAutomation
                 {
                     _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_ANALOG);
                     _eventTimer.sendPause("\"" + commands[2] + "\"", "\"" + commands[3] + "\""); // start slide show
+                }
+                else if (cmd == "BEAMER_Mute")   // mute / demute Beamer
+                {
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_MUTE);
                 }
                 else if (cmd == "Ausschaltsequenz") // switch Beamer, HDMI switch, Backuprecorder off and shut down Raspberry Pi
                 {
@@ -112,14 +109,14 @@ namespace JokiAutomation
             if (this.listBox1.Text == "Pause")
             {
                 _eventTimer.sendPause("\"" + textBox1.Text +"\"" , "\"" + textBox2.Text+"\"" );
+                _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PAUSE);
             }
             else
             {
                 string eventTime = dateTimePicker1.Value.TimeOfDay.Hours.ToString("00") + ":" + dateTimePicker1.Value.TimeOfDay.Minutes.ToString("00");
                 _eventTimer.sendEventTime(eventTime);
+                _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_TIMER);
             }
-            commandID = AudioMix.AM_FADEUP + 0x01; // fade up audio channel 1 and fade down 2 - 4
-            _audioMix.executeAudio(commandID);
         }
 
 
@@ -202,16 +199,13 @@ namespace JokiAutomation
             }
         }
 
-        // start Audio - sequence
+        // execute Audio - profile
         private void button9_Click(object sender, EventArgs e)
         {
-            int commandID = AudioMix.AM_FADEUP;
-            if (_audioMix.channelActive_[listBox3.SelectedIndex] == true)
-            {
-                commandID += 1 << listBox4.SelectedIndex;
-                _audioMix.executeAudio(commandID);
-            }
+            int commandID = AudioMix.AM_PROFILE + listBox4.SelectedIndex;
+            _audioMix.executeAudio(commandID);
         }
+
         // tab control index changed initialize Audiomix for channel 1 and 2 if page opens
         private void TabControl1_SelectedIndexChanged(Object sender, EventArgs e)
         {
@@ -246,7 +240,7 @@ namespace JokiAutomation
             }
             _infraredControl.IRTest(CI_test_active_);
         }
-
+        // button handler reset
         private void button13_Click(object sender, EventArgs e)
         {
             _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_RESET);
@@ -261,12 +255,50 @@ namespace JokiAutomation
         {
             _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_RESET);
         }
+        //slider Laptop audio
+        private void trackBar1_Scroll(object sender, EventArgs e)
+        {
+            _audioMix.audioProfile[listBox4.SelectedIndex, 0] = (byte)trackBar1.Value;
+        }
+        //slider sumary signal amplifier audio
+        private void trackBar2_Scroll(object sender, EventArgs e)
+        {
+            _audioMix.audioProfile[listBox4.SelectedIndex, 1] = (byte)trackBar2.Value;
+        }
+
+        //slider room microphone audio
+        private void trackBar3_Scroll(object sender, EventArgs e)
+        {
+            _audioMix.audioProfile[listBox4.SelectedIndex, 2] = (byte)trackBar3.Value;
+        }
+
+        //slider channel 4 adio
+        private void trackBar4_Scroll(object sender, EventArgs e)
+        {
+            _audioMix.audioProfile[listBox4.SelectedIndex, 3] = (byte)trackBar4.Value;
+        }
+
+        // change audio profile depending listbox index
+        private void listBox4_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            trackBar1.Value = _audioMix.audioProfile[listBox4.SelectedIndex, 0];
+            trackBar2.Value = _audioMix.audioProfile[listBox4.SelectedIndex, 1];
+            trackBar3.Value = _audioMix.audioProfile[listBox4.SelectedIndex, 2];
+            trackBar4.Value = _audioMix.audioProfile[listBox4.SelectedIndex, 3];
+        }
+
+        // eventhandler audio teach
+        private void button16_Click(object sender, EventArgs e)
+        {
+            _audioMix.teachAudio(listBox4.SelectedIndex);
+        }
 
         private EventTimer _eventTimer = new EventTimer();
         private AudioMix _audioMix = new AudioMix();
         private InfraredControl _infraredControl = new InfraredControl();
         public  LogData _logDat = new LogData();
         private bool CI_test_active_ = false;
+
     }
 
 
