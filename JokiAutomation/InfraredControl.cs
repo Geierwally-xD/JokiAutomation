@@ -95,5 +95,6 @@ namespace JokiAutomation
         public const int IR_BEAMER_ANALOG = 14; // switch Beamer to analog input (video from CD)
         public const int IR_SHUTDOWN = 15;      // switch Beamer, HDMI Switch and Backuprecorder off and shut down Raspberry Pi
         public const int IR_BEAMER_MUTE = 16;   // mute / demute Beamer
+        public const int IR_STOP_BACKUP = 17;   // stopps the backup - recorder
     }
 }
