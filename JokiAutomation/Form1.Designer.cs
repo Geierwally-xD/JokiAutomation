@@ -422,7 +422,7 @@
             // 
             // button16
             // 
-            this.button16.Location = new System.Drawing.Point(238, 279);
+            this.button16.Location = new System.Drawing.Point(241, 280);
             this.button16.Name = "button16";
             this.button16.Size = new System.Drawing.Size(87, 28);
             this.button16.TabIndex = 9;
@@ -497,8 +497,9 @@
             "Gottesdienst",
             "Predigt",
             "Text",
-            "Band"});
-            this.listBox4.Location = new System.Drawing.Point(90, 25);
+            "Band",
+            "VideoClip"});
+            this.listBox4.Location = new System.Drawing.Point(85, 26);
             this.listBox4.Name = "listBox4";
             this.listBox4.Size = new System.Drawing.Size(198, 104);
             this.listBox4.TabIndex = 0;

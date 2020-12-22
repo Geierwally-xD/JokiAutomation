@@ -88,7 +88,9 @@ namespace JokiAutomation
         public const int IR_GOPRO_VIEW = 4;   // gopro action cam view
         public const int IR_POSCAM_VIEW = 5;  // camcorder with position control view
         public const int IR_PREACHER_VIEW = 6;// camcorder 2 control view
-        public const int IR_PRAYER_VIEW = 7;  // combination ppp view with gopro action cam view
+        public const int IR_PRAYER_VIEW = 7;  // combination ppp view with gopro action cam view with audio profil worship
+        public const int IR_READER_VIEW = 8;  // combination ppp view with gopro action cam view with audio profil preaching
+        public const int IR_SONG_VIEW = 9;    // combination ppp view with gopro action cam view with audio profil Band
         public const int IR_RESET = 11;       // reset audio - to sumary signal and IR to laptop view
         public const int IR_BEAMER_HDMI_1 = 12; // switch Beamer to HDMI 1 (PPP View)
         public const int IR_BEAMER_HDMI_2 = 13; // switch Beamer to HDMI 2 (live stream View)

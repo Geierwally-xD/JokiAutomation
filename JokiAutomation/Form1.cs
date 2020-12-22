@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -68,7 +69,15 @@ namespace JokiAutomation
                 {
                     _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PRAYER_VIEW);
                 }
-                else if (cmd == "BEAMER_PPP")  // switch Beamer to HDMI 1 (PPP View)
+                else if (cmd == "LesungMulti")
+                {
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_READER_VIEW);
+                }
+                else if (cmd == "BandMulti")
+                {
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SONG_VIEW);
+                }
+                else if (cmd == "BEAMER_LiveVideo")  // switch Beamer to HDMI 1 (laptop) and audio to VideoClip (laptop out)
                 {
                     _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_HDMI_1);
                 }
@@ -247,16 +256,22 @@ namespace JokiAutomation
         // button handler reset
         private void button13_Click(object sender, EventArgs e)
         {
+            _audioMix._rasPi.rasPiStop();
+            Thread.Sleep(1000);
             _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_RESET);
         }
 
         private void button14_Click(object sender, EventArgs e)
         {
+            _audioMix._rasPi.rasPiStop();
+            Thread.Sleep(1000);
             _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_RESET);
         }
 
         private void button15_Click(object sender, EventArgs e)
         {
+            _audioMix._rasPi.rasPiStop();
+            Thread.Sleep(1000);
             _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_RESET);
         }
         //slider Laptop audio

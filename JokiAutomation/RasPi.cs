@@ -154,6 +154,6 @@ namespace JokiAutomation
         private Form1 _rasPiForm;
         private static String[] _threadResultString = new String[5];
         private string _JokiAutomationPath = Environment.GetEnvironmentVariable("JokiAutomation");
-        static private string[] _rasPiConfig = { "192.168.0.40", "pi", "raspberry" }; // default login data
+        static private string[] _rasPiConfig = { "192.168.178.70", "pi", "raspberry" }; // default login data
     }
 }
