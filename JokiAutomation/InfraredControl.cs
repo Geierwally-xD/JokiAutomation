@@ -84,7 +84,7 @@ namespace JokiAutomation
         public const int IR_SEQUENCE = 50;    // command sequence raspberry pi
         public const int IR_PAUSE = 1;        // pause sequence
         public const int IR_TIMER = 2;        // timer sequence
-        public const int IR_PPP_VIEW = 3;     // power point view
+        public const int IR_PPP_VIEW = 3;     // power point view with audio profile Band
         public const int IR_GOPRO_VIEW = 4;   // gopro action cam view
         public const int IR_POSCAM_VIEW = 5;  // camcorder with position control view
         public const int IR_PREACHER_VIEW = 6;// camcorder 2 control view
@@ -98,5 +98,7 @@ namespace JokiAutomation
         public const int IR_SHUTDOWN = 15;      // switch Beamer, HDMI Switch and Backuprecorder off and shut down Raspberry Pi
         public const int IR_BEAMER_MUTE = 16;   // mute / demute Beamer
         public const int IR_STOP_BACKUP = 17;   // stopps the backup - recorder
+        public const int IR_START_BACKUP = 18;  // starts the backup - recorder
+        public const int IR_TEXT_VIEW = 20;     // power point view with audio profile worship
     }
 }

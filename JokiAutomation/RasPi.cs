@@ -39,38 +39,7 @@ namespace JokiAutomation
 
         public void rasPiStop()
         {
-            SshClient sshClient;
-            SshCommand sshConsole;
-            _rasPiForm._logDat.sendInfoMessage("stop RasPi-Automation-application");
-            for (UInt16 i = 0; i < 5; i++)
-            {
-                _threadResultString[i] = "";
-            }
-            try
-            {
-
-                KeyboardInteractiveAuthenticationMethod keybAuth = new KeyboardInteractiveAuthenticationMethod(_rasPiConfig[1]);
-                PasswordAuthenticationMethod pauth = new PasswordAuthenticationMethod(_rasPiConfig[1], _rasPiConfig[2]);
-                keybAuth.AuthenticationPrompt += new EventHandler<Renci.SshNet.Common.AuthenticationPromptEventArgs>(HandleKeyEvent);
-                ConnectionInfo connectionInfo = new ConnectionInfo(_rasPiConfig[0], 22, _rasPiConfig[1], pauth, keybAuth);
-                sshClient = new SshClient(connectionInfo);
-                sshClient.KeepAliveInterval = TimeSpan.FromSeconds(30);
-                sshClient.Connect();
-                sshConsole = sshClient.RunCommand("sudo ./PSD.sh 0");
-                _threadResultString[1] = sshConsole.CommandText;
-                _threadResultString[2] = sshConsole.Result;
-                sshClient.Disconnect();
-                if (_RasPiThread != null)
-                {
-                    _RasPiThread.Abort();
-                    _RasPiThread = null;
-                }
-            }
-            catch (Exception e)
-            {
-                _threadResultString[0] = "Error during stop Raspberry Pi!/n" + e.Message;
-            }
-
+           rasPiExecute(0,0);
         }
 
 

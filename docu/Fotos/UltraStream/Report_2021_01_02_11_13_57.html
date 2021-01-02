@@ -1,0 +1,412 @@
+<!DOCTYPE html> 
+<html lang="en"> 
+<head> 
+<meta charset="UTF-8"> 
+<meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+<meta http-equiv="X-UA-Compatible" content="ie=edge"> 
+<title>Ultra Stream HDMI</title> 
+<style> 
+*{margin:0;padding:0;box-sizing:border-box} 
+body{min-width:1200px;font-size:14px;line-height:1.42857;color:#dcdcdc;background-color:#232323;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:subpixel-antialiased;-webkit-font-feature-settings:"tnum";font-feature-settings:"tnum";font-variant:tabular-nums} 
+.report-container{width:1200px;margin:100px auto 30px;padding:30px;background-color:#393939;border-radius:4px} 
+.main-header{position:fixed;top:0;left:0;z-index:5000;width:100%;height:80px;line-height:80px;color:#cacaca;background-color:#393939;box-shadow:0 5px 9px rgba(0,0,0,.3)} 
+.main-header-wrap{max-width:1200px;margin:0 auto} 
+.main-header-wrap .product-logo{float:left;height:80px;padding-top:4px;padding-left:50px;font-size:24px;color:#dcdcdc;font-weight:700;background:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZD0iTTI5Ljk5MSAzNkg2LjAwOUE2LjAxIDYuMDEgMCAwIDEgMCAyOS45OTFWNi4wMDlBNi4wMSA2LjAxIDAgMCAxIDYuMDA5IDBIMjkuOTlBNi4wMSA2LjAxIDAgMCAxIDM2IDYuMDA5VjI5Ljk5QTYuMDEgNi4wMSAwIDAgMSAyOS45OTEgMzZ6IiBmaWxsPSIjMGNkODZjIi8+PHBhdGggZD0iTTE4LjU4MSA5LjMwM2ExLjQzMSAxLjQzMSAwIDAgMC0yLjAyNCAwbC04Ljc3OSA4Ljc3OWExLjQzMSAxLjQzMSAwIDAgMCAwIDIuMDI0bDguNzc5IDguNzc5YTEuNDMxIDEuNDMxIDAgMCAwIDIuMDI0IDBsOC43NzktOC43NzlhMS40MzEgMS40MzEgMCAwIDAgMC0yLjAyNGwtOC43NzktOC43Nzl6TTI1LjIyNyA1YTYuMTk5IDYuMTk5IDAgMCAwLS43MDcuMDQ1LjcxNC43MTQgMCAwIDAtLjUxLjIxMS43MTQuNzE0IDAgMCAwLS4wMDUgMS4wMDguNy43IDAgMCAwIC41NDkuMjAxYy4wMTEuMDAzLjAyMS4wMDguMDMzLjAwNmE0Ljk0NyA0Ljk0NyAwIDAgMSA1LjU1MSA1LjY1My4wNTguMDU4IDAgMCAwIC4wMTEuMDQyLjY5NC42OTQgMCAwIDAgLjIwMi40NjMuNzEyLjcxMiAwIDAgMCAxLjIwNy0uNDA2Yy4wMDMtLjAwNi4wMDgtLjAwOS4wMDgtLjAxNUE2LjM1NSA2LjM1NSAwIDAgMCAyNS4yMjcgNXptLS44MzEgMi45NTdhLjcxMS43MTEgMCAwIDAtLjQwMyAxLjIwNy43LjcgMCAwIDAgLjU1Ny4yMDFjLjAyLjAwOS4wNDIuMDEuMDYzLjAwNC4xOTItLjA1Ni4zOTItLjA4NS41OTItLjA4NWEyLjEyMSAyLjEyMSAwIDAgMSAyLjA2OSAyLjY1Yy0uMDAxLjAwNi4wMDEuMDA5LjAwMS4wMTRhLjcwMS43MDEgMCAwIDAgLjE4NC42NjUuNzEyLjcxMiAwIDAgMCAxLjE5LS4zMjdjMC0uMDA0LjAwMy0uMDA0LjAwMi0uMDA2LjAwMy0uMDEuMDA2LS4wMi4wMDctLjAzMWwuMDA1LS4wMTZhMy41MzEgMy41MzEgMCAwIDAtNC4yNjctNC4yNzZ6IiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZmlsbD0iI2ZmZiIvPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBmaWxsPSIjZjM1NDJmIiBkPSJNMjAgMjMuMTA3djEuNjM0aC0xLjYzNHYtMS42MzR6Ii8+PHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGZpbGw9IiMwYmQzNjkiIGQ9Ik0xNy43OTYgMjQuNzV2MS42MzNoLTEuNjM0VjI0Ljc1eiIvPjwvc3ZnPg==') no-repeat 0;background-size:35px 35px} 
+h1{margin-bottom:10px;font-size:22px} 
+h2{position:relative;margin:20px 0;line-height:1;font-size:20px;color:#0cd86c} 
+h3,h4{position:relative;line-height:1;font-weight:normal} 
+h3{margin-top:20px;margin-bottom:3px;font-size:18px} 
+h4{margin-top:15px;margin-bottom:2px} 
+.report-summary{margin-bottom:35px} 
+.report-summary p{color:#9c9c9c} 
+.content-level1{margin-top:30px} 
+.content-remark{margin-top:10px} 
+.content-remark span+span{margin-left:10px} 
+.table-info th,.table-info td{padding:2px 0} 
+.table-info th{width:180px;color:#9c9c9c;text-align:left;font-weight:normal} 
+.table-info th span{display:inline-block;width:60px;margin-right:8px} 
+.hex-data span{padding-right:10px;font-family:Menlo,Monaco,Consolas,"Courier New",monospace;text-transform:uppercase} 
+.reg-mark{position:relative;margin-right:1em} 
+.reg-mark::after{position:absolute;right:-0.9em;content:'®';font-size:14px;font-weight:bold} 
+.log-list{margin-top:10px} 
+.log-list tr th{font-weight:bold;color:inherit} 
+.log-list tr th:nth-child(2){width:230px} 
+.log-list tr th:nth-child(3){width:auto} 
+.log-list td{color:#9c9c9c} 
+.log-list .Error td{color:#f9403e} 
+.log-list .Warning td{color:#e58631} 
+pre{font-family:Menlo,Monaco,Consolas,"Courier New",monospace;word-break:break-all;white-space:pre-wrap;background: #3d3d3d;padding: 20px 30px;}
+::-webkit-scrollbar {width: 15px;} 
+::-webkit-scrollbar-track {background-color: #2c2c2c;} 
+::-webkit-scrollbar-thumb {background-color: #3f3f3f;-webkit-border-radius: 10px;border-radius: 10px;} 
+::-webkit-scrollbar-button {background-color: #3f3f3f;} 
+::-webkit-scrollbar-corner {background-color: #3f3f3f;} 
+</style> 
+</head> 
+<body> 
+<header class="main-header"><div class="main-header-wrap clearfix"><div class="product-logo">Ultra Stream</div></div></header><div class="report-container"> 
+<div class="report-summary"> 
+<h1>Ultra Stream HDMI</h1> 
+<p>Generated at Sat Jan  2 11:14:00 2021
+</p> 
+</div> 
+<div class="report-content"> 
+<div class="content-level1"> 
+<h2>DEVICE</h2> 
+<pre class="json"> 
+{
+	"product": {
+		"device-name": "Ultra Stream C301200424207",
+		"product-name": "Ultra Stream",
+		"module-name": "Ultra Stream HDMI",
+		"sn": "C301200424207",
+		"hardware-ver": "C",
+		"firmware-ver-s": "1.4.34",
+		"factory-firmware-ver-s": "1.3.189"
+	},
+	"mac-addr": {
+		"eth": "d0:c8:57:80:17:04",
+		"wifi": "d0:c8:57:80:17:05",
+		"blue": "d0:c8:57:80:17:06"
+	}
+}</pre> 
+</div> 
+<div class="content-level1"> 
+<h2>STATUS</h2> 
+<pre class="json"> 
+{
+	"cur-status": 80,
+	"last-rec-status": 0,
+	"lock-user": [
+	],
+	"preview-user": [
+	],
+	"sysstat": {
+		"cpu": 604,
+		"cpu-usage": 45,
+		"mem-total": 524288,
+		"mem-free": 242684,
+		"eth-rx": 8816,
+		"eth-tx": 79056,
+		"wlan-rx": 0,
+		"wlan-tx": 2720,
+		"mobile-rx": 0,
+		"mobile-tx": 0,
+		"usb-rd": 0,
+		"usb-wr": 0,
+		"sd-rd": 0,
+		"sd-wr": 0
+	},
+	"rec-status": {
+		"result": 0,
+		"run-ms": 0,
+		"cur-bps": 0,
+		"avg-bps": 0,
+		"result2": 0,
+		"cur-bps2": 0,
+		"avg-bps2": 0,
+		"client-id": ""
+	},
+	"live-status": {
+		"result": 27,
+		"run-ms": 0,
+		"cur-bps": 0,
+		"avg-bps": 0,
+		"net": 0,
+		"peer_ip": "",
+		"result2": 27,
+		"cur-bps2": 0,
+		"avg-bps2": 0,
+		"net2": 0,
+		"peer_ip2": "",
+		"result3": 0,
+		"cur-bps3": 0,
+		"avg-bps3": 0,
+		"net3": 0,
+		"peer_ip3": "",
+		"result4": 0,
+		"cur-bps4": 0,
+		"avg-bps4": 0,
+		"net4": 0,
+		"peer_ip4": "",
+		"client-id": ""
+	},
+	"upgrade-status": {
+		"step": 0,
+		"percent": 0,
+		"result": 27,
+		"client-id": "",
+		"mode": "none"
+	},
+	"format-status": {
+		"type": 0,
+		"percent": 0,
+		"result": 27,
+		"client-id": ""
+	},
+	"disk-test": {
+		"read-bps": 0,
+		"write-bps": 0,
+		"percent": 0,
+		"result": 27,
+		"client-id": ""
+	},
+	"living-test": {
+		"upload-bps": 0,
+		"percent": 0,
+		"result": 27,
+		"net": 1,
+		"client-id": ""
+	},
+	"check-upgrade": {
+		"result": 0,
+		"client-id": ""
+	},
+	"input-signal": {
+		"signal-info-types": [
+			"video-info",
+			"audio-info",
+			"hdmi-info"
+		],
+		"hdmi-info": {
+			"mode": "hdmi",
+			"vic": 0,
+			"hdcp": false,
+			"it-content": false,
+			"3d-format": false,
+			"timing-h-total": 2200,
+			"timing-h-active": 1920,
+			"timing-h-frontporch": 88,
+			"timing-h-syncwidth": 44,
+			"timing-h-backporch": 148,
+			"timing-f0v-syncwidth": 5,
+			"timing-f0v-frontporch": 4,
+			"timing-f0v-backproch": 36,
+			"timing-f0v-active": 1080,
+			"timing-f0v-totalheight": 1125
+		},
+		"audio-info": {
+			"codec": "lpcm",
+			"num-channels": 2,
+			"sample-rate": 48000,
+			"bit-count": 24,
+			"cs-size": 5,
+			"cs-data": [
+				"0x00",
+				"0x00",
+				"0x20",
+				"0x02",
+				"0x0b"
+			]
+		},
+		"video-info": {
+			"codec": "uncompressed",
+			"width": 1920,
+			"height": 1080,
+			"scan": "progressive",
+			"field-rate": 60.00,
+			"color-depth": 8,
+			"color-format": "rgb",
+			"aspect-ratio": "16:9",
+			"sampling": "4:4:4",
+			"quant-range": "full",
+			"sat-range": "full",
+			"frame-struct": "2d"
+		}
+	},
+	"usb": {
+		"disk-status": 1,
+		"total-size": 15503687680,
+		"used-size": 1063239680,
+		"free-size": 14306230272,
+		"block-size": 8192,
+		"usage": 6,
+		"sys-path": "/dev/sda1",
+		"fs-type": "vfat",
+		"mount-path": "/usr/share/web-data/media/disk0",
+		"fs-label": "DAA1-9DE4",
+		"write-bps": 0,
+		"read-bps": 0,
+		"free-sec": 26460,
+		"file-count": 2,
+		"beign-time": "2020-12-31 16:53:58",
+		"end-time": "2021-01-03 07:55:58",
+		"total-cache-time": 0
+	},
+	"sd": {
+		"disk-status": 1,
+		"total-size": 31589679104,
+		"used-size": 6436749312,
+		"free-size": 24079187968,
+		"block-size": 16384,
+		"usage": 21,
+		"sys-path": "/dev/mmcblk1p1",
+		"fs-type": "vfat",
+		"mount-path": "/usr/share/web-data/media/disk1",
+		"fs-label": "E9F3-28D3",
+		"write-bps": 0,
+		"read-bps": 0,
+		"free-sec": 44535,
+		"file-count": 11,
+		"beign-time": "2020-12-20 09:42:36",
+		"end-time": "2021-01-03 07:55:58",
+		"total-cache-time": 56440
+	},
+	"wifi": {
+		"name": "C301200424207",
+		"level": 0,
+		"ip": "192.168.48.1",
+		"mask": "255.255.255.0",
+		"router": "",
+		"dns": ""
+	},
+	"eth": {
+		"ip": "192.168.178.43",
+		"mask": "255.255.255.0",
+		"router": "192.168.178.1",
+		"dns": "192.168.178.1"
+	},
+	"mobile": {
+		"ip": "",
+		"mask": "",
+		"router": "",
+		"dns": ""
+	},
+	"upgrade": {
+		"ver": "",
+		"date": "",
+		"size-byte": 0,
+		"info": [
+		]
+	}
+}</pre> 
+</div> 
+<div class="content-level1"> 
+<h2>SETTINGS</h2> 
+<pre class="json">{
+	"passwd": 0,
+	"is-settings": 1,
+	"is-ssdp": 1,
+	"is-signal-lost": 0,
+	"is-hdmi-rec-ctrl": 0,
+	"is-auto-send-file": 0,
+	"sdi-anc-trigger-id": 0,
+	"is-auto-rec": 0,
+	"is-low-latency": 0,
+	"is-auto-live": 0,
+	"is-check-update": 1,
+	"audio-sync-offset": 0,
+	"softap": {
+		"is-softap": 1,
+		"is-visible": 1,
+		"softap-ssid": "C301200424207",
+		"softap-passwd": "00424207"
+	},
+	"date-time": {
+		"timezone": "Europe/Berlin",
+		"is-auto": 1
+	},
+	"rec-control": {
+		"mime-type": 0,
+		"usb-option": 1,
+		"sd-option": 1,
+		"root-folder": "REC_Folder",
+		"file-prefix": "VID",
+		"time-unit": 30
+	},
+	"video-color": {
+		"contrast": 100,
+		"brightness": 0,
+		"saturation": 100,
+		"hue": 0
+	},
+	"volume": {
+		"is-mic": 1,
+		"mic-gain": 0,
+		"is-spi": 1,
+		"spi-gain": 0,
+		"is-phone": 1,
+		"phone-gain": 0
+	},
+	"main-stream": {
+		"is-auto": 1,
+		"codec": 0,
+		"cx": 1920,
+		"cy": 1080,
+		"duration": 166667,
+		"kbps": 4096,
+		"gop": 1,
+		"profile": 2,
+		"cbrstat": 60,
+		"fullrange": 0
+	},
+	"sub-stream": {
+		"enable": 1,
+		"cx": 1280,
+		"cy": 720,
+		"duration": 333333,
+		"kbps": 1024,
+		"gop": 1,
+		"profile": 2,
+		"cbrstat": 60,
+		"fullrange": 0
+	},
+	"audio": {
+		"sample-rate": 48000,
+		"channels": 2,
+		"kbps": 128
+	},
+	"rec-stream": 0,
+	"live-stream": 1,
+	"mws-stream": 1,
+	"eth": {
+		"is-dhcp": 1,
+		"ip": "",
+		"mask": "",
+		"router": "",
+		"dns": ""
+	},
+	"stream-server": [
+		{
+			"id": 0,
+			"type": 2,
+			"url": "rtmps://a.rtmps.youtube.com/live2",
+			"key": "new",
+			"is-auth": 1,
+			"user": "Johanneskirche Hersbruck",
+			"passwd": "https://lh3.googleusercontent.com/a-/AOh14GjzEAVc5Tv1gckxvsxGAktNPTUiRKU3SO7KqEo9=s96-c",
+			"is-use": 1,
+			"token": "1//09ftr9flh9b5CCgYIARAAGAkSNwF-L9Irij6Oh2owSOEd8quFP3veobWUyRCiVu4Gbku6H6xOruKR8fnIIiZ8-2y-iGoNog3wy3w",
+			"net-mode": 0,
+			"name": "YouTube Server",
+			"port": 0,
+			"is-main": 0,
+			"is-sub": 0,
+			"main-stream-name": "",
+			"sub-stream-name": "",
+			"is-audio": 0,
+			"event-data": "{\"title\":\"Gottesdienst Epiphanias\",\"desc\":\"\",\"privacy\":\"public\",\"def_id\":\"\",\"def_bound_id\":\"\",\"def_url\":\"\",\"def_key\":\"\",\"def_title\":\"\",\"sel_id\":\"new\",\"sel_bound_id\":\"\",\"sel_url\":\"rtmps://a.rtmps.youtube.com/live2\",\"sel_key\":\"\",\"sel_title\":\"Gottesdienst Epiphanias\"}"
+		}
+	],
+	"send-file-cloud": [
+	],
+	"video-input-format": {
+		"is-color-fmt": 0,
+		"color-fmt": 1,
+		"is-quant-range": 0,
+		"quant-range": 1
+	},
+	"video-output-format": {
+		"is-color-fmt": 0,
+		"color-fmt": 3,
+		"is-quant-range": 0,
+		"quant-range": 2,
+		"is-sat-range": 0,
+		"sat-range": 2
+	}
+}</pre> 
+</div> 
+</div> 
+</div> 
+</body> 
+</html> 

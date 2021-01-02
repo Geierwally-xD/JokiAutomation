@@ -53,6 +53,10 @@ namespace JokiAutomation
                 {
                     _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PPP_VIEW);
                 }
+                else if (cmd == "Text")
+                {
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_TEXT_VIEW); // 20 power point view with audio profile text
+                }
                 else if (cmd == "GoPro")
                 {
                     _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_GOPRO_VIEW);
@@ -94,6 +98,10 @@ namespace JokiAutomation
                 {
                     _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_MUTE);
                 }
+                else if (cmd == "Backup_Start")   // starts the backup recorder
+                {
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_START_BACKUP); // 18 starts the backup - recorder
+                }
                 else if (cmd == "Backup_Stop")   // stopps the backup recorder
                 {
                     _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_STOP_BACKUP);
@@ -101,6 +109,10 @@ namespace JokiAutomation
                 else if (cmd == "Ausschaltsequenz") // switch Beamer, HDMI switch, Backuprecorder off and shut down Raspberry Pi
                 {
                     _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SHUTDOWN);
+                }
+                else if (cmd == "RasPi_Reset")   // kills all activ RasPiAutomation processes on raspberry pi
+                {
+                    _audioMix._rasPi.rasPiStop();
                 }
                 else
                 {
