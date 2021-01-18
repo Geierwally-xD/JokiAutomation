@@ -81,13 +81,13 @@ namespace JokiAutomation
                 {
                     _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SONG_VIEW);
                 }
-                else if (cmd == "BEAMER_LiveVideo")  // switch Beamer to HDMI 1 (laptop) and audio to VideoClip (laptop out)
+                else if (cmd == "BEAMER_LiveVideo")  // switch HDMI laptop and audio to VideoClip (laptop out)
                 {
-                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_HDMI_1);
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_LIVE_VIDEO);
                 }
-                else if (cmd == "BEAMER_LiveStream") // switch Beamer to HDMI 2 (live stream View)
+                else if (cmd == "BEAMER_LiveStream") // toggle Beamer between HDMI 1 (only PPP) and HDMI 2 (live stream View)
                 {
-                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_HDMI_2);
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_TOGGLE);
                 }
                 else if (cmd == "BEAMER_VideoClip") // switch Beamer to analog input (video from CD)
                 {
@@ -234,11 +234,7 @@ namespace JokiAutomation
         // tab control index changed initialize Audiomix for channel 1 and 2 if page opens
         private void TabControl1_SelectedIndexChanged(Object sender, EventArgs e)
         {
-            if(TabControl1.SelectedIndex == 2) // audiomix page active?
-            {
-                int commandID = AudioMix.AM_ACTIVE + 0x03;
-                _audioMix.executeAudio(commandID); // activate audio channels 1 and 2 
-            }
+            //nothing to doe here
         }
 
         // reset raspberry pi 1 stopps RaspiAutomation App on raspberry from audiomix menu page

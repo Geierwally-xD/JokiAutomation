@@ -9,6 +9,7 @@ using Renci.SshNet.Common;
 using System.Threading;
 using System.Windows.Forms;
 using System.IO;
+using System.Diagnostics;
 
 namespace JokiAutomation
 {
@@ -45,31 +46,46 @@ namespace JokiAutomation
 
         public void rasPiExecute(int command, int ID)
         {
+
             _commandString = command.ToString();
             _idString = ID.ToString();
+            int commandLineInstances = 0;
             for (UInt16 i = 0; i < 5; i++)
             {
                 _threadResultString[i] = "";
             }
             try
             {
-                if (_threadResultString[0] != "")
+                // count running command line instances of JoKiAutomation
+                Process[] localByName = Process.GetProcessesByName("JoKiAutomation");
+                for(int i = 0;i< localByName.Length; i++) 
                 {
-                    _rasPiForm._logDat.sendInfoMessage(_threadResultString[0]);
-                    _rasPiForm._logDat.sendInfoMessage(_threadResultString[1]);
-                    _rasPiForm._logDat.sendInfoMessage(_threadResultString[2]);
+                   if(localByName[i].MainWindowTitle == "")
+                    {
+                        commandLineInstances++;
+                    }
                 }
-
-                _RasPiThread = new Thread(new ThreadStart(rasPiThreadStart));
-                _rasPiForm._logDat.sendInfoMessage("start Raspberry Pi RasPi-Automation-application " + _commandString + " " + _idString);
-                _RasPiThread.Start();
-                if (_threadResultString[0] != "")
+                if (commandLineInstances < 2) // maximum one instance of JoKiAutomation from command line allowed 
                 {
-                    _rasPiForm._logDat.sendInfoMessage(_threadResultString[0]);
-                    _rasPiForm._logDat.sendInfoMessage(_threadResultString[1]);
-                    _rasPiForm._logDat.sendInfoMessage(_threadResultString[2]);
-                    _rasPiForm._logDat.sendInfoMessage(_threadResultString[3]);
-                    _rasPiForm._logDat.sendInfoMessage(_threadResultString[4]);
+                    if (_threadResultString[0] != "")
+                    {
+                        _rasPiForm._logDat.sendInfoMessage(_threadResultString[0]);
+                        _rasPiForm._logDat.sendInfoMessage(_threadResultString[1]);
+                        _rasPiForm._logDat.sendInfoMessage(_threadResultString[2]);
+                    }
+
+                    _RasPiThread = new Thread(new ThreadStart(rasPiThreadStart));
+                    _RasPiThread.SetApartmentState(ApartmentState.STA);
+                    _rasPiForm._logDat.sendInfoMessage("start Raspberry Pi RasPi-Automation-application " + _commandString + " " + _idString);
+                    _RasPiThread.Start();
+                    if (_threadResultString[0] != "")
+                    {
+                        _rasPiForm._logDat.sendInfoMessage(_threadResultString[0]);
+                        _rasPiForm._logDat.sendInfoMessage(_threadResultString[1]);
+                        _rasPiForm._logDat.sendInfoMessage(_threadResultString[2]);
+                        _rasPiForm._logDat.sendInfoMessage(_threadResultString[3]);
+                        _rasPiForm._logDat.sendInfoMessage(_threadResultString[4]);
+                    }
                 }
             }
             catch (Exception e)
