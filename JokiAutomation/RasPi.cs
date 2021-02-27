@@ -40,13 +40,12 @@ namespace JokiAutomation
 
         public void rasPiStop()
         {
-           rasPiExecute(0,0);
+           PuttyRequestRasPi(0,0);
         }
 
-
+        // raspberry pi request over Renci ssh.Net
         public void rasPiExecute(int command, int ID)
         {
-
             _commandString = command.ToString();
             _idString = ID.ToString();
             int commandLineInstances = 0;
@@ -102,7 +101,7 @@ namespace JokiAutomation
             }
         }
 
-
+        // raspberry pi request over putty command line
         public static void rasPiThreadStart()
         {
             SshCommand sshConsole;
@@ -133,12 +132,77 @@ namespace JokiAutomation
             }
         }
 
+        public void PuttyRequestRasPi(int command, int ID)
+        {
+            string cmd = null;
+            _commandString = command.ToString();
+            _idString = ID.ToString();
+            m_szFeedback = "Feedback from: " + _rasPiConfig[0] + "\r\n";
+            ProcessStartInfo psi = new ProcessStartInfo()
+            {
+                FileName = _rasPiConfig[3], // A const or a readonly string that points to the plink executable
+                Arguments = String.Format("-ssh {0}@{1} -pw {2}", _rasPiConfig[1] /*userName*/, _rasPiConfig[0] /*remoteHost*/, _rasPiConfig[2] /*password*/),
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                RedirectStandardInput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            Process p = Process.Start(psi);
+
+            m_objLock = new Object();
+            m_blnDoRead = true;
+
+            AsyncReadFeedback(p.StandardOutput); // start the async read of stdout
+            AsyncReadFeedback(p.StandardError); // start the async read of stderr
+
+            StreamWriter strw = p.StandardInput;
+            if (command > 0)
+            {
+                _rasPiForm._logDat.sendInfoMessage("start Raspberry Pi RasPi-Automation-application over Putty " + _commandString + " " + _idString);
+                cmd = "sudo nice --15 remote-debugging/RasPiAutomation " + _commandString + " " + _idString;
+            }
+            else
+            {
+                _rasPiForm._logDat.sendInfoMessage("reset Raspberry Pi RasPi-Automation-application over Putty ");
+                cmd = "killall -SIGKILL RasPiAutomation ";
+            }
+            strw.WriteLine(cmd); // send commands 
+            strw.WriteLine("exit"); // send exit command at the end
+
+            p.WaitForExit(); // block thread until remote operations are done
+            _rasPiForm._logDat.sendInfoMessage(m_szFeedback);
+        }
+
+        // trhread helper method for PuttyRequestRasPi
+        public void AsyncReadFeedback(StreamReader strr)
+        {
+            Thread trdr = new Thread(new ParameterizedThreadStart(__ctReadFeedback));
+            trdr.Start(strr);
+        }
+        // trhread helper method for PuttyRequestRasPi
+        private void __ctReadFeedback(Object objStreamReader)
+        {
+            StreamReader strr = (StreamReader)objStreamReader;
+            string line;
+            while (!strr.EndOfStream && m_blnDoRead)
+            {
+                line = strr.ReadLine();
+                // lock the feedback buffer (since we don't want some messy stdout/err mix string in the end)
+                lock (m_objLock) { m_szFeedback += line + "\r\n"; }
+            }
+        }
+
         public Thread _RasPiThread = null;
         private static string _commandString = null;
         private static string _idString = null;
         private Form1 _rasPiForm;
         private static String[] _threadResultString = new String[5];
         private string _JokiAutomationPath = Environment.GetEnvironmentVariable("JokiAutomation");
-        static private string[] _rasPiConfig = { "192.168.178.70", "pi", "raspberry" }; // default login data
+        private String m_szFeedback; // hold feedback data
+        private Object m_objLock;    // lock object
+        private Boolean m_blnDoRead; // boolean value keeping up the read (may be used to interrupt the reading process)
+        static private string[] _rasPiConfig = { "192.168.178.70", "pi", "raspberry", "C:/Program Files/PuTTY/plink" }; // default login data
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace JokiAutomation
+﻿using System.Windows.Forms;//rvtest
+
+namespace JokiAutomation
 {
     partial class Form1
     {
@@ -28,6 +30,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.TabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.button15 = new System.Windows.Forms.Button();
@@ -73,6 +76,18 @@
             this.listBox3 = new System.Windows.Forms.ListBox();
             this.richTextBox2 = new System.Windows.Forms.RichTextBox();
             this.tabPage4 = new System.Windows.Forms.TabPage();
+            this.teachNullPos = new System.Windows.Forms.Button();
+            this.moveRight = new System.Windows.Forms.Button();
+            this.moveLeft = new System.Windows.Forms.Button();
+            this.moveDown = new System.Windows.Forms.Button();
+            this.moveUp = new System.Windows.Forms.Button();
+            this.teachParkPos = new System.Windows.Forms.Button();
+            this.label10 = new System.Windows.Forms.Label();
+            this.listBoxCamPosControl = new System.Windows.Forms.ListBox();
+            this.teachCamPos = new System.Windows.Forms.Button();
+            this.resetCamPos = new System.Windows.Forms.Button();
+            this.moveCamPos = new System.Windows.Forms.Button();
+            this.calibrate = new System.Windows.Forms.Button();
             this.richTextBox3 = new System.Windows.Forms.RichTextBox();
             this.TabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -597,6 +612,18 @@
             // 
             // tabPage4
             // 
+            this.tabPage4.Controls.Add(this.teachNullPos);
+            this.tabPage4.Controls.Add(this.moveRight);
+            this.tabPage4.Controls.Add(this.moveLeft);
+            this.tabPage4.Controls.Add(this.moveDown);
+            this.tabPage4.Controls.Add(this.moveUp);
+            this.tabPage4.Controls.Add(this.teachParkPos);
+            this.tabPage4.Controls.Add(this.label10);
+            this.tabPage4.Controls.Add(this.listBoxCamPosControl);
+            this.tabPage4.Controls.Add(this.teachCamPos);
+            this.tabPage4.Controls.Add(this.resetCamPos);
+            this.tabPage4.Controls.Add(this.moveCamPos);
+            this.tabPage4.Controls.Add(this.calibrate);
             this.tabPage4.Controls.Add(this.richTextBox3);
             this.tabPage4.Location = new System.Drawing.Point(4, 22);
             this.tabPage4.Name = "tabPage4";
@@ -606,6 +633,151 @@
             this.tabPage4.Text = "Position Camcorder";
             this.tabPage4.UseVisualStyleBackColor = true;
             // 
+            // teachNullPos
+            // 
+            this.teachNullPos.Location = new System.Drawing.Point(400, 297);
+            this.teachNullPos.Name = "teachNullPos";
+            this.teachNullPos.Size = new System.Drawing.Size(97, 28);
+            this.teachNullPos.TabIndex = 18;
+            this.teachNullPos.Text = "Teach Null Pos";
+            this.teachNullPos.UseVisualStyleBackColor = true;
+            this.teachNullPos.Click += new System.EventHandler(this.teachNullPos_Click);
+            // 
+            // moveRight
+            // 
+            this.moveRight.Image = ((System.Drawing.Image)(resources.GetObject("moveRight.Image")));
+            this.moveRight.Location = new System.Drawing.Point(616, 105);
+            this.moveRight.Name = "moveRight";
+            this.moveRight.Size = new System.Drawing.Size(85, 85);
+            this.moveRight.TabIndex = 17;
+            this.moveRight.UseVisualStyleBackColor = true;
+            this.moveRight.MouseDown += new System.Windows.Forms.MouseEventHandler(this.moveRightHandler);
+            this.moveRight.MouseUp += new System.Windows.Forms.MouseEventHandler(this.moveDoneHandler);
+            // 
+            // moveLeft
+            // 
+            this.moveLeft.Image = ((System.Drawing.Image)(resources.GetObject("moveLeft.Image")));
+            this.moveLeft.Location = new System.Drawing.Point(434, 105);
+            this.moveLeft.Name = "moveLeft";
+            this.moveLeft.Size = new System.Drawing.Size(85, 85);
+            this.moveLeft.TabIndex = 16;
+            this.moveLeft.UseVisualStyleBackColor = true;
+            this.moveLeft.MouseDown += new System.Windows.Forms.MouseEventHandler(this.moveLeftHandler);
+            this.moveLeft.MouseUp += new System.Windows.Forms.MouseEventHandler(this.moveDoneHandler);
+            // 
+            // moveDown
+            // 
+            this.moveDown.Image = ((System.Drawing.Image)(resources.GetObject("moveDown.Image")));
+            this.moveDown.Location = new System.Drawing.Point(525, 197);
+            this.moveDown.Name = "moveDown";
+            this.moveDown.Size = new System.Drawing.Size(85, 85);
+            this.moveDown.TabIndex = 15;
+            this.moveDown.UseVisualStyleBackColor = true;
+            this.moveDown.MouseDown += new System.Windows.Forms.MouseEventHandler(this.moveDownHandler);
+            this.moveDown.MouseUp += new System.Windows.Forms.MouseEventHandler(this.moveDoneHandler);
+            // 
+            // moveUp
+            // 
+            this.moveUp.Image = ((System.Drawing.Image)(resources.GetObject("moveUp.Image")));
+            this.moveUp.Location = new System.Drawing.Point(525, 18);
+            this.moveUp.Name = "moveUp";
+            this.moveUp.Size = new System.Drawing.Size(85, 85);
+            this.moveUp.TabIndex = 14;
+            this.moveUp.UseVisualStyleBackColor = true;
+            this.moveUp.MouseDown += new System.Windows.Forms.MouseEventHandler(this.moveUpHandler);
+            this.moveUp.MouseUp += new System.Windows.Forms.MouseEventHandler(this.moveDoneHandler);
+            // 
+            // teachParkPos
+            // 
+            this.teachParkPos.Location = new System.Drawing.Point(525, 297);
+            this.teachParkPos.Name = "teachParkPos";
+            this.teachParkPos.Size = new System.Drawing.Size(97, 28);
+            this.teachParkPos.TabIndex = 13;
+            this.teachParkPos.Text = "Teach Park Pos";
+            this.teachParkPos.UseVisualStyleBackColor = true;
+            this.teachParkPos.Click += new System.EventHandler(this.teachParkPos_Click);
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.label10.Location = new System.Drawing.Point(6, 3);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(183, 22);
+            this.label10.TabIndex = 12;
+            this.label10.Text = "Camcorder -  Position";
+            // 
+            // listBoxCamPosControl
+            // 
+            this.listBoxCamPosControl.FormattingEnabled = true;
+            this.listBoxCamPosControl.Items.AddRange(new object[] {
+            "Altar",
+            "Taufstein",
+            "Kanzel",
+            "Orgel",
+            "Mittelgang",
+            "Position_6",
+            "Position_7",
+            "Position_8",
+            "Position_9",
+            "Position_10",
+            "Position_11",
+            "Position_12",
+            "Position_13",
+            "Position_14",
+            "Position_15",
+            "Position_16",
+            "Position_17",
+            "Position_18",
+            "Position_19",
+            "Position_20"});
+            this.listBoxCamPosControl.Location = new System.Drawing.Point(10, 28);
+            this.listBoxCamPosControl.Name = "listBoxCamPosControl";
+            this.listBoxCamPosControl.Size = new System.Drawing.Size(325, 264);
+            this.listBoxCamPosControl.TabIndex = 11;
+            this.listBoxCamPosControl.SelectedIndexChanged += new System.EventHandler(this.listBoxCamPosControl_SelectedIndexChanged);
+            // 
+            // teachCamPos
+            // 
+            this.teachCamPos.Location = new System.Drawing.Point(248, 297);
+            this.teachCamPos.Name = "teachCamPos";
+            this.teachCamPos.Size = new System.Drawing.Size(87, 28);
+            this.teachCamPos.TabIndex = 10;
+            this.teachCamPos.Text = "Teach";
+            this.teachCamPos.UseVisualStyleBackColor = true;
+            this.teachCamPos.Click += new System.EventHandler(this.teachCamPos_Click);
+            // 
+            // resetCamPos
+            // 
+            this.resetCamPos.BackColor = System.Drawing.Color.Red;
+            this.resetCamPos.Location = new System.Drawing.Point(129, 296);
+            this.resetCamPos.Name = "resetCamPos";
+            this.resetCamPos.Size = new System.Drawing.Size(87, 28);
+            this.resetCamPos.TabIndex = 5;
+            this.resetCamPos.Text = "Reset";
+            this.resetCamPos.UseVisualStyleBackColor = false;
+            this.resetCamPos.Click += new System.EventHandler(this.resetCamPos_Click);
+            // 
+            // moveCamPos
+            // 
+            this.moveCamPos.Location = new System.Drawing.Point(6, 297);
+            this.moveCamPos.Name = "moveCamPos";
+            this.moveCamPos.Size = new System.Drawing.Size(87, 28);
+            this.moveCamPos.TabIndex = 4;
+            this.moveCamPos.Text = "Start";
+            this.moveCamPos.UseVisualStyleBackColor = true;
+            this.moveCamPos.Click += new System.EventHandler(this.moveCamPos_Click);
+            // 
+            // calibrate
+            // 
+            this.calibrate.Location = new System.Drawing.Point(651, 296);
+            this.calibrate.Name = "calibrate";
+            this.calibrate.Size = new System.Drawing.Size(91, 29);
+            this.calibrate.TabIndex = 1;
+            this.calibrate.Text = "Kalibrierung";
+            this.calibrate.UseVisualStyleBackColor = true;
+            this.calibrate.Click += new System.EventHandler(this.calibrate_Click);
+            // 
             // richTextBox3
             // 
             this.richTextBox3.Location = new System.Drawing.Point(6, 341);
@@ -613,6 +785,7 @@
             this.richTextBox3.Size = new System.Drawing.Size(756, 154);
             this.richTextBox3.TabIndex = 0;
             this.richTextBox3.Text = "";
+            this.richTextBox3.KeyDown += new System.Windows.Forms.KeyEventHandler(this.rtb3KeyDown);
             // 
             // Form1
             // 
@@ -636,6 +809,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).EndInit();
             this.groupBox1.ResumeLayout(false);
             this.tabPage4.ResumeLayout(false);
+            this.tabPage4.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -688,6 +862,18 @@
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.Button teachCamPos;
+        private System.Windows.Forms.Button resetCamPos;
+        private System.Windows.Forms.Button moveCamPos;
+        private System.Windows.Forms.Button calibrate;
+        private System.Windows.Forms.Label label10;
+        public System.Windows.Forms.ListBox listBoxCamPosControl;
+        private System.Windows.Forms.Button teachParkPos;
+        private Button moveUp;
+        private Button teachNullPos;
+        private Button moveRight;
+        private Button moveLeft;
+        private Button moveDown;
     }
 }
 
