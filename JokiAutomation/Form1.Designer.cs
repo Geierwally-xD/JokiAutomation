@@ -1,4 +1,4 @@
-﻿using System.Windows.Forms;//rvtest
+﻿using System.Windows.Forms;
 
 namespace JokiAutomation
 {
@@ -43,6 +43,7 @@ namespace JokiAutomation
             this.listBox1 = new System.Windows.Forms.ListBox();
             this.label1 = new System.Windows.Forms.Label();
             this.textBox1 = new System.Windows.Forms.TextBox();
+            this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.button13 = new System.Windows.Forms.Button();
             this.button12 = new System.Windows.Forms.Button();
@@ -76,12 +77,13 @@ namespace JokiAutomation
             this.listBox3 = new System.Windows.Forms.ListBox();
             this.richTextBox2 = new System.Windows.Forms.RichTextBox();
             this.tabPage4 = new System.Windows.Forms.TabPage();
+            this.testPos = new System.Windows.Forms.Button();
             this.teachNullPos = new System.Windows.Forms.Button();
             this.moveRight = new System.Windows.Forms.Button();
             this.moveLeft = new System.Windows.Forms.Button();
             this.moveDown = new System.Windows.Forms.Button();
             this.moveUp = new System.Windows.Forms.Button();
-            this.teachParkPos = new System.Windows.Forms.Button();
+            this.calibGyro = new System.Windows.Forms.Button();
             this.label10 = new System.Windows.Forms.Label();
             this.listBoxCamPosControl = new System.Windows.Forms.ListBox();
             this.teachCamPos = new System.Windows.Forms.Button();
@@ -127,6 +129,7 @@ namespace JokiAutomation
             this.tabPage1.Controls.Add(this.listBox1);
             this.tabPage1.Controls.Add(this.label1);
             this.tabPage1.Controls.Add(this.textBox1);
+            this.tabPage1.Controls.Add(this.menuStrip1);
             this.tabPage1.Location = new System.Drawing.Point(4, 22);
             this.tabPage1.Name = "tabPage1";
             this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
@@ -237,6 +240,15 @@ namespace JokiAutomation
             this.textBox1.Size = new System.Drawing.Size(595, 27);
             this.textBox1.TabIndex = 1;
             // 
+            // menuStrip1
+            // 
+            this.menuStrip1.ImageScalingSize = new System.Drawing.Size(18, 18);
+            this.menuStrip1.Location = new System.Drawing.Point(3, 3);
+            this.menuStrip1.Name = "menuStrip1";
+            this.menuStrip1.Size = new System.Drawing.Size(762, 24);
+            this.menuStrip1.TabIndex = 11;
+            this.menuStrip1.Text = "menuStrip1";
+            // 
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.button13);
@@ -285,7 +297,7 @@ namespace JokiAutomation
             this.button10.Name = "button10";
             this.button10.Size = new System.Drawing.Size(122, 32);
             this.button10.TabIndex = 5;
-            this.button10.Text = "Stop RasPi";
+            this.button10.Text = "Default";
             this.button10.UseVisualStyleBackColor = true;
             this.button10.Click += new System.EventHandler(this.button10_Click);
             // 
@@ -373,7 +385,7 @@ namespace JokiAutomation
             this.button11.Name = "button11";
             this.button11.Size = new System.Drawing.Size(122, 32);
             this.button11.TabIndex = 7;
-            this.button11.Text = "Stop RasPi";
+            this.button11.Text = "Default";
             this.button11.UseVisualStyleBackColor = true;
             this.button11.Click += new System.EventHandler(this.button11_Click);
             // 
@@ -612,12 +624,13 @@ namespace JokiAutomation
             // 
             // tabPage4
             // 
+            this.tabPage4.Controls.Add(this.testPos);
             this.tabPage4.Controls.Add(this.teachNullPos);
             this.tabPage4.Controls.Add(this.moveRight);
             this.tabPage4.Controls.Add(this.moveLeft);
             this.tabPage4.Controls.Add(this.moveDown);
             this.tabPage4.Controls.Add(this.moveUp);
-            this.tabPage4.Controls.Add(this.teachParkPos);
+            this.tabPage4.Controls.Add(this.calibGyro);
             this.tabPage4.Controls.Add(this.label10);
             this.tabPage4.Controls.Add(this.listBoxCamPosControl);
             this.tabPage4.Controls.Add(this.teachCamPos);
@@ -633,9 +646,19 @@ namespace JokiAutomation
             this.tabPage4.Text = "Position Camcorder";
             this.tabPage4.UseVisualStyleBackColor = true;
             // 
+            // testPos
+            // 
+            this.testPos.Location = new System.Drawing.Point(362, 296);
+            this.testPos.Name = "testPos";
+            this.testPos.Size = new System.Drawing.Size(97, 28);
+            this.testPos.TabIndex = 19;
+            this.testPos.Text = "Test";
+            this.testPos.UseVisualStyleBackColor = true;
+            this.testPos.Click += new System.EventHandler(this.testPos_Click);
+            // 
             // teachNullPos
             // 
-            this.teachNullPos.Location = new System.Drawing.Point(400, 297);
+            this.teachNullPos.Location = new System.Drawing.Point(465, 296);
             this.teachNullPos.Name = "teachNullPos";
             this.teachNullPos.Size = new System.Drawing.Size(97, 28);
             this.teachNullPos.TabIndex = 18;
@@ -687,15 +710,15 @@ namespace JokiAutomation
             this.moveUp.MouseDown += new System.Windows.Forms.MouseEventHandler(this.moveUpHandler);
             this.moveUp.MouseUp += new System.Windows.Forms.MouseEventHandler(this.moveDoneHandler);
             // 
-            // teachParkPos
+            // calibGyro
             // 
-            this.teachParkPos.Location = new System.Drawing.Point(525, 297);
-            this.teachParkPos.Name = "teachParkPos";
-            this.teachParkPos.Size = new System.Drawing.Size(97, 28);
-            this.teachParkPos.TabIndex = 13;
-            this.teachParkPos.Text = "Teach Park Pos";
-            this.teachParkPos.UseVisualStyleBackColor = true;
-            this.teachParkPos.Click += new System.EventHandler(this.teachParkPos_Click);
+            this.calibGyro.Location = new System.Drawing.Point(568, 296);
+            this.calibGyro.Name = "calibGyro";
+            this.calibGyro.Size = new System.Drawing.Size(97, 28);
+            this.calibGyro.TabIndex = 13;
+            this.calibGyro.Text = "Kalib Gyro";
+            this.calibGyro.UseVisualStyleBackColor = true;
+            this.calibGyro.Click += new System.EventHandler(this.calibGyro_Click);
             // 
             // label10
             // 
@@ -770,11 +793,11 @@ namespace JokiAutomation
             // 
             // calibrate
             // 
-            this.calibrate.Location = new System.Drawing.Point(651, 296);
+            this.calibrate.Location = new System.Drawing.Point(671, 295);
             this.calibrate.Name = "calibrate";
             this.calibrate.Size = new System.Drawing.Size(91, 29);
             this.calibrate.TabIndex = 1;
-            this.calibrate.Text = "Kalibrierung";
+            this.calibrate.Text = "Kalib Mag";
             this.calibrate.UseVisualStyleBackColor = true;
             this.calibrate.Click += new System.EventHandler(this.calibrate_Click);
             // 
@@ -793,6 +816,7 @@ namespace JokiAutomation
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 579);
             this.Controls.Add(this.TabControl1);
+            this.MainMenuStrip = this.menuStrip1;
             this.Name = "Form1";
             this.Text = "Joki Automation";
             this.TabControl1.ResumeLayout(false);
@@ -831,12 +855,12 @@ namespace JokiAutomation
         private System.Windows.Forms.TextBox textBox2;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Label label5;
-        public System.Windows.Forms.RichTextBox richTextBox1;
+        public  System.Windows.Forms.RichTextBox richTextBox1;
         private System.Windows.Forms.ListBox listBox2;
         private System.Windows.Forms.Button button3;
         private System.Windows.Forms.Button button2;
-        public System.Windows.Forms.RichTextBox richTextBox2;
-        public System.Windows.Forms.RichTextBox richTextBox3;
+        public  System.Windows.Forms.RichTextBox richTextBox2;
+        public  System.Windows.Forms.RichTextBox richTextBox3;
         private System.Windows.Forms.ListBox listBox3;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.Button button7;
@@ -868,12 +892,14 @@ namespace JokiAutomation
         private System.Windows.Forms.Button calibrate;
         private System.Windows.Forms.Label label10;
         public System.Windows.Forms.ListBox listBoxCamPosControl;
-        private System.Windows.Forms.Button teachParkPos;
+        private System.Windows.Forms.Button calibGyro;
         private Button moveUp;
         private Button teachNullPos;
         private Button moveRight;
         private Button moveLeft;
         private Button moveDown;
+        private Button testPos;
+        private MenuStrip menuStrip1;
     }
 }
 

@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,11 +30,15 @@ namespace JokiAutomation
             listBox2.SelectedIndex = 0;
             listBox3.SelectedIndex = 0;
             listBox4.SelectedIndex = 0;
-            listBoxCamPosControl.SelectedIndex = 0;
+            listBoxCamPosControl.SelectedIndex = 5;
             trackBar1.Value = _audioMix.audioProfile[listBox4.SelectedIndex, 0];
             trackBar2.Value = _audioMix.audioProfile[listBox4.SelectedIndex, 1];
             trackBar3.Value = _audioMix.audioProfile[listBox4.SelectedIndex, 2];
             trackBar4.Value = _audioMix.audioProfile[listBox4.SelectedIndex, 3];
+            Version version = Assembly.GetExecutingAssembly().GetName().Version;
+            this.Text = string.Format("JoKi Automation    Version {0}.{1}.{2}.{3}",
+                           version.Major, version.Minor, version.Build, version.Revision);
+
         }
 
         // interprets command line arguments 
@@ -257,15 +262,15 @@ namespace JokiAutomation
             //nothing to doe here
         }
 
-        // reset raspberry pi 1 stopps RaspiAutomation App on raspberry from audiomix menu page
+        // reset raspberry pi 1 set RaspiAutomation defaults on raspberry from audiomix menu page
         private void button11_Click(object sender, EventArgs e)
         {
-            _audioMix._rasPi.rasPiStop();
+            _audioMix._rasPi.rasPiDefaultSwitch();
         }
-        // reset raspberry pi 2 stopps RaspiAutomation App on raspberry from infrared menu page
+        // reset raspberry pi 2 set RaspiAutomation defaults on raspberry from infrared menu page
         private void button10_Click(object sender, EventArgs e)
         {
-            _audioMix._rasPi.rasPiStop();
+            _audioMix._rasPi.rasPiDefaultSwitch();
         }
         // button handler start/stop sequencer test
         private void button12_Click(object sender, EventArgs e)
@@ -285,22 +290,16 @@ namespace JokiAutomation
         private void button13_Click(object sender, EventArgs e)
         {
             _audioMix._rasPi.rasPiStop();
-            Thread.Sleep(1000);
-            _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_RESET);
         }
 
         private void button14_Click(object sender, EventArgs e)
         {
             _audioMix._rasPi.rasPiStop();
-            Thread.Sleep(1000);
-            _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_RESET);
         }
 
         private void button15_Click(object sender, EventArgs e)
         {
             _audioMix._rasPi.rasPiStop();
-            Thread.Sleep(1000);
-            _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_RESET);
         }
         //slider Laptop audio
         private void trackBar1_Scroll(object sender, EventArgs e)
@@ -350,24 +349,32 @@ namespace JokiAutomation
         // eventhandler position control calibrate
         private void calibrate_Click(object sender, EventArgs e)
         {
-            _requestedFunction = 0;
+            _requestedFunction = 1;
             richTextBox3.Clear();
             if (loginUser("Admin") == true) // super user login necessary
             {
-                _positionControl.calibratePC(0);
-            }
-            else
-            {
-                _requestedFunction = 1; 
+                _positionControl.calibratePC(1);
+                _requestedFunction = 0;
             }
         }
+
+        // calibrate gyroscope sensor; this method needs superuser log in
+        private void calibGyro_Click(object sender, EventArgs e)
+        {
+            richTextBox3.Clear();
+            _requestedFunction = 5;
+            if (loginUser("SuperUser") == true)  // superuser login necessary
+            {
+                _positionControl.calibratePC(2);    // calibrate gyroscope of position control
+                _requestedFunction = 0;
+            }
+        }
+
         // eventhandler reset button position control 
         private void resetCamPos_Click(object sender, EventArgs e)
         {
             _requestedFunction = 0;
             _audioMix._rasPi.rasPiStop();
-            Thread.Sleep(1000);
-            _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_RESET);
         }
 
         private bool loginUser(string userString)
@@ -451,7 +458,7 @@ namespace JokiAutomation
                 switch (_requestedFunction)
                 {
                     case 1:
-                        _positionControl.calibratePC(0);                   // calibrate magnetometer of position control
+                        _positionControl.calibratePC(1);                   // calibrate magnetometer of position control
                         _requestedFunction = 0;
                     break;
                     case 2:
@@ -466,7 +473,7 @@ namespace JokiAutomation
                         _positionControl.teachPos(listBoxCamPosControl.SelectedIndex); // teach selected camcorder position
                     break;
                     case 5:
-                        _positionControl.teachPos(20);  // teach park position camcorder
+                        _positionControl.calibratePC(2);                   // calibrate gyroscope of position control
                         _requestedFunction = 0;
                     break;
                     case 6:
@@ -481,23 +488,10 @@ namespace JokiAutomation
         private void teachCamPos_Click(object sender, EventArgs e)
         {
             richTextBox3.Clear();
-            _infraredControl.executeIR(2);      // switch HDMI to camcorder with position control
             _requestedFunction = 4;
             if (loginUser("SuperUser") == true) // super user login necessary
             {
                 _positionControl.teachPos(listBoxCamPosControl.SelectedIndex);
-            }
-        }
-
-        // teach park position of camcorder; this method needs administrator log in
-        private void teachParkPos_Click(object sender, EventArgs e)
-        {
-            richTextBox3.Clear();
-            _infraredControl.executeIR(2);      // switch HDMI to camcorder with position control
-            _requestedFunction = 5;
-            if (loginUser("Admin") == true)     // admin login necessary
-            {
-                _positionControl.teachPos(20);  // teach park position camcorder
             }
         }
         
@@ -505,7 +499,6 @@ namespace JokiAutomation
         private void moveCamPos_Click(object sender, EventArgs e)
         {
             _requestedFunction = 0;
-            _infraredControl.executeIR(2);      // switch HDMI to camcorder with position control
             _positionControl.moveToPos(listBoxCamPosControl.SelectedIndex);
         }
 
@@ -533,11 +526,10 @@ namespace JokiAutomation
         private void teachNullPos_Click(object sender, EventArgs e)
         {
             richTextBox3.Clear();
-            _infraredControl.executeIR(2);      // switch HDMI to camcorder with position control
             _requestedFunction = 6;
-            if (loginUser("Admin") == true)     // admin login necessary
+            if (loginUser("SuperUser") == true)     // superuser login necessary
             {
-                _positionControl.teachPos(21);  // teach null position camcorder
+                _positionControl.moveToPos(21);
             }
         }
         // eventhandler move up
@@ -565,7 +557,11 @@ namespace JokiAutomation
         {
             _positionControl.moveButtonPressed(PositionControl.PC_BUTTON_RELEASED);
         }
-
+        // eventhandler test position control moves to top five positions in list
+        private void testPos_Click(object sender, EventArgs e)
+        {
+            _positionControl.testProgram();
+        }
         private EventTimer _eventTimer = new EventTimer();
         private AudioMix _audioMix = new AudioMix();
         private InfraredControl _infraredControl = new InfraredControl();
@@ -577,7 +573,9 @@ namespace JokiAutomation
         private uint _InputTimerloop = 0;
         public  LogData _logDat = new LogData();
         private bool CI_test_active_ = false;
+
     }
 
 
 }
+

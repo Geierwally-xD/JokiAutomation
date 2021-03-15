@@ -175,10 +175,17 @@ namespace JokiAutomation
             _rasPi.rasPiExecute(PC_MOVE_BUTTON, ID);
         }
 
+        // position control test program, moves to top five positions in list 
+        public void testProgram()
+        {
+            _rasPi.rasPiExecute(PC_TEST_PROGRAM,0);
+        }
+
         private const int PC_MOVE = 40;            // Position control move to position
         private const int PC_TEACH = 41;           // Position control teach position
         private const int PC_CALIBRATE = 42;       // Position control calibration
         private const int PC_MOVE_BUTTON = 43;     // move button pressed ID 1 up 2 down 3 left 4 right 5 released
+        private const int PC_TEST_PROGRAM = 44;    // position control test program, moves to top five positions in list 
         private const int PC_SEQUENCE = 52;        // Position control sequence
         public const int PC_BUTTON_UP = 1;        // move up button pressed
         public const int PC_BUTTON_DOWN = 2;      // move down button pressed

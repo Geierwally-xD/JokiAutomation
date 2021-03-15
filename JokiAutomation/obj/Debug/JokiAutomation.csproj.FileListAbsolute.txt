@@ -23,3 +23,4 @@ D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\bin\Debug\
 D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\bin\Debug\Renci.SshNet.dll
 D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\bin\Debug\Renci.SshNet.xml
 D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.csproj.CopyComplete
+D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.csprojAssemblyReference.cache

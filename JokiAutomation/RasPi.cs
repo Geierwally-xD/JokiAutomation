@@ -38,6 +38,11 @@ namespace JokiAutomation
             }
         }
 
+        public void rasPiDefaultSwitch() //reset audio - to sumary signal, IR to laptop view beamer to HDMI1
+        {
+            PuttyRequestRasPi(InfraredControl.IR_SEQUENCE, InfraredControl.IR_RESET);
+        }
+
         public void rasPiStop()
         {
            PuttyRequestRasPi(0,0);
@@ -161,14 +166,32 @@ namespace JokiAutomation
             if (command > 0)
             {
                 _rasPiForm._logDat.sendInfoMessage("start Raspberry Pi RasPi-Automation-application over Putty " + _commandString + " " + _idString);
-                cmd = "sudo nice --15 remote-debugging/RasPiAutomation " + _commandString + " " + _idString;
+                strw.WriteLine("sudo nice --15 remote-debugging/RasPiAutomation " + _commandString + " " + _idString);
             }
             else
             {
                 _rasPiForm._logDat.sendInfoMessage("reset Raspberry Pi RasPi-Automation-application over Putty ");
-                cmd = "killall -SIGKILL RasPiAutomation ";
+                strw.WriteLine("sudo killall -SIGKILL RasPiAutomation"); // send commands 
+                strw.WriteLine("gpio export 5 out");
+                strw.WriteLine("gpio -g write 5 0");
+                strw.WriteLine("gpio export 6 out");
+                strw.WriteLine("gpio -g write 6 0");
+                strw.WriteLine("gpio export 7 out"); // IR out
+                strw.WriteLine("gpio -g write 7 0"); // IR out
+                strw.WriteLine("gpio export 13 out");
+                strw.WriteLine("gpio -g write 13 0");
+                strw.WriteLine("gpio export 19 out");
+                strw.WriteLine("gpio -g write 19 0");
+                strw.WriteLine("gpio export 26 out");
+                strw.WriteLine("gpio -g write 26 0");
+                strw.WriteLine("gpio export 16 out");
+                strw.WriteLine("gpio -g write 16 0");
+                strw.WriteLine("gpio export 20 out");
+                strw.WriteLine("gpio -g write 20 0");
+                strw.WriteLine("gpio export 21 out");
+                strw.WriteLine("gpio -g write 21 0");
+                strw.WriteLine("sudo nice --15 remote-debugging/RasPiAutomation 30 96"); // send reset to audiomix
             }
-            strw.WriteLine(cmd); // send commands 
             strw.WriteLine("exit"); // send exit command at the end
 
             p.WaitForExit(); // block thread until remote operations are done
