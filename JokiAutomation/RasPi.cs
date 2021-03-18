@@ -171,7 +171,7 @@ namespace JokiAutomation
             else
             {
                 _rasPiForm._logDat.sendInfoMessage("reset Raspberry Pi RasPi-Automation-application over Putty ");
-                strw.WriteLine("sudo killall -SIGKILL RasPiAutomation"); // send commands 
+                strw.WriteLine("sudo killall -SIGKILL RasPiAutomation");    // stopp all RasPiAutomation 
                 strw.WriteLine("gpio export 5 out");
                 strw.WriteLine("gpio -g write 5 0");
                 strw.WriteLine("gpio export 6 out");
@@ -190,7 +190,10 @@ namespace JokiAutomation
                 strw.WriteLine("gpio -g write 20 0");
                 strw.WriteLine("gpio export 21 out");
                 strw.WriteLine("gpio -g write 21 0");
-                strw.WriteLine("sudo nice --15 remote-debugging/RasPiAutomation 30 96"); // send reset to audiomix
+                strw.WriteLine("sudo chmod 777 -c -R /dev/ttyUSB0");   // set read write access rights to serial port
+                strw.WriteLine("sudo stty -F /dev/ttyUSB0 9600 raw -echo"); // configure serial port
+                strw.WriteLine("sudo echo -n '(MX*:RES!)' > /dev/ttyUSB0"); // send reset via serial port to audiomix
+                // strw.WriteLine("sudo nice --15 remote-debugging/RasPiAutomation 30 96"); // send reset to audiomix
             }
             strw.WriteLine("exit"); // send exit command at the end
 
