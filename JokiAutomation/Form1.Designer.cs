@@ -83,13 +83,12 @@ namespace JokiAutomation
             this.moveLeft = new System.Windows.Forms.Button();
             this.moveDown = new System.Windows.Forms.Button();
             this.moveUp = new System.Windows.Forms.Button();
-            this.calibGyro = new System.Windows.Forms.Button();
+            this.testPosSwitch = new System.Windows.Forms.Button();
             this.label10 = new System.Windows.Forms.Label();
             this.listBoxCamPosControl = new System.Windows.Forms.ListBox();
             this.teachCamPos = new System.Windows.Forms.Button();
             this.resetCamPos = new System.Windows.Forms.Button();
             this.moveCamPos = new System.Windows.Forms.Button();
-            this.calibrate = new System.Windows.Forms.Button();
             this.richTextBox3 = new System.Windows.Forms.RichTextBox();
             this.TabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -293,9 +292,9 @@ namespace JokiAutomation
             // button10
             // 
             this.button10.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
-            this.button10.Location = new System.Drawing.Point(643, 467);
+            this.button10.Location = new System.Drawing.Point(659, 467);
             this.button10.Name = "button10";
-            this.button10.Size = new System.Drawing.Size(122, 32);
+            this.button10.Size = new System.Drawing.Size(103, 32);
             this.button10.TabIndex = 5;
             this.button10.Text = "Default";
             this.button10.UseVisualStyleBackColor = true;
@@ -318,16 +317,17 @@ namespace JokiAutomation
             "HDMI Switch ausschalten",
             "Backup Recorder ausschalten",
             "Backup Recorder Aufnahme start",
-            "Backup Recorder Aufnahme stop"});
+            "Backup Recorder Aufnahme stop",
+            "Beamer einschalten"});
             this.listBox2.Location = new System.Drawing.Point(19, 43);
             this.listBox2.Name = "listBox2";
-            this.listBox2.Size = new System.Drawing.Size(398, 186);
+            this.listBox2.Size = new System.Drawing.Size(398, 199);
             this.listBox2.TabIndex = 4;
             // 
             // button3
             // 
             this.button3.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
-            this.button3.Location = new System.Drawing.Point(342, 239);
+            this.button3.Location = new System.Drawing.Point(342, 255);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(75, 32);
             this.button3.TabIndex = 3;
@@ -338,7 +338,7 @@ namespace JokiAutomation
             // button2
             // 
             this.button2.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
-            this.button2.Location = new System.Drawing.Point(19, 239);
+            this.button2.Location = new System.Drawing.Point(19, 255);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(75, 32);
             this.button2.TabIndex = 2;
@@ -630,13 +630,12 @@ namespace JokiAutomation
             this.tabPage4.Controls.Add(this.moveLeft);
             this.tabPage4.Controls.Add(this.moveDown);
             this.tabPage4.Controls.Add(this.moveUp);
-            this.tabPage4.Controls.Add(this.calibGyro);
+            this.tabPage4.Controls.Add(this.testPosSwitch);
             this.tabPage4.Controls.Add(this.label10);
             this.tabPage4.Controls.Add(this.listBoxCamPosControl);
             this.tabPage4.Controls.Add(this.teachCamPos);
             this.tabPage4.Controls.Add(this.resetCamPos);
             this.tabPage4.Controls.Add(this.moveCamPos);
-            this.tabPage4.Controls.Add(this.calibrate);
             this.tabPage4.Controls.Add(this.richTextBox3);
             this.tabPage4.Location = new System.Drawing.Point(4, 22);
             this.tabPage4.Name = "tabPage4";
@@ -648,9 +647,9 @@ namespace JokiAutomation
             // 
             // testPos
             // 
-            this.testPos.Location = new System.Drawing.Point(362, 296);
+            this.testPos.Location = new System.Drawing.Point(375, 297);
             this.testPos.Name = "testPos";
-            this.testPos.Size = new System.Drawing.Size(97, 28);
+            this.testPos.Size = new System.Drawing.Size(107, 28);
             this.testPos.TabIndex = 19;
             this.testPos.Text = "Test";
             this.testPos.UseVisualStyleBackColor = true;
@@ -658,9 +657,9 @@ namespace JokiAutomation
             // 
             // teachNullPos
             // 
-            this.teachNullPos.Location = new System.Drawing.Point(465, 296);
+            this.teachNullPos.Location = new System.Drawing.Point(652, 297);
             this.teachNullPos.Name = "teachNullPos";
-            this.teachNullPos.Size = new System.Drawing.Size(97, 28);
+            this.teachNullPos.Size = new System.Drawing.Size(110, 28);
             this.teachNullPos.TabIndex = 18;
             this.teachNullPos.Text = "Teach Null Pos";
             this.teachNullPos.UseVisualStyleBackColor = true;
@@ -710,15 +709,15 @@ namespace JokiAutomation
             this.moveUp.MouseDown += new System.Windows.Forms.MouseEventHandler(this.moveUpHandler);
             this.moveUp.MouseUp += new System.Windows.Forms.MouseEventHandler(this.moveDoneHandler);
             // 
-            // calibGyro
+            // testPosSwitch
             // 
-            this.calibGyro.Location = new System.Drawing.Point(568, 296);
-            this.calibGyro.Name = "calibGyro";
-            this.calibGyro.Size = new System.Drawing.Size(97, 28);
-            this.calibGyro.TabIndex = 13;
-            this.calibGyro.Text = "Kalib Gyro";
-            this.calibGyro.UseVisualStyleBackColor = true;
-            this.calibGyro.Click += new System.EventHandler(this.calibGyro_Click);
+            this.testPosSwitch.Location = new System.Drawing.Point(513, 297);
+            this.testPosSwitch.Name = "testPosSwitch";
+            this.testPosSwitch.Size = new System.Drawing.Size(108, 28);
+            this.testPosSwitch.TabIndex = 13;
+            this.testPosSwitch.Text = "Test Switch";
+            this.testPosSwitch.UseVisualStyleBackColor = true;
+            this.testPosSwitch.Click += new System.EventHandler(this.testPosSwitch_Click);
             // 
             // label10
             // 
@@ -790,16 +789,6 @@ namespace JokiAutomation
             this.moveCamPos.Text = "Start";
             this.moveCamPos.UseVisualStyleBackColor = true;
             this.moveCamPos.Click += new System.EventHandler(this.moveCamPos_Click);
-            // 
-            // calibrate
-            // 
-            this.calibrate.Location = new System.Drawing.Point(671, 295);
-            this.calibrate.Name = "calibrate";
-            this.calibrate.Size = new System.Drawing.Size(91, 29);
-            this.calibrate.TabIndex = 1;
-            this.calibrate.Text = "Kalib Mag";
-            this.calibrate.UseVisualStyleBackColor = true;
-            this.calibrate.Click += new System.EventHandler(this.calibrate_Click);
             // 
             // richTextBox3
             // 
@@ -889,10 +878,9 @@ namespace JokiAutomation
         private System.Windows.Forms.Button teachCamPos;
         private System.Windows.Forms.Button resetCamPos;
         private System.Windows.Forms.Button moveCamPos;
-        private System.Windows.Forms.Button calibrate;
         private System.Windows.Forms.Label label10;
         public System.Windows.Forms.ListBox listBoxCamPosControl;
-        private System.Windows.Forms.Button calibGyro;
+        private System.Windows.Forms.Button testPosSwitch;
         private Button moveUp;
         private Button teachNullPos;
         private Button moveRight;

@@ -99,6 +99,8 @@ namespace JokiAutomation
         public const int IR_BEAMER_MUTE = 16;   // mute / demute Beamer
         public const int IR_STOP_BACKUP = 17;   // stopps the backup - recorder
         public const int IR_START_BACKUP = 18;  // starts the backup - recorder
+        public const int IR_BEAMER_ON = 19;     // switch on Beamer
         public const int IR_TEXT_VIEW = 20;     // power point view with audio profile worship
+        public const int IR_SWITCH_BACKUP = 21; // switch on/ off backup - recorder
     }
 }

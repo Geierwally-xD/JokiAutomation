@@ -107,6 +107,10 @@ namespace JokiAutomation
                 {
                     _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_MUTE);
                 }
+                else if (cmd == "BEAMER_ON")   // switch on Beamer
+                {
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_ON);
+                }
                 else if (cmd == "Backup_Start")   // starts the backup recorder
                 {
                     _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_START_BACKUP); // 18 starts the backup - recorder
@@ -114,6 +118,10 @@ namespace JokiAutomation
                 else if (cmd == "Backup_Stop")   // stopps the backup recorder
                 {
                     _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_STOP_BACKUP);
+                }
+                else if (cmd == "Backup_Switch")   // switch on/off backup recorder
+                {
+                    _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SWITCH_BACKUP);
                 }
                 else if (cmd == "Ausschaltsequenz") // switch Beamer, HDMI switch, Backuprecorder off and shut down Raspberry Pi
                 {
@@ -358,18 +366,6 @@ namespace JokiAutomation
             }
         }
 
-        // calibrate gyroscope sensor; this method needs superuser log in
-        private void calibGyro_Click(object sender, EventArgs e)
-        {
-            richTextBox3.Clear();
-            _requestedFunction = 5;
-            if (loginUser("SuperUser") == true)  // superuser login necessary
-            {
-                _positionControl.calibratePC(2);    // calibrate gyroscope of position control
-                _requestedFunction = 0;
-            }
-        }
-
         // eventhandler reset button position control 
         private void resetCamPos_Click(object sender, EventArgs e)
         {
@@ -527,9 +523,9 @@ namespace JokiAutomation
         {
             richTextBox3.Clear();
             _requestedFunction = 6;
-            if (loginUser("SuperUser") == true)     // superuser login necessary
+            if (loginUser("Admin") == true)     // superuser login necessary
             {
-                _positionControl.moveToPos(21);
+                _positionControl.teachPos(21);
             }
         }
         // eventhandler move up
@@ -560,8 +556,15 @@ namespace JokiAutomation
         // eventhandler test position control moves to top five positions in list
         private void testPos_Click(object sender, EventArgs e)
         {
-            _positionControl.testProgram();
+            _positionControl.testProgram(0); // test program 1 move to first five positions with cam 1 view
         }
+
+        // eventhandler advanced test program 1 move to top five positions with switching cam 1, cam 2, gopro, laptop and sound profiles
+        private void testPosSwitch_Click(object sender, EventArgs e)
+        {
+            _positionControl.testProgram(1);
+        }
+
         private EventTimer _eventTimer = new EventTimer();
         private AudioMix _audioMix = new AudioMix();
         private InfraredControl _infraredControl = new InfraredControl();

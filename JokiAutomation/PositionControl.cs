@@ -176,9 +176,9 @@ namespace JokiAutomation
         }
 
         // position control test program, moves to top five positions in list 
-        public void testProgram()
+        public void testProgram(int ID)
         {
-            _rasPi.rasPiExecute(PC_TEST_PROGRAM,0);
+            _rasPi.rasPiExecute(PC_TEST_PROGRAM,ID);
         }
 
         private const int PC_MOVE = 40;            // Position control move to position
