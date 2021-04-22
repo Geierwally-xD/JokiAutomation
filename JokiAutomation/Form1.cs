@@ -577,6 +577,10 @@ namespace JokiAutomation
         public  LogData _logDat = new LogData();
         private bool CI_test_active_ = false;
 
+        private void textBox1_TextChanged(object sender, EventArgs e)
+        {
+
+        }
     }
 
 
