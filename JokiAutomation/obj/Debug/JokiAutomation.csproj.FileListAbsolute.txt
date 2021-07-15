@@ -24,3 +24,16 @@ D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\bin\Debug\
 D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\bin\Debug\Renci.SshNet.xml
 D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.csproj.CopyComplete
 D:\SilverbirdData\Projekte\VisualStudio\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.csprojAssemblyReference.cache
+C:\D_Drive\SilverbirdData\Projects\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\bin\Debug\JokiAutomation.exe.config
+C:\D_Drive\SilverbirdData\Projects\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\bin\Debug\JokiAutomation.exe
+C:\D_Drive\SilverbirdData\Projects\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\bin\Debug\JokiAutomation.pdb
+C:\D_Drive\SilverbirdData\Projects\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\bin\Debug\Renci.SshNet.dll
+C:\D_Drive\SilverbirdData\Projects\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\bin\Debug\Renci.SshNet.xml
+C:\D_Drive\SilverbirdData\Projects\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.csproj.AssemblyReference.cache
+C:\D_Drive\SilverbirdData\Projects\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.Form1.resources
+C:\D_Drive\SilverbirdData\Projects\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.Properties.Resources.resources
+C:\D_Drive\SilverbirdData\Projects\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.csproj.GenerateResource.cache
+C:\D_Drive\SilverbirdData\Projects\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.csproj.CoreCompileInputs.cache
+C:\D_Drive\SilverbirdData\Projects\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.csproj.CopyComplete
+C:\D_Drive\SilverbirdData\Projects\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.exe
+C:\D_Drive\SilverbirdData\Projects\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.pdb
