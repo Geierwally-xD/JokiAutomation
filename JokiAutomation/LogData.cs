@@ -38,6 +38,11 @@ namespace JokiAutomation
                     logDatForm.richTextBox3.Focus();
                     WinFormsExtensions.AppendLine(logDatForm.richTextBox3, message);
                 }
+                else if (logDatForm.TabControl1.SelectedIndex == 4)
+                {
+                    logDatForm.richTextBoxZoomConfig.Focus();
+                    WinFormsExtensions.AppendLine(logDatForm.richTextBoxZoomConfig, message);
+                }
             }
             else
             {   // command line application, write to logfile

@@ -24,6 +24,7 @@ namespace JokiAutomation
             _infraredControl.initIR(this);
             _audioMix.initAudio(this);
             _positionControl.initPC(this);
+            _autoZoom.initAZ(this);
             _Inputtimer.Interval = 1000;  // check rich text box each 1000ms
             _Inputtimer.Tick += new System.EventHandler(Inputtimer_Elapsed);
             listBox1.SelectedIndex = 0;
@@ -51,7 +52,7 @@ namespace JokiAutomation
                 if ((cmd == "Pause") && (commands.Length == 4))
                 {
                     _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PAUSE);
-                    _eventTimer.sendPause("\""+commands[2]+"\"", "\"" + commands[3]+"\""); // start slide show
+                    _eventTimer.sendPause("\"" + commands[2] + "\"", "\"" + commands[3] + "\""); // start slide show
                 }
                 else if (cmd == "Timer")
                 {
@@ -140,6 +141,10 @@ namespace JokiAutomation
                 {
                     _positionControl.sequence(commands[2], commands[3]);
                 }
+                else if (cmd == "AutoZoom")
+                {
+                    _autoZoom.openDialog(this);
+                }
                 else
                 {
                     throw new System.ArgumentException(" ", "original");
@@ -151,6 +156,27 @@ namespace JokiAutomation
             }
         }
 
+        public void displayZoomConfig()
+        {
+            //rv
+            textBoxZoomCalibTime.Text = Convert.ToString(_autoZoom._AZ_Config.CalibrationTime, 10);
+            textBoxZoomCalibOffset.Text = Convert.ToString(_autoZoom._AZ_Config.CalibrationOffset, 10);
+            textBoxServoMiddle.Text = Convert.ToString(_autoZoom._AZ_Config.ServoMiddle, 10);
+            textBoxServoControl.Text = Convert.ToString(_autoZoom._AZ_Config.ServoControl, 10);
+            textBoxServoReference.Text = Convert.ToString(_autoZoom._AZ_Config.ServoReference, 10);
+        }
+
+        // set autozoom value
+        public void setZoomValue(byte value)
+        {
+            _autoZoom.setZoomValue(value);
+        }
+
+        // move the autozoom
+        public void moveZoom()
+        {
+            _autoZoom.moveToPos();
+        }
 
         // eventhandler Start button, start timer or pause slide show depending on selected listbox item
         private void button1_Click(object sender, EventArgs e)
@@ -159,7 +185,7 @@ namespace JokiAutomation
             _audioMix.executeAudio(commandID); // activate audio channels 1 and 2 
             if (this.listBox1.Text == "Pause")
             {
-                _eventTimer.sendPause("\"" + textBox1.Text +"\"" , "\"" + textBox2.Text+"\"" );
+                _eventTimer.sendPause("\"" + textBox1.Text + "\"", "\"" + textBox2.Text + "\"");
                 _audioMix._rasPi.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PAUSE);
             }
             else
@@ -228,11 +254,11 @@ namespace JokiAutomation
         private void button5_Click(object sender, EventArgs e)
         {
             int commandID = AudioMix.AM_ACTIVE;
-            for(int i = 0; i<4; i++ ) // add active channels to ID
+            for (int i = 0; i < 4; i++) // add active channels to ID
             {
                 if (_audioMix.channelActive_[i] == true)
                 {
-                    commandID += 1<<i;
+                    commandID += 1 << i;
                 }
             }
             _audioMix.executeAudio(commandID);
@@ -247,7 +273,7 @@ namespace JokiAutomation
         // active channel listbox index changed
         private void listBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
-           if( _audioMix.channelActive_[listBox3.SelectedIndex] == true)
+            if (_audioMix.channelActive_[listBox3.SelectedIndex] == true)
             {
                 button4.BackColor = Color.Green;
             }
@@ -267,7 +293,19 @@ namespace JokiAutomation
         // tab control index changed initialize Audiomix for channel 1 and 2 if page opens
         private void TabControl1_SelectedIndexChanged(Object sender, EventArgs e)
         {
-            //nothing to doe here
+           if(TabControl1.SelectedIndex == 4)
+            {
+                _autoZoom.readZoomConfiguration(); // read zoom configuration from Raspberry Pi
+                _autoZoom.readZoomValues();
+                displayZoomConfig();
+            }
+           else if (TabControl1.SelectedIndex == 3)
+            {
+                _autoZoom.readZoomValues();
+                byte zoomVal = _autoZoom._AZ_ZoomValue[listBoxCamPosControl.SelectedIndex];
+                _autoZoom.setZoomValue(zoomVal);
+                zoomValue.Text = Convert.ToString(zoomVal, 10);
+            }
         }
 
         // reset raspberry pi 1 set RaspiAutomation defaults on raspberry from audiomix menu page
@@ -284,7 +322,7 @@ namespace JokiAutomation
         private void button12_Click(object sender, EventArgs e)
         {
             CI_test_active_ = !CI_test_active_; // start stop test IR sequencer
-            if(CI_test_active_)
+            if (CI_test_active_)
             {
                 button12.BackColor = Color.Green;
             }
@@ -377,7 +415,7 @@ namespace JokiAutomation
         {
             bool retVal = false;
             _requestedUser = userString;
-            if ((_User == _requestedUser) ||(_User == "Admin"))
+            if ((_User == _requestedUser) || (_User == "Admin"))
             {
                 retVal = true;
             }
@@ -395,16 +433,16 @@ namespace JokiAutomation
         private void Inputtimer_Elapsed(object sender, System.EventArgs e)
         {
             string userString = null;
-            if(++_InputTimerloop < 30) // 30 seconds time for log in
+            if (++_InputTimerloop < 30) // 30 seconds time for log in
             {
                 _Inputtimer.Start();
-                switch(TabControl1.SelectedIndex)
+                switch (TabControl1.SelectedIndex)
                 {
                     case 1:
                         userString = richTextBox1.Text;
                         richTextBox1.Select(richTextBox1.Text.Length - 1, 0);
                         richTextBox1.ScrollToCaret();
-                    break;
+                        break;
                     case 2:
                         userString = richTextBox2.Text;
                         richTextBox2.Select(richTextBox2.Text.Length - 1, 0);
@@ -415,12 +453,17 @@ namespace JokiAutomation
                         richTextBox3.Select(richTextBox3.Text.Length - 1, 0);
                         richTextBox3.ScrollToCaret();
                         break;
+                    case 4:
+                        userString = richTextBoxZoomConfig.Text;
+                        richTextBoxZoomConfig.Select(richTextBoxZoomConfig.Text.Length - 1, 0);
+                        richTextBoxZoomConfig.ScrollToCaret();
+                        break;
                 }
-                if(userString.Contains("6691ikoJ"))
+                if (userString.Contains("6691ikoJ"))
                 {
                     _User = "Admin";
                 }
-                else if(userString.Contains("Joki1966"))
+                else if (userString.Contains("Joki1966"))
                 {
                     _User = "SuperUser";
                 }
@@ -436,14 +479,14 @@ namespace JokiAutomation
                 _requestedFunction = 0;
             }
 
-            if ((_requestedUser == _User)||(_User == "Admin"))
+            if ((_requestedUser == _User) || (_User == "Admin"))
             {
                 _Inputtimer.Stop();
                 switch (TabControl1.SelectedIndex)
                 {
                     case 1:
                         richTextBox1.Clear();
-                    break;
+                        break;
                     case 2:
                         richTextBox2.Clear();
                         break;
@@ -456,30 +499,30 @@ namespace JokiAutomation
                     case 1:
                         _positionControl.calibratePC(1);                   // calibrate magnetometer of position control
                         _requestedFunction = 0;
-                    break;
+                        break;
                     case 2:
                         _audioMix.teachAudio(listBox4.SelectedIndex);      // teach selected audio profile
                         _requestedFunction = 0;
-                    break;
+                        break;
                     case 3:
                         _infraredControl.teachIR(listBox2.SelectedIndex);  // teach selected infrared sequence
                         _requestedFunction = 0;
-                    break;
+                        break;
                     case 4:
                         _positionControl.teachPos(listBoxCamPosControl.SelectedIndex); // teach selected camcorder position
-                    break;
+                        break;
                     case 5:
                         _positionControl.calibratePC(2);                   // calibrate gyroscope of position control
                         _requestedFunction = 0;
-                    break;
+                        break;
                     case 6:
                         _positionControl.teachPos(21);  // teach null position camcorder
                         _requestedFunction = 0;
-                    break;
+                        break;
                 }
             }
         }
- 
+
         // teach selected position of camcorder; this method needs super user log in
         private void teachCamPos_Click(object sender, EventArgs e)
         {
@@ -488,9 +531,10 @@ namespace JokiAutomation
             if (loginUser("SuperUser") == true) // super user login necessary
             {
                 _positionControl.teachPos(listBoxCamPosControl.SelectedIndex);
+                _autoZoom._AZ_ZoomValue[listBoxCamPosControl.SelectedIndex] = _autoZoom._AZ_ZoomValue[20];
             }
         }
-        
+
         // move camcorder to selected position
         private void moveCamPos_Click(object sender, EventArgs e)
         {
@@ -513,9 +557,16 @@ namespace JokiAutomation
             }
         }
 
+        // eventhandler cam pos value index changed, set corresponding zoomVal from RasPi
         private void listBoxCamPosControl_SelectedIndexChanged(object sender, EventArgs e)
         {
-            _requestedFunction = 0;
+            if (TabControl1.SelectedIndex == 3)
+            {
+                byte zoomVal = _autoZoom._AZ_ZoomValue[listBoxCamPosControl.SelectedIndex];
+                _autoZoom.setZoomValue(zoomVal);
+                zoomValue.Text = Convert.ToString(zoomVal, 10);
+                _requestedFunction = 0;
+            }
         }
 
         // eventhandler teach null position
@@ -565,24 +616,198 @@ namespace JokiAutomation
             _positionControl.testProgram(1);
         }
 
+        // zoom value changed
+        private void zoomValue_TextChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                byte num_var = byte.Parse(zoomValue.Text);
+                if ((num_var >= 0) && (num_var < 101))
+                {
+                    setZoomValue(num_var);
+                }
+                else
+                {
+                    zoomValue.Text = "";
+                }
+            }
+            catch (Exception)
+            {
+                zoomValue.Text = "";
+                _logDat.sendInfoMessage("JokiAutomation\nFormatfehler Zahlenwert in Autozoom \n");
+            }
+        }
+
+        // move zoom to position
+        private void buttonZoom_Click(object sender, EventArgs e)
+        {
+            moveZoom();
+        }
+
+        // zoom calibration time changed
+        private void textBoxZoomCalibTime_TextChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                uint num_var = uint.Parse(textBoxZoomCalibTime.Text);
+                if ((num_var >= 0) && (num_var < 30000000))
+                {
+                    _autoZoom._AZ_Config.CalibrationTime = num_var;
+                }
+                else
+                {
+                    textBoxZoomCalibTime.Text = "";
+                }
+            }
+            catch (Exception)
+            {
+                textBoxZoomCalibTime.Text = "";
+                _logDat.sendInfoMessage("JokiAutomation\nFormatfehler Zahlenwert in Autozoom \n");
+            }
+        }
+
+        // zoom calibration offset
+        private void textBoxZoomCalibOffset_TextChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                ushort num_var = ushort.Parse(textBoxZoomCalibOffset.Text);
+                if ((num_var >= 0) && (num_var < 60000))
+                {
+                    _autoZoom._AZ_Config.CalibrationOffset = num_var;
+                }
+                else
+                {
+                    textBoxZoomCalibOffset.Text = "";
+                }
+            }
+            catch (Exception)
+            {
+                textBoxZoomCalibOffset.Text = "";
+                _logDat.sendInfoMessage("JokiAutomation\nFormatfehler Zahlenwert in Autozoom \n");
+            }
+
+        }
+
+        // zoom servo middle position
+        private void textBoxServoMiddle_TextChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                ushort num_var = ushort.Parse(textBoxServoMiddle.Text);
+                if ((num_var >= 0) && (num_var < 1700))
+                {
+                    _autoZoom._AZ_Config.ServoMiddle = num_var;
+                }
+                else
+                {
+                    textBoxServoMiddle.Text = "";
+                }
+            }
+            catch (Exception)
+            {
+                textBoxServoMiddle.Text = "";
+                _logDat.sendInfoMessage("JokiAutomation\nFormatfehler Zahlenwert in Autozoom \n");
+            }
+        }
+
+        // zoom servo reference position offset (= middle position +/- offset)
+        private void textBoxServoReference_TextChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                ushort num_var = ushort.Parse(textBoxServoReference.Text);
+                if ((num_var >= 0) && (num_var < 400))
+                {
+                    _autoZoom._AZ_Config.ServoReference = num_var;
+                }
+                else
+                {
+                    textBoxServoReference.Text = "";
+                }
+            }
+            catch (Exception)
+            {
+                textBoxServoReference.Text = "";
+                _logDat.sendInfoMessage("JokiAutomation\nFormatfehler Zahlenwert in Autozoom \n");
+            }
+        }
+
+        // zoom servo control position offset (= middle position +/- offset)
+        private void textBoxServoControl_TextChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                ushort num_var = ushort.Parse(textBoxServoControl.Text);
+                if ((num_var >= 0) && (num_var < 100))
+                {
+                    _autoZoom._AZ_Config.ServoControl = num_var;
+                }
+                else
+                {
+                    textBoxServoControl.Text = "";
+                }
+            }
+            catch (Exception)
+            {
+                textBoxServoControl.Text = "";
+                _logDat.sendInfoMessage("JokiAutomation\nFormatfehler Zahlenwert in Autozoom \n");
+            }
+        }
+        
+        // eventhandler button write zoom configuration
+        private void buttonConfig_Click(object sender, EventArgs e)
+        {
+            if (loginUser("SuperUser") == true) // super user login necessary
+            {
+                _autoZoom.writeZoomConfiguration(); // write zoom configuration to raspberry pi
+            }
+        }
+
+        // eventhandlier start autozoom calibration
+        private void buttonCalib_Click(object sender, EventArgs e)
+        {
+            _autoZoom.calibrate();
+        }
+
+        // autozoom test move to first five positions in a loop 
+        private void buttonZoomTest_Click(object sender, EventArgs e)
+        {
+            _autoZoom.test();
+        }
+
+        // autozoom servo test move
+        private void buttonServoStart_Click(object sender, EventArgs e)
+        {
+            _autoZoom.servoMove();
+        }
+        
+        // autozoom move servo to middle position
+        private void buttonServoStop_Click(object sender, EventArgs e)
+        {
+            _autoZoom.servoMiddle();
+        }
+
+        // eventhandler reset button autozoom config 
+        private void buttonAZReset_Click(object sender, EventArgs e)
+        {
+            _audioMix._rasPi.rasPiStop();
+        }
+
         private EventTimer _eventTimer = new EventTimer();
         private AudioMix _audioMix = new AudioMix();
         private InfraredControl _infraredControl = new InfraredControl();
         private PositionControl _positionControl = new PositionControl();
+        private AutoZoomControl _autoZoom = new AutoZoomControl();
         private string _User = "DefaultUser"; // set user
         private string _requestedUser = "DefaultUser"; // requestet user
-        private  static uint _requestedFunction = 0;   
+        private static uint _requestedFunction = 0;
         private System.Windows.Forms.Timer _Inputtimer = new System.Windows.Forms.Timer(); // input sequence of password 
         private uint _InputTimerloop = 0;
-        public  LogData _logDat = new LogData();
+        public LogData _logDat = new LogData();
         private bool CI_test_active_ = false;
 
-        private void textBox1_TextChanged(object sender, EventArgs e)
-        {
-
-        }
     }
-
 
 }
 

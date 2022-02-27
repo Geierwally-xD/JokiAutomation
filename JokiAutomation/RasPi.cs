@@ -139,7 +139,7 @@ namespace JokiAutomation
 
         public void PuttyRequestRasPi(int command, int ID)
         {
-            string cmd = null;
+            //string cmd = null;
             _commandString = command.ToString();
             _idString = ID.ToString();
             m_szFeedback = "Feedback from: " + _rasPiConfig[0] + "\r\n";
@@ -218,6 +218,58 @@ namespace JokiAutomation
                 // lock the feedback buffer (since we don't want some messy stdout/err mix string in the end)
                 lock (m_objLock) { m_szFeedback += line + "\r\n"; }
             }
+        }
+
+        // write autozoom configuration binary to Raspberry Pi
+        public void UploadBinary(Byte[] data, string filePath)
+        {
+            try
+            {
+                KeyboardInteractiveAuthenticationMethod keybAuth = new KeyboardInteractiveAuthenticationMethod(_rasPiConfig[1]);
+                PasswordAuthenticationMethod pauth = new PasswordAuthenticationMethod(_rasPiConfig[1], _rasPiConfig[2]);
+                keybAuth.AuthenticationPrompt += new EventHandler<Renci.SshNet.Common.AuthenticationPromptEventArgs>(HandleKeyEvent);
+                ConnectionInfo connectionInfo = new ConnectionInfo(_rasPiConfig[0], 22, _rasPiConfig[1], pauth, keybAuth);
+
+                var client = new SftpClient(connectionInfo);
+                _rasPiForm._logDat.sendInfoMessage("upload binary data to Raspberry Pi\n");
+                client.Connect();
+                var stream = new MemoryStream();
+                stream.Write(data, 0, data.Length);
+                stream.Position = 0;
+                client.UploadFile(stream, filePath);
+                client.Disconnect();
+            }
+            catch (Exception e)
+            {
+                _rasPiForm._logDat.sendInfoMessage("Error on upload binary data\n" + e.Message);
+            }
+        }
+
+        public Byte[] DownloadBinary(string filePath, int length)
+        {
+            Byte[] data = new byte[length];
+            try
+            {
+                KeyboardInteractiveAuthenticationMethod keybAuth = new KeyboardInteractiveAuthenticationMethod(_rasPiConfig[1]);
+                PasswordAuthenticationMethod pauth = new PasswordAuthenticationMethod(_rasPiConfig[1], _rasPiConfig[2]);
+                keybAuth.AuthenticationPrompt += new EventHandler<Renci.SshNet.Common.AuthenticationPromptEventArgs>(HandleKeyEvent);
+                ConnectionInfo connectionInfo = new ConnectionInfo(_rasPiConfig[0], 22, _rasPiConfig[1], pauth, keybAuth);
+                var client = new SftpClient(connectionInfo);
+                _rasPiForm._logDat.sendInfoMessage("download binary data to Raspberry Pi\n");
+                client.Connect();
+                var stream = new MemoryStream();
+                client.DownloadFile( filePath, stream);
+                stream.Read(data, 0, data.Length);
+                stream.Position = 0;
+                client.Disconnect();
+            }
+            catch (Exception e)
+            {
+                _rasPiForm._logDat.sendInfoMessage("Error on download binary data\n" + e.Message);
+            }
+
+
+            return data;
         }
 
         public Thread _RasPiThread = null;
