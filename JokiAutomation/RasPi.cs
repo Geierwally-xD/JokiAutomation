@@ -255,12 +255,12 @@ namespace JokiAutomation
                 keybAuth.AuthenticationPrompt += new EventHandler<Renci.SshNet.Common.AuthenticationPromptEventArgs>(HandleKeyEvent);
                 ConnectionInfo connectionInfo = new ConnectionInfo(_rasPiConfig[0], 22, _rasPiConfig[1], pauth, keybAuth);
                 var client = new SftpClient(connectionInfo);
-                _rasPiForm._logDat.sendInfoMessage("download binary data to Raspberry Pi\n");
+                _rasPiForm._logDat.sendInfoMessage("download binary data from Raspberry Pi\n");
                 client.Connect();
                 var stream = new MemoryStream();
                 client.DownloadFile( filePath, stream);
-                stream.Read(data, 0, data.Length);
                 stream.Position = 0;
+                int read = stream.Read(data, 0, data.Length);
                 client.Disconnect();
             }
             catch (Exception e)

@@ -14,4 +14,7 @@
     <StartArguments>
     </StartArguments>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <StartArguments>"AutoZoom"</StartArguments>
+  </PropertyGroup>
 </Project>

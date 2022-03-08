@@ -720,6 +720,7 @@ namespace JokiAutomation
                 if ((num_var >= 0) && (num_var < 400))
                 {
                     _autoZoom._AZ_Config.ServoReference = num_var;
+                    _autoZoom._AZLastServoPosition = (byte)AutoZoomControl.AZ_SERVOPOS.AZ_REF_RIGHT;
                 }
                 else
                 {
@@ -742,6 +743,8 @@ namespace JokiAutomation
                 if ((num_var >= 0) && (num_var < 100))
                 {
                     _autoZoom._AZ_Config.ServoControl = num_var;
+                    _autoZoom._AZLastServoPosition = (byte)AutoZoomControl.AZ_SERVOPOS.AZ_CON_RIGHT;
+
                 }
                 else
                 {
@@ -758,9 +761,10 @@ namespace JokiAutomation
         // eventhandler button write zoom configuration
         private void buttonConfig_Click(object sender, EventArgs e)
         {
-            if (loginUser("SuperUser") == true) // super user login necessary
+            if (loginUser("Admin") == true)     // admin login necessary
             {
                 _autoZoom.writeZoomConfiguration(); // write zoom configuration to raspberry pi
+                _autoZoom.writeZoomValues(); //rvtodo comment out
             }
         }
 
@@ -773,7 +777,10 @@ namespace JokiAutomation
         // autozoom test move to first five positions in a loop 
         private void buttonZoomTest_Click(object sender, EventArgs e)
         {
-            _autoZoom.test();
+            if (loginUser("Admin") == true)     // superuser login necessary
+            {
+                _autoZoom.test();
+            }
         }
 
         // autozoom servo test move
@@ -785,7 +792,10 @@ namespace JokiAutomation
         // autozoom move servo to middle position
         private void buttonServoStop_Click(object sender, EventArgs e)
         {
-            _autoZoom.servoMiddle();
+            if (loginUser("Admin") == true)     // superuser login necessary
+            {
+                _autoZoom.servoMiddle();
+            }
         }
 
         // eventhandler reset button autozoom config 

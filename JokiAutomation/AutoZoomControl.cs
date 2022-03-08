@@ -87,32 +87,28 @@ namespace JokiAutomation
         public void writeZoomConfiguration()
         {
             Byte[] cofigData = StructureToByteArray(_AZ_Config);
-            //rvtodo comment in 
-            //_rasPi.UploadBinary(cofigData, "zoomconfig.bin");
+            _rasPi.UploadBinary(cofigData, "zoomconfig.bin");
         }
 
         // read zoom configuration from raspberry pi
         public void readZoomConfiguration()
         {
-            int size = System.Runtime.InteropServices.Marshal.SizeOf(typeof(AZ_CONFIG));
-            //rvtodo comment in 
-            //Byte[] cofigData = _rasPi.DownloadBinary("zoomconfig.bin",size );
-            //ByteArrayToStructure(cofigData, ref _AZ_Config);
+           /* int size = System.Runtime.InteropServices.Marshal.SizeOf(typeof(AZ_CONFIG));
+            Byte[] cofigData = _rasPi.DownloadBinary("zoomconfig.bin",size );
+            ByteArrayToStructure(cofigData, ref _AZ_Config);*/ 
+           //rvtodo comment in
         }
 
         // write zoom values to raspberry pi
         public void writeZoomValues()
         {
-            //rvtodo comment in 
-            //_rasPi.UploadBinary(_AZ_ZoomValue, "zoomValues.bin");
+            _rasPi.UploadBinary(_AZ_ZoomValue, "zoomValues.bin");
         }
 
         // read zoom values from raspberry pi
         public void readZoomValues()
         {
-
-            //rvtodo comment in 
-            // _AZ_ZoomValue = _rasPi.DownloadBinary("zoomValues.bin", 21);
+            _AZ_ZoomValue = _rasPi.DownloadBinary("zoomValues.bin", 21);
         }
 
         // calibrate zoom values
@@ -149,8 +145,8 @@ namespace JokiAutomation
         }
 
         public AZ_CONFIG _AZ_Config = new AZ_CONFIG();
-        public byte[] _AZ_ZoomValue = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-        private enum AZ_SERVOPOS
+        public byte[] _AZ_ZoomValue = new byte[] { 100, 70, 40, 10, 0, 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+        public enum AZ_SERVOPOS
         {
             AZ_MIDDLE     = 0,
             AZ_REF_RIGHT  = 1,
@@ -162,7 +158,7 @@ namespace JokiAutomation
         private const int AZ_CALIB = 61;           // calibrate autozoom
         private const int AZ_TEST = 62;            // autozoom test positions
         private const int AZ_SERVO_MOVE = 63;      // autozoom move servo to position
-        private byte _AZLastServoPosition = (byte)AZ_SERVOPOS.AZ_CON_RIGHT;
+        public byte _AZLastServoPosition = (byte)AZ_SERVOPOS.AZ_CON_RIGHT;
         private static RasPi _rasPi = new RasPi(); // Raspberry Pi functionality
         private static Form1 _AZForm;
     }
