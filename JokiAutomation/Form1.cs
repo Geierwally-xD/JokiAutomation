@@ -145,6 +145,10 @@ namespace JokiAutomation
                 {
                     _autoZoom.openDialog(this);
                 }
+                else if (cmd == "ZoomReferenz")
+                {
+                    moveZoomReference();
+                }
                 else
                 {
                     throw new System.ArgumentException(" ", "original");
@@ -160,7 +164,7 @@ namespace JokiAutomation
         {
             //rv
             textBoxZoomCalibTime.Text = Convert.ToString(_autoZoom._AZ_Config.CalibrationTime, 10);
-            textBoxZoomCalibOffset.Text = Convert.ToString(_autoZoom._AZ_Config.CalibrationOffset, 10);
+            textBoxServoControlInv.Text = Convert.ToString(_autoZoom._AZ_Config.ServoControlN, 10);
             textBoxServoMiddle.Text = Convert.ToString(_autoZoom._AZ_Config.ServoMiddle, 10);
             textBoxServoControl.Text = Convert.ToString(_autoZoom._AZ_Config.ServoControl, 10);
             textBoxServoReference.Text = Convert.ToString(_autoZoom._AZ_Config.ServoReference, 10);
@@ -635,6 +639,7 @@ namespace JokiAutomation
             {
                 zoomValue.Text = "";
                 _logDat.sendInfoMessage("JokiAutomation\nFormatfehler Zahlenwert in Autozoom \n");
+                zoomValue.Focus();
             }
         }
 
@@ -663,28 +668,31 @@ namespace JokiAutomation
             {
                 textBoxZoomCalibTime.Text = "";
                 _logDat.sendInfoMessage("JokiAutomation\nFormatfehler Zahlenwert in Autozoom \n");
+                textBoxZoomCalibTime.Focus();
             }
         }
 
-        // zoom calibration offset
-        private void textBoxZoomCalibOffset_TextChanged(object sender, EventArgs e)
+        // zoom servo control position offset (= middle position - offset)
+        private void textBoxServoControlInv_TextChanged(object sender, EventArgs e)
         {
             try
             {
-                ushort num_var = ushort.Parse(textBoxZoomCalibOffset.Text);
-                if ((num_var >= 0) && (num_var < 60000))
+                ushort num_var = ushort.Parse(textBoxServoControlInv.Text);
+                if ((num_var >= 0) && (num_var < 100))
                 {
-                    _autoZoom._AZ_Config.CalibrationOffset = num_var;
+                    _autoZoom._AZ_Config.ServoControlN = num_var;
+                    _autoZoom._AZLastServoPosition = (byte)AutoZoomControl.AZ_SERVOPOS.AZ_CON_LEFT;
                 }
                 else
                 {
-                    textBoxZoomCalibOffset.Text = "";
+                    textBoxServoControlInv.Text = "";
                 }
             }
             catch (Exception)
             {
-                textBoxZoomCalibOffset.Text = "";
+                textBoxServoControlInv.Text = "";
                 _logDat.sendInfoMessage("JokiAutomation\nFormatfehler Zahlenwert in Autozoom \n");
+                textBoxServoControlInv.Focus();
             }
 
         }
@@ -708,6 +716,7 @@ namespace JokiAutomation
             {
                 textBoxServoMiddle.Text = "";
                 _logDat.sendInfoMessage("JokiAutomation\nFormatfehler Zahlenwert in Autozoom \n");
+                textBoxServoMiddle.Focus();
             }
         }
 
@@ -731,10 +740,11 @@ namespace JokiAutomation
             {
                 textBoxServoReference.Text = "";
                 _logDat.sendInfoMessage("JokiAutomation\nFormatfehler Zahlenwert in Autozoom \n");
+                textBoxServoReference.Focus();
             }
         }
 
-        // zoom servo control position offset (= middle position +/- offset)
+        // zoom servo control position offset (= middle position + offset)
         private void textBoxServoControl_TextChanged(object sender, EventArgs e)
         {
             try
@@ -755,9 +765,18 @@ namespace JokiAutomation
             {
                 textBoxServoControl.Text = "";
                 _logDat.sendInfoMessage("JokiAutomation\nFormatfehler Zahlenwert in Autozoom \n");
+                textBoxServoControl.Focus();
             }
         }
-        
+
+        // move zoom to reference point
+        private void moveZoomReference()
+        {
+            setZoomValue(100);
+            moveZoom();
+        }
+
+
         // eventhandler button write zoom configuration
         private void buttonConfig_Click(object sender, EventArgs e)
         {
@@ -804,6 +823,31 @@ namespace JokiAutomation
             _audioMix._rasPi.rasPiStop();
         }
 
+        // eventhandler move reference
+        private void buttonZoomReference_Click(object sender, EventArgs e)
+        {
+            moveZoomReference();
+        }
+
+        // eventhandler test left right servo position servo Zoom
+        private void buttonZoomTestMiddle_Click(object sender, EventArgs e)
+        {
+            if (loginUser("SuperUser") == true) // super user login necessary
+            {
+               // _autoZoom._AZLastServoPosition = (byte)AutoZoomControl.AZ_SERVOPOS.AZ_CON_RIGHT;
+                _autoZoom.servoMove();
+            }
+        }
+
+        // eventhandler Test middle position servo Zoom
+        private void buttonZoomServoMiddle_Click(object sender, EventArgs e)
+        {
+            if (loginUser("SuperUser") == true) // super user login necessary
+            {
+                _autoZoom.servoMiddle();
+            }
+        }
+
         private EventTimer _eventTimer = new EventTimer();
         private AudioMix _audioMix = new AudioMix();
         private InfraredControl _infraredControl = new InfraredControl();
@@ -816,7 +860,6 @@ namespace JokiAutomation
         private uint _InputTimerloop = 0;
         public LogData _logDat = new LogData();
         private bool CI_test_active_ = false;
-
     }
 
 }

@@ -36,6 +36,7 @@ namespace JokiAutomation
             {
                 zoomValue.Text = "";
                 _AZForm._logDat.sendInfoMessage("JokiAutomation\nFormatfehler Zahlenwert in Autozoom \n");
+                zoomValue.Focus();
             }
         }
 

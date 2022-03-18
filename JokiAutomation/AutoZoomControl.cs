@@ -18,7 +18,7 @@ namespace JokiAutomation
             public ushort ServoMiddle;    // 16 bit value servo middle position
             public ushort ServoReference; // 16 bit value servo reference move position
             public ushort ServoControl;   // 16 bit value servo control move position
-            public ushort CalibrationOffset;// 16 bit value calibration offset
+            public ushort ServoControlN;  // 16 bit value control offset
             public uint CalibrationTime;  // 32 bit value calibration time
         }
 
@@ -93,10 +93,9 @@ namespace JokiAutomation
         // read zoom configuration from raspberry pi
         public void readZoomConfiguration()
         {
-           /* int size = System.Runtime.InteropServices.Marshal.SizeOf(typeof(AZ_CONFIG));
+            int size = System.Runtime.InteropServices.Marshal.SizeOf(typeof(AZ_CONFIG));
             Byte[] cofigData = _rasPi.DownloadBinary("zoomconfig.bin",size );
-            ByteArrayToStructure(cofigData, ref _AZ_Config);*/ 
-           //rvtodo comment in
+            ByteArrayToStructure(cofigData, ref _AZ_Config);
         }
 
         // write zoom values to raspberry pi

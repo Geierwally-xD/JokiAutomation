@@ -77,6 +77,9 @@ namespace JokiAutomation
             this.listBox3 = new System.Windows.Forms.ListBox();
             this.richTextBox2 = new System.Windows.Forms.RichTextBox();
             this.tabPage4 = new System.Windows.Forms.TabPage();
+            this.buttonZoomServoMiddle = new System.Windows.Forms.Button();
+            this.buttonZoomTestMiddle = new System.Windows.Forms.Button();
+            this.buttonZoomReference = new System.Windows.Forms.Button();
             this.buttonZoom = new System.Windows.Forms.Button();
             this.labelAutozoom = new System.Windows.Forms.Label();
             this.zoomValue = new System.Windows.Forms.TextBox();
@@ -98,13 +101,13 @@ namespace JokiAutomation
             this.buttonZoomTest = new System.Windows.Forms.Button();
             this.groupBoxZoomCalib = new System.Windows.Forms.GroupBox();
             this.buttonCalib = new System.Windows.Forms.Button();
-            this.textBoxZoomCalibOffset = new System.Windows.Forms.TextBox();
             this.textBoxZoomCalibTime = new System.Windows.Forms.TextBox();
-            this.labelZoomCalibOffset = new System.Windows.Forms.Label();
             this.labelZoomCalibTime = new System.Windows.Forms.Label();
             this.buttonConfig = new System.Windows.Forms.Button();
             this.groupBoxServoAdjust = new System.Windows.Forms.GroupBox();
             this.textBoxServoControl = new System.Windows.Forms.TextBox();
+            this.textBoxServoControlInv = new System.Windows.Forms.TextBox();
+            this.labelZoomCalibOffset = new System.Windows.Forms.Label();
             this.textBoxServoReference = new System.Windows.Forms.TextBox();
             this.labelServoControl = new System.Windows.Forms.Label();
             this.labelServoReference = new System.Windows.Forms.Label();
@@ -701,6 +704,9 @@ namespace JokiAutomation
             // 
             // tabPage4
             // 
+            this.tabPage4.Controls.Add(this.buttonZoomServoMiddle);
+            this.tabPage4.Controls.Add(this.buttonZoomTestMiddle);
+            this.tabPage4.Controls.Add(this.buttonZoomReference);
             this.tabPage4.Controls.Add(this.buttonZoom);
             this.tabPage4.Controls.Add(this.labelAutozoom);
             this.tabPage4.Controls.Add(this.zoomValue);
@@ -726,6 +732,39 @@ namespace JokiAutomation
             this.tabPage4.Text = "Position Camcorder";
             this.tabPage4.UseVisualStyleBackColor = true;
             // 
+            // buttonZoomServoMiddle
+            // 
+            this.buttonZoomServoMiddle.Location = new System.Drawing.Point(888, 303);
+            this.buttonZoomServoMiddle.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
+            this.buttonZoomServoMiddle.Name = "buttonZoomServoMiddle";
+            this.buttonZoomServoMiddle.Size = new System.Drawing.Size(244, 70);
+            this.buttonZoomServoMiddle.TabIndex = 25;
+            this.buttonZoomServoMiddle.Text = "Servo Mitte";
+            this.buttonZoomServoMiddle.UseVisualStyleBackColor = true;
+            this.buttonZoomServoMiddle.Click += new System.EventHandler(this.buttonZoomServoMiddle_Click);
+            // 
+            // buttonZoomTestMiddle
+            // 
+            this.buttonZoomTestMiddle.Location = new System.Drawing.Point(888, 187);
+            this.buttonZoomTestMiddle.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
+            this.buttonZoomTestMiddle.Name = "buttonZoomTestMiddle";
+            this.buttonZoomTestMiddle.Size = new System.Drawing.Size(244, 70);
+            this.buttonZoomTestMiddle.TabIndex = 24;
+            this.buttonZoomTestMiddle.Text = "Servo Position";
+            this.buttonZoomTestMiddle.UseVisualStyleBackColor = true;
+            this.buttonZoomTestMiddle.Click += new System.EventHandler(this.buttonZoomTestMiddle_Click);
+            // 
+            // buttonZoomReference
+            // 
+            this.buttonZoomReference.Location = new System.Drawing.Point(888, 67);
+            this.buttonZoomReference.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
+            this.buttonZoomReference.Name = "buttonZoomReference";
+            this.buttonZoomReference.Size = new System.Drawing.Size(244, 70);
+            this.buttonZoomReference.TabIndex = 23;
+            this.buttonZoomReference.Text = "Referenzpunkt";
+            this.buttonZoomReference.UseVisualStyleBackColor = true;
+            this.buttonZoomReference.Click += new System.EventHandler(this.buttonZoomReference_Click);
+            // 
             // buttonZoom
             // 
             this.buttonZoom.Location = new System.Drawing.Point(888, 708);
@@ -741,7 +780,7 @@ namespace JokiAutomation
             // 
             this.labelAutozoom.AutoSize = true;
             this.labelAutozoom.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
-            this.labelAutozoom.Location = new System.Drawing.Point(905, 547);
+            this.labelAutozoom.Location = new System.Drawing.Point(909, 7);
             this.labelAutozoom.Name = "labelAutozoom";
             this.labelAutozoom.Size = new System.Drawing.Size(202, 46);
             this.labelAutozoom.TabIndex = 21;
@@ -968,9 +1007,7 @@ namespace JokiAutomation
             // groupBoxZoomCalib
             // 
             this.groupBoxZoomCalib.Controls.Add(this.buttonCalib);
-            this.groupBoxZoomCalib.Controls.Add(this.textBoxZoomCalibOffset);
             this.groupBoxZoomCalib.Controls.Add(this.textBoxZoomCalibTime);
-            this.groupBoxZoomCalib.Controls.Add(this.labelZoomCalibOffset);
             this.groupBoxZoomCalib.Controls.Add(this.labelZoomCalibTime);
             this.groupBoxZoomCalib.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F);
             this.groupBoxZoomCalib.Location = new System.Drawing.Point(139, 111);
@@ -992,41 +1029,21 @@ namespace JokiAutomation
             this.buttonCalib.UseVisualStyleBackColor = true;
             this.buttonCalib.Click += new System.EventHandler(this.buttonCalib_Click);
             // 
-            // textBoxZoomCalibOffset
-            // 
-            this.textBoxZoomCalibOffset.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.1F);
-            this.textBoxZoomCalibOffset.Location = new System.Drawing.Point(390, 215);
-            this.textBoxZoomCalibOffset.Name = "textBoxZoomCalibOffset";
-            this.textBoxZoomCalibOffset.Size = new System.Drawing.Size(244, 68);
-            this.textBoxZoomCalibOffset.TabIndex = 37;
-            this.textBoxZoomCalibOffset.Text = "0";
-            this.textBoxZoomCalibOffset.TextChanged += new System.EventHandler(this.textBoxZoomCalibOffset_TextChanged);
-            // 
             // textBoxZoomCalibTime
             // 
             this.textBoxZoomCalibTime.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.1F);
-            this.textBoxZoomCalibTime.Location = new System.Drawing.Point(390, 107);
+            this.textBoxZoomCalibTime.Location = new System.Drawing.Point(390, 193);
             this.textBoxZoomCalibTime.Name = "textBoxZoomCalibTime";
-            this.textBoxZoomCalibTime.Size = new System.Drawing.Size(244, 68);
+            this.textBoxZoomCalibTime.Size = new System.Drawing.Size(267, 68);
             this.textBoxZoomCalibTime.TabIndex = 35;
             this.textBoxZoomCalibTime.Text = "0";
             this.textBoxZoomCalibTime.TextChanged += new System.EventHandler(this.textBoxZoomCalibTime_TextChanged);
-            // 
-            // labelZoomCalibOffset
-            // 
-            this.labelZoomCalibOffset.AutoSize = true;
-            this.labelZoomCalibOffset.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
-            this.labelZoomCalibOffset.Location = new System.Drawing.Point(34, 232);
-            this.labelZoomCalibOffset.Name = "labelZoomCalibOffset";
-            this.labelZoomCalibOffset.Size = new System.Drawing.Size(263, 46);
-            this.labelZoomCalibOffset.TabIndex = 36;
-            this.labelZoomCalibOffset.Text = "Kalibrieroffset";
             // 
             // labelZoomCalibTime
             // 
             this.labelZoomCalibTime.AutoSize = true;
             this.labelZoomCalibTime.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
-            this.labelZoomCalibTime.Location = new System.Drawing.Point(34, 124);
+            this.labelZoomCalibTime.Location = new System.Drawing.Point(34, 209);
             this.labelZoomCalibTime.Name = "labelZoomCalibTime";
             this.labelZoomCalibTime.Size = new System.Drawing.Size(227, 46);
             this.labelZoomCalibTime.TabIndex = 35;
@@ -1047,6 +1064,8 @@ namespace JokiAutomation
             // groupBoxServoAdjust
             // 
             this.groupBoxServoAdjust.Controls.Add(this.textBoxServoControl);
+            this.groupBoxServoAdjust.Controls.Add(this.textBoxServoControlInv);
+            this.groupBoxServoAdjust.Controls.Add(this.labelZoomCalibOffset);
             this.groupBoxServoAdjust.Controls.Add(this.textBoxServoReference);
             this.groupBoxServoAdjust.Controls.Add(this.labelServoControl);
             this.groupBoxServoAdjust.Controls.Add(this.labelServoReference);
@@ -1065,17 +1084,37 @@ namespace JokiAutomation
             // textBoxServoControl
             // 
             this.textBoxServoControl.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.1F);
-            this.textBoxServoControl.Location = new System.Drawing.Point(382, 334);
+            this.textBoxServoControl.Location = new System.Drawing.Point(382, 314);
             this.textBoxServoControl.Name = "textBoxServoControl";
             this.textBoxServoControl.Size = new System.Drawing.Size(197, 68);
             this.textBoxServoControl.TabIndex = 34;
             this.textBoxServoControl.Text = "0";
             this.textBoxServoControl.TextChanged += new System.EventHandler(this.textBoxServoControl_TextChanged);
             // 
+            // textBoxServoControlInv
+            // 
+            this.textBoxServoControlInv.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.1F);
+            this.textBoxServoControlInv.Location = new System.Drawing.Point(382, 445);
+            this.textBoxServoControlInv.Name = "textBoxServoControlInv";
+            this.textBoxServoControlInv.Size = new System.Drawing.Size(197, 68);
+            this.textBoxServoControlInv.TabIndex = 37;
+            this.textBoxServoControlInv.Text = "0";
+            this.textBoxServoControlInv.TextChanged += new System.EventHandler(this.textBoxServoControlInv_TextChanged);
+            // 
+            // labelZoomCalibOffset
+            // 
+            this.labelZoomCalibOffset.AutoSize = true;
+            this.labelZoomCalibOffset.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.labelZoomCalibOffset.Location = new System.Drawing.Point(45, 462);
+            this.labelZoomCalibOffset.Name = "labelZoomCalibOffset";
+            this.labelZoomCalibOffset.Size = new System.Drawing.Size(243, 46);
+            this.labelZoomCalibOffset.TabIndex = 36;
+            this.labelZoomCalibOffset.Text = "Stellbetrieb -";
+            // 
             // textBoxServoReference
             // 
             this.textBoxServoReference.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.1F);
-            this.textBoxServoReference.Location = new System.Drawing.Point(382, 215);
+            this.textBoxServoReference.Location = new System.Drawing.Point(382, 187);
             this.textBoxServoReference.Name = "textBoxServoReference";
             this.textBoxServoReference.Size = new System.Drawing.Size(197, 68);
             this.textBoxServoReference.TabIndex = 33;
@@ -1086,17 +1125,17 @@ namespace JokiAutomation
             // 
             this.labelServoControl.AutoSize = true;
             this.labelServoControl.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
-            this.labelServoControl.Location = new System.Drawing.Point(45, 351);
+            this.labelServoControl.Location = new System.Drawing.Point(45, 336);
             this.labelServoControl.Name = "labelServoControl";
-            this.labelServoControl.Size = new System.Drawing.Size(219, 46);
+            this.labelServoControl.Size = new System.Drawing.Size(253, 46);
             this.labelServoControl.TabIndex = 32;
-            this.labelServoControl.Text = "Stellbetrieb";
+            this.labelServoControl.Text = "Stellbetrieb +";
             // 
             // labelServoReference
             // 
             this.labelServoReference.AutoSize = true;
             this.labelServoReference.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
-            this.labelServoReference.Location = new System.Drawing.Point(45, 232);
+            this.labelServoReference.Location = new System.Drawing.Point(45, 210);
             this.labelServoReference.Name = "labelServoReference";
             this.labelServoReference.Size = new System.Drawing.Size(302, 46);
             this.labelServoReference.TabIndex = 31;
@@ -1127,7 +1166,7 @@ namespace JokiAutomation
             // textBoxServoMiddle
             // 
             this.textBoxServoMiddle.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.1F);
-            this.textBoxServoMiddle.Location = new System.Drawing.Point(382, 107);
+            this.textBoxServoMiddle.Location = new System.Drawing.Point(382, 73);
             this.textBoxServoMiddle.Name = "textBoxServoMiddle";
             this.textBoxServoMiddle.Size = new System.Drawing.Size(197, 68);
             this.textBoxServoMiddle.TabIndex = 26;
@@ -1138,7 +1177,7 @@ namespace JokiAutomation
             // 
             this.labelServoMiddle.AutoSize = true;
             this.labelServoMiddle.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
-            this.labelServoMiddle.Location = new System.Drawing.Point(45, 124);
+            this.labelServoMiddle.Location = new System.Drawing.Point(45, 95);
             this.labelServoMiddle.Name = "labelServoMiddle";
             this.labelServoMiddle.Size = new System.Drawing.Size(254, 46);
             this.labelServoMiddle.TabIndex = 27;
@@ -1280,11 +1319,14 @@ namespace JokiAutomation
         private Button buttonZoomTest;
         private GroupBox groupBoxZoomCalib;
         private Button buttonCalib;
-        public TextBox textBoxZoomCalibOffset;
+        public TextBox textBoxServoControlInv;
         public TextBox textBoxZoomCalibTime;
         private Label labelZoomCalibOffset;
         private Label labelZoomCalibTime;
         private Button buttonAZReset;
+        private Button buttonZoomTestMiddle;
+        private Button buttonZoomReference;
+        private Button buttonZoomServoMiddle;
     }
 }
 
