@@ -678,7 +678,7 @@ namespace JokiAutomation
             try
             {
                 ushort num_var = ushort.Parse(textBoxServoControlInv.Text);
-                if ((num_var >= 0) && (num_var < 100))
+                if ((num_var >= 0) && (num_var < 200))
                 {
                     _autoZoom._AZ_Config.ServoControlN = num_var;
                     _autoZoom._AZLastServoPosition = (byte)AutoZoomControl.AZ_SERVOPOS.AZ_CON_LEFT;
@@ -750,7 +750,7 @@ namespace JokiAutomation
             try
             {
                 ushort num_var = ushort.Parse(textBoxServoControl.Text);
-                if ((num_var >= 0) && (num_var < 100))
+                if ((num_var >= 0) && (num_var < 200))
                 {
                     _autoZoom._AZ_Config.ServoControl = num_var;
                     _autoZoom._AZLastServoPosition = (byte)AutoZoomControl.AZ_SERVOPOS.AZ_CON_RIGHT;
