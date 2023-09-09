@@ -87,27 +87,27 @@ namespace JokiAutomation
         public void writeZoomConfiguration()
         {
             Byte[] cofigData = StructureToByteArray(_AZ_Config);
-            _rasPi.UploadBinary(cofigData, "zoomconfig.bin");
+            _rasPi.UploadBinary(cofigData, "/home/pi/JokiAutomation/config/zoomconfig.bin");
         }
 
         // read zoom configuration from raspberry pi
         public void readZoomConfiguration()
         {
             int size = System.Runtime.InteropServices.Marshal.SizeOf(typeof(AZ_CONFIG));
-            Byte[] cofigData = _rasPi.DownloadBinary("zoomconfig.bin",size );
+            Byte[] cofigData = _rasPi.DownloadBinary("/home/pi/JokiAutomation/config/zoomconfig.bin",size );
             ByteArrayToStructure(cofigData, ref _AZ_Config);
         }
 
         // write zoom values to raspberry pi
         public void writeZoomValues()
         {
-            _rasPi.UploadBinary(_AZ_ZoomValue, "zoomValues.bin");
+            _rasPi.UploadBinary(_AZ_ZoomValue, "/home/pi/JokiAutomation/config/zoomValues.bin");
         }
 
         // read zoom values from raspberry pi
         public void readZoomValues()
         {
-            _AZ_ZoomValue = _rasPi.DownloadBinary("zoomValues.bin", 21);
+            _AZ_ZoomValue = _rasPi.DownloadBinary("/home/pi/JokiAutomation/config/zoomValues.bin", 21);
         }
 
         // calibrate zoom values

@@ -124,7 +124,7 @@ namespace JokiAutomation
                     _threadResultString[1] = "connect ssh client to Raspberry Pi";
                     sshClient.Connect();
                     _threadResultString[2] = "ssh client connected";
-                    String commandString = "sudo ./RasPiAutomation.sh " + _commandString + " " + _idString + " /dev/null";
+                    String commandString = "sudo /home/pi/JokiAutomation/scripts/RasPiAutomation.sh " + _commandString + " " + _idString + " /dev/null";
                     sshConsole = sshClient.RunCommand(commandString);
                     _threadResultString[3] = sshConsole.CommandText;
                     _threadResultString[4] = sshConsole.Result;
@@ -166,7 +166,7 @@ namespace JokiAutomation
             if (command > 0)
             {
                 _rasPiForm._logDat.sendInfoMessage("start Raspberry Pi RasPi-Automation-application over Putty " + _commandString + " " + _idString);
-                strw.WriteLine("sudo nice --15 remote-debugging/RasPiAutomation " + _commandString + " " + _idString);
+                strw.WriteLine("sudo nice --15 /home/pi/JokiAutomation/RasPiAutomation " + _commandString + " " + _idString);
             }
             else
             {
