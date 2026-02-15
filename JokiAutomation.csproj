@@ -1,0 +1,8 @@
+<ItemGroup>
+  <None Include="Network.cfg">
+    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  </None>
+  <None Include="App.config">
+    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  </None>
+</ItemGroup>

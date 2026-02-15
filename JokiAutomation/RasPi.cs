@@ -71,18 +71,15 @@ namespace JokiAutomation
                 }
                 if (commandLineInstances < 2) // maximum one instance of JoKiAutomation from command line allowed 
                 {
-                    if (_threadResultString[0] != "")
+                    if (_threadResultString[0] != "") // Lesen ohne Lock
                     {
                         _rasPiForm._logDat.sendInfoMessage(_threadResultString[0]);
-                        _rasPiForm._logDat.sendInfoMessage(_threadResultString[1]);
-                        _rasPiForm._logDat.sendInfoMessage(_threadResultString[2]);
                     }
-
                     _RasPiThread = new Thread(new ThreadStart(rasPiThreadStart));
                     _RasPiThread.SetApartmentState(ApartmentState.STA);
                     _rasPiForm._logDat.sendInfoMessage("start Raspberry Pi RasPi-Automation-application " + _commandString + " " + _idString);
                     _RasPiThread.Start();
-                    if (_threadResultString[0] != "")
+                    if (_threadResultString[0] != "") // Erneutes Lesen ohne Lock
                     {
                         _rasPiForm._logDat.sendInfoMessage(_threadResultString[0]);
                         _rasPiForm._logDat.sendInfoMessage(_threadResultString[1]);
@@ -94,7 +91,7 @@ namespace JokiAutomation
             }
             catch (Exception e)
             {
-                MessageBox.Show("Error during Start Raspberry Pi!/n" + e.Message);
+                MessageBox.Show("Error during Start Raspberry Pi!\n" + e.Message);
                 if (_threadResultString[0] != "")
                 {
                     _rasPiForm._logDat.sendInfoMessage(_threadResultString[0]);
@@ -281,6 +278,6 @@ namespace JokiAutomation
         private String m_szFeedback; // hold feedback data
         private Object m_objLock;    // lock object
         private Boolean m_blnDoRead; // boolean value keeping up the read (may be used to interrupt the reading process)
-        static private string[] _rasPiConfig = { "192.168.178.70", "pi", "raspberry", "C:/Program Files/PuTTY/plink" }; // default login data
+        static private string[] _rasPiConfig = { "192.168.0.40", "pi", "raspberry", "C:/Program Files/PuTTY/plink" }; // default login data
     }
 }
