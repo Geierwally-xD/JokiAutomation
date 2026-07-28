@@ -40,11 +40,19 @@ namespace JokiAutomation
             {
                 string app_path = Assembly.GetExecutingAssembly().Location;
                 WinFormsExtensions.writeLog(app_path, message);
-                Console.WriteLine(message); // Auch in Console ausgeben
+                Console.WriteLine(message);
             }
             else
             {
-                // GUI-Modus
+                // Check if we need to invoke (are we on a different thread?)
+                if (logDatForm.InvokeRequired)
+                {
+                    // Marshal the call to the UI thread
+                    logDatForm.BeginInvoke(new Action(() => sendInfoMessage(strMsg)));
+                    return;
+                }
+                
+                // GUI-Modus (now guaranteed to be on UI thread)
                 var richTextBox = GetRichTextBoxForSelectedTab();
                 if (richTextBox != null)
                 {

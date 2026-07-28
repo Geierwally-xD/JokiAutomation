@@ -1,0 +1,15 @@
+#!/bin/sh
+# cd ../../home/pi
+# sudo nice --15 remote-debugging/RasPiAutomation 30 96
+    for pin in 5 6 7 13 19 26 16 20 21
+    do
+        pigs m $pin w
+        pigs w $pin 0
+    done
+
+    sudo chmod 777 -c -R /dev/ttyUSB0
+    stty -F /dev/ttyUSB0 9600 raw -echo
+    echo -n '(MX*:RES!)' > /dev/ttyUSB0
+    sudo killall -SIGKILL RasPiAutomation
+
+

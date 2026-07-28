@@ -1,10 +1,59 @@
+# ============================================
+# JoKiAutomation - Sensible Daten
+# ============================================
+
+# Konfigurationsdateien mit IP-Adressen und Passwörtern
+*.cfg
+Network.cfg
+RaspberryPi.cfg
+
+# Log-Dateien mit sensiblen Laufzeitdaten
+*.log
+RasPiAutomationLog.txt
+
+# ============================================
 # Build and Release Folders
+# ============================================
 bin/
 obj/
 [Oo]bj/
 [Bb]in/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
 
+# ============================================
+# Visual Studio
+# ============================================
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio cache/options directory
+.vs/
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# Build results
+*.dll
+*.exe
+*.pdb
+*.cache
+
+# ============================================
 # Other files and folders
+# ============================================
 .settings/
 
 # Executables
@@ -13,10 +62,17 @@ obj/
 *.ipa
 *.apk
 
-# Config and copilot chat
-.vs/JokiAutomation/copilot-chat/*.*
-Network.cfg
+# Backup files
+*.bak
+*.old
+*~
 
+# Temporary files
+*.tmp
+*.temp
+
+# ============================================
 # Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
 # should NOT be excluded as they contain compiler settings and other important
 # information for Eclipse / Flash Builder.
+# ============================================

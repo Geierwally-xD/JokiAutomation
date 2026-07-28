@@ -1,0 +1,21 @@
+# ============================================
+# JoKiAutomation - Raspberry Pi SSH-Konfiguration
+# ============================================
+#
+# ANLEITUNG:
+# 1. Kopieren Sie diese Datei nach 'RaspberryPi.cfg'
+# 2. Tragen Sie Ihre echten SSH-Zugangsdaten ein
+# 3. Committen Sie NIEMALS die RaspberryPi.cfg Datei!
+#
+# FORMAT (genau 4 Zeilen):
+# Zeile 1: IP-Adresse des Raspberry Pi
+# Zeile 2: SSH-Benutzername
+# Zeile 3: SSH-Passwort
+# Zeile 4: Vollständiger Pfad zu PuTTY plink.exe
+#
+# ============================================
+
+192.168.0.40
+pi
+ihr_raspberry_pi_passwort
+C:/Program Files/PuTTY/plink

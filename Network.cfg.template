@@ -1,0 +1,32 @@
+# ============================================
+# JoKiAutomation - Netzwerk-Konfiguration
+# ============================================
+# 
+# ANLEITUNG:
+# 1. Kopieren Sie diese Datei nach 'Network.cfg'
+# 2. Tragen Sie Ihre echten IP-Adressen und Zugangsdaten ein
+# 3. Committen Sie NIEMALS die Network.cfg Datei!
+#
+# FORMAT:
+# GeräteName;IP-Adresse
+# GeräteName;IP-Adresse;Port;Benutzername;Passwort (für Delock-Geräte)
+# USER_[Rolle];Passwort (für Benutzer-Authentifizierung)
+#
+# ============================================
+
+# ATEM Mini Pro Video-Switcher
+ATEM_MiniPro;192.168.1.100
+
+# Roku TV
+Roku_TV;192.168.1.101
+
+# Raspberry Pi (Hauptsteuerung)
+RaspberryPi_Main;192.168.1.102
+
+# Delock HDMI Extender mit Authentifizierung
+HDMI_Extender_Transmitter;192.168.1.103;80;admin;passwort
+HDMI_Extender_TV_Receiver;192.168.1.104;80;admin;passwort
+
+# Benutzer-Authentifizierung
+USER_Admin;ihr_admin_passwort_hier
+USER_SuperUser;ihr_superuser_passwort_hier

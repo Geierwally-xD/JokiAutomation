@@ -19,11 +19,55 @@ namespace JokiAutomation
         public void initRasPi(Form1 winForm)
         {
             _rasPiForm = winForm;
-            if (File.Exists(_JokiAutomationPath + "RaspberryPi.cfg"))
+            _staticRasPiForm = winForm;
+
+            // Determine config path (from environment variable or application directory)
+            string configPath = _JokiAutomationPath;
+            if (string.IsNullOrEmpty(configPath))
             {
-                _rasPiConfig = System.IO.File.ReadAllLines(_JokiAutomationPath + "RaspberryPi.cfg");
+                configPath = AppDomain.CurrentDomain.BaseDirectory;
             }
-            //System.IO.File.WriteAllLines(_JokiAutomationPath + "RaspberryPi.cfg", _rasPiConfig);
+            if (!configPath.EndsWith(Path.DirectorySeparatorChar.ToString()))
+            {
+                configPath += Path.DirectorySeparatorChar;
+            }
+
+            // Load Raspberry Pi configuration
+            string raspberryPiCfgPath = configPath + "RaspberryPi.cfg";
+            if (File.Exists(raspberryPiCfgPath))
+            {
+                string[] raspberryPiConfig = System.IO.File.ReadAllLines(raspberryPiCfgPath);
+                if (raspberryPiConfig.Length >= 4)
+                {
+                    _rasPiConfig[1] = raspberryPiConfig[1];  // username
+                    _rasPiConfig[2] = raspberryPiConfig[2];  // password
+                    _rasPiConfig[3] = raspberryPiConfig[3];  // plink path
+                }
+            }
+
+            // Load IP address ONLY from Network.cfg - required
+            string networkCfgPath = configPath + "Network.cfg";
+            if (File.Exists(networkCfgPath))
+            {
+                string[] networkConfig = System.IO.File.ReadAllLines(networkCfgPath);
+                foreach (string line in networkConfig)
+                {
+                    if (!line.StartsWith("#") && line.Contains(";"))
+                    {
+                        string[] parts = line.Split(';');
+                        if (parts.Length >= 2 && parts[0].Trim().Equals("RaspberryPi_Main", StringComparison.OrdinalIgnoreCase))
+                        {
+                            _rasPiConfig[0] = parts[1].Trim();
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Network.cfg not found - set IP to empty (will cause connection error)
+                _rasPiConfig[0] = "";
+            }
         }
 
 
@@ -75,6 +119,23 @@ namespace JokiAutomation
                     {
                         _rasPiForm._logDat.sendInfoMessage(_threadResultString[0]);
                     }
+                    
+
+
+                    // Load IP address from Network.cfg
+                    string ipAddress = GetRaspberryPiIpFromNetwork();
+
+                    if (string.IsNullOrEmpty(ipAddress))
+                    {
+                        _rasPiForm._logDat.sendInfoMessage("Fehler: RaspberryPi_Main IP nicht in Network.cfg gefunden!");
+                        return;
+                    }
+
+                    KeyboardInteractiveAuthenticationMethod keybAuth = new KeyboardInteractiveAuthenticationMethod(_rasPiConfig[1]);
+                    PasswordAuthenticationMethod pauth = new PasswordAuthenticationMethod(_rasPiConfig[1], _rasPiConfig[2]);
+                    keybAuth.AuthenticationPrompt += new EventHandler<Renci.SshNet.Common.AuthenticationPromptEventArgs>(HandleKeyEvent);
+
+
                     _RasPiThread = new Thread(new ThreadStart(rasPiThreadStart));
                     _RasPiThread.SetApartmentState(ApartmentState.STA);
                     _rasPiForm._logDat.sendInfoMessage("start Raspberry Pi RasPi-Automation-application " + _commandString + " " + _idString);
@@ -103,36 +164,266 @@ namespace JokiAutomation
             }
         }
 
+        // Hilfsfunktion zum Laden der Konfiguration und IP aus Network.cfg
+        private static string GetRaspberryPiIpFromNetwork()
+        {
+            // Suche Network.cfg in verschiedenen Locations (Priorität):
+            // 1. Umgebungsvariable JokiAutomation
+            // 2. AppDomain.BaseDirectory (bin-Verzeichnis)
+            // 3. ParentDirectory vom bin (Projekt-Root)
+
+            string[] searchPaths = new string[3];
+
+            // 1. Umgebungsvariable
+            string envPath = Environment.GetEnvironmentVariable("JokiAutomation");
+            if (!string.IsNullOrEmpty(envPath) && !envPath.EndsWith(Path.DirectorySeparatorChar.ToString()))
+            {
+                envPath += Path.DirectorySeparatorChar;
+            }
+            searchPaths[0] = envPath;
+
+            // 2. AppDomain.BaseDirectory (bin-Verzeichnis)
+            string basePath = AppDomain.CurrentDomain.BaseDirectory;
+            if (!basePath.EndsWith(Path.DirectorySeparatorChar.ToString()))
+            {
+                basePath += Path.DirectorySeparatorChar;
+            }
+            searchPaths[1] = basePath;
+
+            // 3. ParentDirectory vom bin (Projekt-Root)
+            string parentPath = Directory.GetParent(basePath).FullName;
+            if (!parentPath.EndsWith(Path.DirectorySeparatorChar.ToString()))
+            {
+                parentPath += Path.DirectorySeparatorChar;
+            }
+            searchPaths[2] = parentPath;
+
+            // Suche die Datei
+            foreach (string searchPath in searchPaths)
+            {
+                if (string.IsNullOrEmpty(searchPath))
+                    continue;
+
+                string networkCfgPath = searchPath + "Network.cfg";
+                System.Diagnostics.Debug.WriteLine($"DEBUG: Suche Network.cfg unter: {networkCfgPath}");
+
+                if (File.Exists(networkCfgPath))
+                {
+                    System.Diagnostics.Debug.WriteLine($"DEBUG: Network.cfg gefunden!");
+                    return ParseRaspberryPiIpFromFile(networkCfgPath);
+                }
+            }
+
+            System.Diagnostics.Debug.WriteLine($"DEBUG: Network.cfg in keinem Verzeichnis gefunden!");
+            return "";
+        }
+
+        // Parse die Network.cfg Datei
+        private static string ParseRaspberryPiIpFromFile(string filePath)
+        {
+            System.Diagnostics.Debug.WriteLine($"DEBUG: Lese {filePath}");
+
+            try
+            {
+                string[] networkConfig = File.ReadAllLines(filePath);
+                System.Diagnostics.Debug.WriteLine($"DEBUG: {networkConfig.Length} Zeilen gelesen");
+
+                foreach (string line in networkConfig)
+                {
+                    if (string.IsNullOrWhiteSpace(line))
+                        continue;
+
+                    System.Diagnostics.Debug.WriteLine($"DEBUG: Zeile: '{line}'");
+
+                    if (!line.StartsWith("#") && line.Contains(";"))
+                    {
+                        string[] parts = line.Split(';');
+                        System.Diagnostics.Debug.WriteLine($"DEBUG: Parts Count: {parts.Length}, Part[0]: '{parts[0].Trim()}'");
+
+                        if (parts.Length >= 2 && parts[0].Trim().Equals("RaspberryPi_Main", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string result = parts[1].Trim();
+                            System.Diagnostics.Debug.WriteLine($"DEBUG: IP gefunden: {result}");
+                            return result;
+                        }
+                    }
+                }
+
+                System.Diagnostics.Debug.WriteLine($"DEBUG: RaspberryPi_Main nicht in Datei gefunden!");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"DEBUG: Fehler beim Lesen: {ex.Message}");
+            }
+
+            return "";
+        }
+
         // raspberry pi request over putty command line
         public static void rasPiThreadStart()
         {
-            SshCommand sshConsole;
-            lock (_threadResultString)
+            try
             {
-                try
+                KeyboardInteractiveAuthenticationMethod keybAuth = new KeyboardInteractiveAuthenticationMethod(_rasPiConfig[1]);
+                PasswordAuthenticationMethod pauth = new PasswordAuthenticationMethod(_rasPiConfig[1], _rasPiConfig[2]);
+                keybAuth.AuthenticationPrompt += new EventHandler<AuthenticationPromptEventArgs>(HandleKeyEvent);
+
+                // Lade IP immer aus Network.cfg
+                string ipAddress = GetRaspberryPiIpFromNetwork();
+
+                if (string.IsNullOrEmpty(ipAddress))
                 {
-                    SshClient sshClient;
-                    KeyboardInteractiveAuthenticationMethod keybAuth = new KeyboardInteractiveAuthenticationMethod(_rasPiConfig[1]);
-                    PasswordAuthenticationMethod pauth = new PasswordAuthenticationMethod(_rasPiConfig[1], _rasPiConfig[2]);
-                    keybAuth.AuthenticationPrompt += new EventHandler<Renci.SshNet.Common.AuthenticationPromptEventArgs>(HandleKeyEvent);
-                    ConnectionInfo connectionInfo = new ConnectionInfo(_rasPiConfig[0], 22, _rasPiConfig[1], pauth, keybAuth);
-                    sshClient = new SshClient(connectionInfo);
+                    lock (_threadResultString)
+                    {
+                        _threadResultString[0] = "Fehler: RaspberryPi_Main IP nicht in Network.cfg gefunden!";
+                    }
+                    if (_staticRasPiForm != null)
+                    {
+                        _staticRasPiForm._logDat.sendInfoMessage(_threadResultString[0]);
+                    }
+                    return;
+                }
+
+                lock (_threadResultString)
+                {
+                    _threadResultString[1] = $"Versuche Verbindung zu: {ipAddress}:22 mit User: {_rasPiConfig[1]}";
+                }
+                if (_staticRasPiForm != null)
+                {
+                    _staticRasPiForm._logDat.sendInfoMessage(_threadResultString[1]);
+                }
+
+                ConnectionInfo connectionInfo = new ConnectionInfo(ipAddress, 22, _rasPiConfig[1], pauth, keybAuth);
+                // Erhöhe das Connect-Timeout, damit langsame Netzwerkverbindungen nicht sofort abbrechen
+                connectionInfo.Timeout = TimeSpan.FromSeconds(30);
+                using (SshClient sshClient = new SshClient(connectionInfo))
+                {
                     sshClient.KeepAliveInterval = TimeSpan.FromSeconds(30);
-                    _threadResultString[1] = "connect ssh client to Raspberry Pi";
+                    // Stelle sicher, dass die verwendete ConnectionInfo ein großzügigeres Timeout hat
+                    sshClient.ConnectionInfo.Timeout = TimeSpan.FromSeconds(30);
+
+                    lock (_threadResultString)
+                    {
+                        _threadResultString[2] = "Starte SSH Connect...";
+                    }
+                    if (_staticRasPiForm != null)
+                    {
+                        _staticRasPiForm._logDat.sendInfoMessage(_threadResultString[2]);
+                    }
+
                     sshClient.Connect();
-                    _threadResultString[2] = "ssh client connected";
-                    String commandString = "sudo /home/pi/JokiAutomation/scripts/RasPiAutomation.sh " + _commandString + " " + _idString + " /dev/null";
-                    sshConsole = sshClient.RunCommand(commandString);
-                    _threadResultString[3] = sshConsole.CommandText;
-                    _threadResultString[4] = sshConsole.Result;
+
+                    lock (_threadResultString)
+                    {
+                        _threadResultString[3] = "SSH verbunden!";
+                    }
+                    if (_staticRasPiForm != null)
+                    {
+                        _staticRasPiForm._logDat.sendInfoMessage(_threadResultString[3]);
+                    }
+
+                    string commandString = string.Format(
+                        "sudo -n /home/pi/JokiAutomation/scripts/RasPiAutomation.sh {0} {1}",
+                        _commandString,
+                        _idString);
+
+                    SshCommand cmd = sshClient.CreateCommand(commandString);
+                    cmd.CommandTimeout = TimeSpan.FromSeconds(75);
+
+                    lock (_threadResultString)
+                    {
+                        _threadResultString[0] = "Movement started (blocking)";
+                        _threadResultString[4] = commandString;
+                    }
+                    if (_staticRasPiForm != null)
+                    {
+                        _staticRasPiForm._logDat.sendInfoMessage(_threadResultString[0]);
+                        _staticRasPiForm._logDat.sendInfoMessage("Command: " + _threadResultString[4]);
+                    }
+
+                    cmd.Execute();
+
+                    int exit = cmd.ExitStatus.HasValue ? cmd.ExitStatus.Value : -1;
+                    string stdout = cmd.Result;
+                    string stderr = cmd.Error;
+
+                    lock (_threadResultString)
+                    {
+                        _threadResultString[0] = exit == 0
+                            ? "Movement completed"
+                            : string.Format("Movement failed (exit={0})", exit);
+                        _threadResultString[4] = "=== STDOUT ===\n" + stdout + "\n\n=== STDERR ===\n" + stderr;
+                    }
+                    if (_staticRasPiForm != null)
+                    {
+                        _staticRasPiForm._logDat.sendInfoMessage(_threadResultString[0]);
+                        if (!string.IsNullOrEmpty(stdout))
+                        {
+                            _staticRasPiForm._logDat.sendInfoMessage("=== STDOUT ===");
+                            _staticRasPiForm._logDat.sendInfoMessage(stdout);
+                        }
+                        if (!string.IsNullOrEmpty(stderr))
+                        {
+                            _staticRasPiForm._logDat.sendInfoMessage("=== STDERR ===");
+                            _staticRasPiForm._logDat.sendInfoMessage(stderr);
+                        }
+                    }
+
                     sshClient.Disconnect();
                 }
-                catch (Exception e)
-                {
-                    _threadResultString[0] = "Error in Raspberry Pi thread!/n" + e.Message;
-                }
             }
+            catch (System.Net.Sockets.SocketException sockEx)
+    {
+        lock (_threadResultString)
+        {
+            _threadResultString[0] = "Netzwerk-Fehler: Kann Raspberry Pi nicht erreichen!";
+            _threadResultString[1] = $"IP: {_rasPiConfig[0]}, Port: 22";
+            _threadResultString[2] = $"SocketException: {sockEx.Message}";
+            _threadResultString[3] = $"ErrorCode: {sockEx.SocketErrorCode}";
+            _threadResultString[4] = "Prüfen Sie:\n- Ist der RasPi eingeschaltet?\n- Ist die IP korrekt?\n- Ist SSH aktiviert?\n- Firewall-Blockierung?";
         }
+        if (_staticRasPiForm != null)
+        {
+            _staticRasPiForm._logDat.sendInfoMessage(_threadResultString[0]);
+            _staticRasPiForm._logDat.sendInfoMessage(_threadResultString[1]);
+            _staticRasPiForm._logDat.sendInfoMessage(_threadResultString[2]);
+            _staticRasPiForm._logDat.sendInfoMessage(_threadResultString[3]);
+            _staticRasPiForm._logDat.sendInfoMessage(_threadResultString[4]);
+        }
+    }
+    catch (Renci.SshNet.Common.SshAuthenticationException authEx)
+    {
+        lock (_threadResultString)
+        {
+            _threadResultString[0] = "SSH Authentifizierung fehlgeschlagen!";
+            _threadResultString[1] = $"User: {_rasPiConfig[1]}";
+            _threadResultString[2] = $"Fehler: {authEx.Message}";
+            _threadResultString[4] = "Prüfen Sie Username und Passwort in RaspberryPi.cfg";
+        }
+        if (_staticRasPiForm != null)
+        {
+            _staticRasPiForm._logDat.sendInfoMessage(_threadResultString[0]);
+            _staticRasPiForm._logDat.sendInfoMessage(_threadResultString[1]);
+            _staticRasPiForm._logDat.sendInfoMessage(_threadResultString[2]);
+            _staticRasPiForm._logDat.sendInfoMessage(_threadResultString[4]);
+        }
+    }
+    catch (Exception e)
+    {
+        lock (_threadResultString)
+        {
+            _threadResultString[0] = "Error in Raspberry Pi thread!\n" + e.Message;
+            _threadResultString[1] = $"Exception Type: {e.GetType().Name}";
+            _threadResultString[4] = "Exception:\n" + e.ToString();
+        }
+        if (_staticRasPiForm != null)
+        {
+            _staticRasPiForm._logDat.sendInfoMessage(_threadResultString[0]);
+            _staticRasPiForm._logDat.sendInfoMessage(_threadResultString[1]);
+            _staticRasPiForm._logDat.sendInfoMessage(_threadResultString[4]);
+        }
+    }
+}
 
         public void PuttyRequestRasPi(int command, int ID)
         {
@@ -163,12 +454,12 @@ namespace JokiAutomation
             if (command > 0)
             {
                 _rasPiForm._logDat.sendInfoMessage("start Raspberry Pi RasPi-Automation-application over Putty " + _commandString + " " + _idString);
-                strw.WriteLine("sudo nice --15 /home/pi/JokiAutomation/RasPiAutomation " + _commandString + " " + _idString);
+                strw.WriteLine("nice --15 /home/pi/JokiAutomation/RasPiAutomation " + _commandString + " " + _idString);
             }
             else
             {
                 _rasPiForm._logDat.sendInfoMessage("reset Raspberry Pi RasPi-Automation-application over Putty ");
-                strw.WriteLine("sudo killall -SIGKILL RasPiAutomation");    // stopp all RasPiAutomation 
+                strw.WriteLine("killall -SIGKILL RasPiAutomation");    // stopp all RasPiAutomation 
                 strw.WriteLine("gpio export 5 out");
                 strw.WriteLine("gpio -g write 5 0");
                 strw.WriteLine("gpio export 6 out");
@@ -187,10 +478,8 @@ namespace JokiAutomation
                 strw.WriteLine("gpio -g write 20 0");
                 strw.WriteLine("gpio export 21 out");
                 strw.WriteLine("gpio -g write 21 0");
-                strw.WriteLine("sudo chmod 777 -c -R /dev/ttyUSB0");   // set read write access rights to serial port
-                strw.WriteLine("sudo stty -F /dev/ttyUSB0 9600 raw -echo"); // configure serial port
-                strw.WriteLine("sudo echo -n '(MX*:RES!)' > /dev/ttyUSB0"); // send reset via serial port to audiomix
-                // strw.WriteLine("sudo nice --15 remote-debugging/RasPiAutomation 30 96"); // send reset to audiomix
+                strw.WriteLine("stty -F /dev/ttyUSB0 9600 raw -echo"); // configure serial port
+                strw.WriteLine("echo -n '(MX*:RES!)' > /dev/ttyUSB0"); // send reset via serial port to audiomix
             }
             strw.WriteLine("exit"); // send exit command at the end
 
@@ -225,7 +514,16 @@ namespace JokiAutomation
                 KeyboardInteractiveAuthenticationMethod keybAuth = new KeyboardInteractiveAuthenticationMethod(_rasPiConfig[1]);
                 PasswordAuthenticationMethod pauth = new PasswordAuthenticationMethod(_rasPiConfig[1], _rasPiConfig[2]);
                 keybAuth.AuthenticationPrompt += new EventHandler<Renci.SshNet.Common.AuthenticationPromptEventArgs>(HandleKeyEvent);
-                ConnectionInfo connectionInfo = new ConnectionInfo(_rasPiConfig[0], 22, _rasPiConfig[1], pauth, keybAuth);
+
+                // Load IP address from Network.cfg
+                string ipAddress = GetRaspberryPiIpFromNetwork();
+                if (string.IsNullOrEmpty(ipAddress))
+                {
+                    _rasPiForm._logDat.sendInfoMessage("Error: RaspberryPi_Main IP not found in Network.cfg\n");
+                    return;
+                }
+                ConnectionInfo connectionInfo = new ConnectionInfo(ipAddress, 22, _rasPiConfig[1], pauth, keybAuth);
+                connectionInfo.Timeout = TimeSpan.FromSeconds(30);
 
                 var client = new SftpClient(connectionInfo);
                 _rasPiForm._logDat.sendInfoMessage("upload binary data to Raspberry Pi\n");
@@ -250,7 +548,17 @@ namespace JokiAutomation
                 KeyboardInteractiveAuthenticationMethod keybAuth = new KeyboardInteractiveAuthenticationMethod(_rasPiConfig[1]);
                 PasswordAuthenticationMethod pauth = new PasswordAuthenticationMethod(_rasPiConfig[1], _rasPiConfig[2]);
                 keybAuth.AuthenticationPrompt += new EventHandler<Renci.SshNet.Common.AuthenticationPromptEventArgs>(HandleKeyEvent);
-                ConnectionInfo connectionInfo = new ConnectionInfo(_rasPiConfig[0], 22, _rasPiConfig[1], pauth, keybAuth);
+
+                // Load IP address from Network.cfg if available, otherwise use default from _rasPiConfig
+                // Load IP address from Network.cfg
+                string ipAddress = GetRaspberryPiIpFromNetwork();
+                if (string.IsNullOrEmpty(ipAddress))
+                {
+                    _rasPiForm._logDat.sendInfoMessage("Error: RaspberryPi_Main IP not found in Network.cfg\n");
+                    return data;
+                }
+                ConnectionInfo connectionInfo = new ConnectionInfo(ipAddress, 22, _rasPiConfig[1], pauth, keybAuth);
+                connectionInfo.Timeout = TimeSpan.FromSeconds(30);
                 var client = new SftpClient(connectionInfo);
                 _rasPiForm._logDat.sendInfoMessage("download binary data from Raspberry Pi\n");
                 client.Connect();
@@ -272,12 +580,13 @@ namespace JokiAutomation
         public Thread _RasPiThread = null;
         private static string _commandString = null;
         private static string _idString = null;
-        private Form1 _rasPiForm;
+        private Form1 _rasPiForm;       
+        private static Form1 _staticRasPiForm;      
         private static String[] _threadResultString = new String[5];
-        private string _JokiAutomationPath = Environment.GetEnvironmentVariable("JokiAutomation");
+        private static string _JokiAutomationPath = Environment.GetEnvironmentVariable("JokiAutomation");
         private String m_szFeedback; // hold feedback data
         private Object m_objLock;    // lock object
         private Boolean m_blnDoRead; // boolean value keeping up the read (may be used to interrupt the reading process)
-        static private string[] _rasPiConfig = { "192.168.0.40", "pi", "raspberry", "C:/Program Files/PuTTY/plink" }; // default login data
+        static private string[] _rasPiConfig = { "", "pi", "raspberry", "C:/Program Files/PuTTY/plink" }; // IP loaded from Network.cfg, default login data
     }
 }

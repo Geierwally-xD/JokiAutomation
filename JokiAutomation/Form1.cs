@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Configuration; // ✅ ADD THIS
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -57,6 +58,9 @@ namespace JokiAutomation
         private Dictionary<string, NetworkDevice> _networkDevices;
         private Dictionary<string, DelockSocketAdapter> _delockAdapters;
         private Dictionary<string, string> _userPasswords; // ✅ NEU
+
+        private readonly object _operationLock = new object();
+        private volatile bool _isOperationInProgress = false;
 
         // Network Device Information
         private class NetworkDevice
@@ -215,6 +219,25 @@ namespace JokiAutomation
             _logDat?.sendInfoMessage($"JokiAutomation\nRoku TV konfiguriert für IP: {rokuIP}");
         }
 
+        private bool TryBeginOperation(string operationName)
+        {
+            if (!Monitor.TryEnter(_operationLock, TimeSpan.Zero))
+            {
+                Debug.WriteLine($"⚠ Operation '{operationName}' is locked because other process is running");
+                return false;
+            }
+
+            _isOperationInProgress = true;
+            Debug.WriteLine($"→ Operation '{operationName}' started");
+            return true;
+        }
+
+        private void EndOperation(string operationName)
+        {
+            _isOperationInProgress = false;
+            Debug.WriteLine($"← Operation '{operationName}' finished");
+            Monitor.Exit(_operationLock);
+        }
 
         /// <summary>
         /// Interprets command line arguments and executes corresponding automation commands.
@@ -222,282 +245,315 @@ namespace JokiAutomation
         /// <param name="commands">Command line arguments array</param>
         public void CommandInterpreter(string[] commands)
         {
-            // Validate input
-            if (commands == null || commands.Length < 2)
-            {
-                _logDat?.sendInfoMessage("JokiAutomation\nKeine gültigen Kommandozeilenargumente übergeben.");
+            if (!TryBeginOperation("CommandInterpreter"))
                 return;
-            }
-
-            string cmd = commands[1];
 
             try
             {
-                // Commands requiring 4 parameters
-                if ((cmd == "Pause" || cmd == "BEAMER_VideoClip") && commands.Length < 4)
+
+                // Validate input
+                if (commands == null || commands.Length < 2)
                 {
-                    _logDat?.sendInfoMessage($"JokiAutomation\nKommando '{cmd}' benötigt 2 zusätzliche Parameter.");
+                    _logDat?.sendInfoMessage("JokiAutomation\nKeine gültigen Kommandozeilenargumente übergeben.");
                     return;
                 }
 
-                if (cmd == "PositionControl" && commands.Length < 4)
+                string cmd = commands[1];
+
+                try
                 {
-                    _logDat?.sendInfoMessage("JokiAutomation\nKommando 'PositionControl' benötigt 2 Parameter: Position und Profil.");
-                    return;
-                }
+                    // Commands requiring 4 parameters
+                    if ((cmd == "Pause" || cmd == "BEAMER_VideoClip") && commands.Length < 4)
+                    {
+                        _logDat?.sendInfoMessage($"JokiAutomation\nKommando '{cmd}' benötigt 2 zusätzliche Parameter.");
+                        return;
+                    }
 
-                // Execute command
-                switch (cmd)
-                {
-                    case "Pause":
-                        DisablePictureInPicture();
-                        SwitchATEMInput(ATEMInput.Laptop);
-                        ExecutePauseCommand(commands[2], commands[3]);
-                        break;
+                    if (cmd == "PositionControl" && commands.Length < 4)
+                    {
+                        _logDat?.sendInfoMessage("JokiAutomation\nKommando 'PositionControl' benötigt 2 Parameter: Position und Profil.");
+                        return;
+                    }
 
-                    case "Timer":
-                        if (commands.Length < 3)
-                        {
-                            _logDat?.sendInfoMessage("JokiAutomation\nKommando 'Timer' benötigt einen Zeit-Parameter.");
-                            return;
-                        }
-                        DisablePictureInPicture();
-                        SwitchATEMInput(ATEMInput.Laptop);
-                        ExecuteTimerCommand(commands[2]);
-                        break;
-
-                    case "Band":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PPP_VIEW);
-                        DisablePictureInPicture();
-                        SwitchATEMInput(ATEMInput.Laptop);
-                        break;
-
-                    case "Text":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_TEXT_VIEW);
-                        DisablePictureInPicture();
-                        SwitchATEMInput(ATEMInput.Laptop);
-                        break;
-
-                    case "GoPro":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_GOPRO_VIEW);
-                        DisablePictureInPicture();
-                        SwitchATEMInput(ATEMInput.GoPro);
-                        break;
-
-                    case "Altar":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_POSCAM_VIEW);
-                        DisablePictureInPicture();
-                        SwitchATEMInput(ATEMInput.CamcorderMain);
-                        break;
-
-                    case "Predigt":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PREACHER_VIEW);
-                        DisablePictureInPicture();
-                        SwitchATEMInput(ATEMInput.CamcorderPreacher);
-                        break;
-
-                    case "Gebet":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PRAYER_VIEW);
-                        SwitchATEMInput(ATEMInput.Laptop);
-                        Thread.Sleep(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
-                        EnablePictureInPicture();
-                        break;
-
-                    case "LesungMulti":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_READER_VIEW);
-                        SwitchATEMInput(ATEMInput.Laptop);
-                        Thread.Sleep(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
-                        EnablePictureInPicture();
-                        break;
-
-                    case "BandMulti":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SONG_VIEW);
-                        SwitchATEMInput(ATEMInput.Laptop);
-                        Thread.Sleep(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
-                        EnablePictureInPicture();
-                        break;
-
-                    case "BEAMER_LiveVideo":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_LIVE_VIDEO);
-                        DisablePictureInPicture();
-                        SwitchATEMInput(ATEMInput.Laptop);
-                        break;
-
-                    case "BEAMER_LiveStream":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_TOGGLE);
-                        break;
-
-                    case "BEAMER_VideoClip":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_ANALOG);
-                        SwitchATEMInput(ATEMInput.Laptop);
-                        ExecutePauseCommand(commands[2], commands[3]);
-                        break;
-
-                    case "BEAMER_Mute":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_MUTE);
-                        break;
-
-                    case "BEAMER_ON":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_ON);
-                        break;
-
-                    case "Backup_Start":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_START_BACKUP);
-                        break;
-
-                    case "Backup_Stop":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_STOP_BACKUP);
-                        break;
-
-                    case "Backup_Switch":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SWITCH_BACKUP);
-                        break;
-
-                    case "Ausschaltsequenz":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SHUTDOWN);
-                        break;
-
-                    case "RasPi_Reset":
-                        _audioMix?._rasPi?.rasPiStop();
-                        break;
-
-                    case "PositionControl":
-                        // Auswerten des ersten Buchstabens von commands[3] für ATEM-Steuerung
-                        if (commands.Length >= 4 && !string.IsNullOrEmpty(commands[3]))
-                        {
-                            char firstChar = char.ToUpper(commands[3][0]);
+                    // Execute command
+                    switch (cmd)
+                    {
+                        case "Pause":
                             DisablePictureInPicture();
+                            SwitchATEMInput(ATEMInput.Laptop);
+                            ExecutePauseCommand(commands[2], commands[3]);
+                            break;
 
-                            _logDat?.sendInfoMessage($"JokiAutomation\nPositionControl: Position={commands[2]}, Profil={commands[3]}, Modus={firstChar}");
-
-                            switch (firstChar)
+                        case "Timer":
+                            if (commands.Length < 3)
                             {
-                                case 'A':  // Altar = Camcorder Main
-                                    SwitchATEMInput(ATEMInput.CamcorderMain);
-                                    break;
-
-                                case 'G':  // GoPro = GoPro Actionkamera
-                                    SwitchATEMInput(ATEMInput.GoPro);
-                                    break;
-
-                                case 'K':  // Kanzel = Camcorder Preacher
-                                    SwitchATEMInput(ATEMInput.CamcorderPreacher);
-                                    break;
-
-                                case 'L':  // Laptop = Laptop/Computer
-                                    SwitchATEMInput(ATEMInput.Laptop);
-                                    break;
-
-                                default:
-                                    _logDat?.sendInfoMessage($"JokiAutomation\nUnbekannter Profil-Typ: {firstChar}, PiP wird deaktiviert");
-                                    DisablePictureInPicture();
-                                    break;
+                                _logDat?.sendInfoMessage("JokiAutomation\nKommando 'Timer' benötigt einen Zeit-Parameter.");
+                                return;
                             }
-                        }
-                        else
-                        {
-                            _logDat?.sendInfoMessage("JokiAutomation\nKeine Profil-Information vorhanden");
                             DisablePictureInPicture();
-                        }
+                            SwitchATEMInput(ATEMInput.Laptop);
+                            ExecuteTimerCommand(commands[2]);
+                            break;
 
-                        _positionControl?.sequence(commands[2], commands[3]);
-                        SwitchATEMInput(ATEMInput.CamcorderMain);
-                        break;
+                        case "Band":
+                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PPP_VIEW);
+                            DisablePictureInPicture();
+                            SwitchATEMInput(ATEMInput.Laptop);
+                            break;
 
-                    case "AutoZoom":
-                        _autoZoom?.openDialog(this);
-                        break;
+                        case "Text":
+                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_TEXT_VIEW);
+                            DisablePictureInPicture();
+                            SwitchATEMInput(ATEMInput.Laptop);
+                            break;
 
-                    case "ZoomReferenz":
-                        moveZoomReference();
-                        break;
+                        case "GoPro":
+                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_GOPRO_VIEW);
+                            DisablePictureInPicture();
+                            SwitchATEMInput(ATEMInput.GoPro);
+                            break;
 
-                    case "ATEM_Init":
-                        InitializeATEMToDefault();
-                        break;
+                        case "Altar":
+                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_POSCAM_VIEW);
+                            DisablePictureInPicture();
+                            SwitchATEMInput(ATEMInput.CamcorderMain);
+                            break;
 
-                    case "ATEM_MIC1_On":
-                        SetATEMMicrophone(1, true);
-                        break;
+                        case "Predigt":
+                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PREACHER_VIEW);
+                            DisablePictureInPicture();
+                            SwitchATEMInput(ATEMInput.CamcorderPreacher);
+                            break;
 
-                    case "ATEM_MIC1_Off":
-                        SetATEMMicrophone(1, false);
-                        break;
+                        case "Gebet":
+                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PRAYER_VIEW);
+                            SwitchATEMInput(ATEMInput.Laptop);
+                            Thread.Sleep(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
+                            EnablePictureInPicture();
+                            break;
 
-                    case "ATEM_MIC2_On":
-                        SetATEMMicrophone(2, true);
-                        break;
+                        case "LesungMulti":
+                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_READER_VIEW);
+                            SwitchATEMInput(ATEMInput.Laptop);
+                            Thread.Sleep(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
+                            EnablePictureInPicture();
+                            break;
 
-                    case "ATEM_MIC2_Off":
-                        SetATEMMicrophone(2, false);
-                        break;
+                        case "BandMulti":
+                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SONG_VIEW);
+                            SwitchATEMInput(ATEMInput.Laptop);
+                            Thread.Sleep(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
+                            EnablePictureInPicture();
+                            break;
 
-                    case "ROKU_TVon":
-                        {
-                            DelockSocketAdapter hdmiDelockTransmitSupply = GetDelockAdapter("HDMI_Extender_Transmitter");
-                            DelockSocketAdapter hdmiDelockTVReceiverSupply = GetDelockAdapter("HDMI_Extender_TV_Receiver");
-                            if (hdmiDelockTransmitSupply != null)
+                        case "BEAMER_LiveVideo":
+                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_LIVE_VIDEO);
+                            DisablePictureInPicture();
+                            SwitchATEMInput(ATEMInput.Laptop);
+                            break;
+
+                        case "BEAMER_LiveStream":
+                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_TOGGLE);
+                            break;
+
+                        case "BEAMER_VideoClip":
+                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_ANALOG);
+                            SwitchATEMInput(ATEMInput.Laptop);
+                            ExecutePauseCommand(commands[2], commands[3]);
+                            break;
+
+                        case "BEAMER_Mute":
+                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_MUTE);
+                            break;
+
+                        case "BEAMER_ON":
+                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_ON);
+                            break;
+
+                        case "Backup_Start":
+                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_START_BACKUP);
+                            break;
+
+                        case "Backup_Stop":
+                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_STOP_BACKUP);
+                            break;
+
+                        case "Backup_Switch":
+                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SWITCH_BACKUP);
+                            break;
+
+                        case "Ausschaltsequenz":
+                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SHUTDOWN);
+                            break;
+
+                        case "RasPi_Reset":
+                            _audioMix?._rasPi?.rasPiStop();
+                            break;
+
+                        case "PositionControl":
+                            // Auswerten des ersten Buchstabens von commands[3] für ATEM-Steuerung
+                            if (commands.Length >= 4 && !string.IsNullOrEmpty(commands[3]))
                             {
-                                hdmiDelockTransmitSupply.TurnOnSocket(1);
-                                _logDat?.sendInfoMessage("JokiAutomation\nRoku HDMI Extender TV Receiver Steckdose eingeschaltet.");
+                                char firstChar = char.ToUpper(commands[3][0]);
+                                DisablePictureInPicture();
+
+                                _logDat?.sendInfoMessage($"JokiAutomation\nPositionControl: Position={commands[2]}, Profil={commands[3]}, Modus={firstChar}");
+
+                                switch (firstChar)
+                                {
+                                    case 'A':  // Altar = Camcorder Main
+                                        SwitchATEMInput(ATEMInput.CamcorderMain);
+                                        break;
+
+                                    case 'G':  // GoPro = GoPro Actionkamera
+                                        SwitchATEMInput(ATEMInput.GoPro);
+                                        break;
+
+                                    case 'K':  // Kanzel = Camcorder Preacher
+                                        SwitchATEMInput(ATEMInput.CamcorderPreacher);
+                                        break;
+
+                                    case 'L':  // Laptop = Laptop/Computer
+                                        SwitchATEMInput(ATEMInput.Laptop);
+                                        break;
+
+                                    default:
+                                        _logDat?.sendInfoMessage($"JokiAutomation\nUnbekannter Profil-Typ: {firstChar}, PiP wird deaktiviert");
+                                        DisablePictureInPicture();
+                                        break;
+                                }
+                            }
+                            else
+                            {
+                                _logDat?.sendInfoMessage("JokiAutomation\nKeine Profil-Information vorhanden");
+                                DisablePictureInPicture();
                             }
 
-                            Thread.Sleep(1000);
+                            // Warte bis Position Control fertig ist (max. 80 Sekunden)
+                            int maxWaitMs = 80000;
+                            int waitIntervalMs = 100;
+                            int elapsedMs = 0;
 
-                            if (hdmiDelockTVReceiverSupply != null)
+                            _positionControl?.sequence(commands[2], commands[3]);
+                            while (_positionControl != null && _positionControl.IsMoving() && elapsedMs < maxWaitMs)
                             {
-                                hdmiDelockTVReceiverSupply.TurnOnSocket(1);
-                                _logDat?.sendInfoMessage("JokiAutomation\nRoku HDMI Extender TV Receiver Steckdose eingeschaltet.");
+                                Thread.Sleep(waitIntervalMs);
+                                elapsedMs += waitIntervalMs;
+                                Application.DoEvents(); // UI responsive halten
                             }
 
-                            Thread.Sleep(1000);
-
-                            if (_rokuTV != null)
+                            if (elapsedMs >= maxWaitMs)
                             {
-                                _rokuTV.PowerOn();
+                                _logDat?.sendInfoMessage("JokiAutomation\nWARNUNG: Position Control Timeout nach 15s");
+                            }
+                            else
+                            {
+                                _logDat?.sendInfoMessage($"JokiAutomation\nPosition Control abgeschlossen nach {elapsedMs}ms");
+                            }
+
+                            SwitchATEMInput(ATEMInput.CamcorderMain);
+                            break;
+
+                        case "AutoZoom":
+                            _autoZoom?.openDialog(this);
+                            break;
+
+                        case "ZoomReferenz":
+                            moveZoomReference();
+                            break;
+
+                        case "ATEM_Init":
+                            InitializeATEMToDefault();
+                            break;
+
+                        case "ATEM_MIC1_On":
+                            SetATEMMicrophone(1, true);
+                            break;
+
+                        case "ATEM_MIC1_Off":
+                            SetATEMMicrophone(1, false);
+                            break;
+
+                        case "ATEM_MIC2_On":
+                            SetATEMMicrophone(2, true);
+                            break;
+
+                        case "ATEM_MIC2_Off":
+                            SetATEMMicrophone(2, false);
+                            break;
+
+                        case "ROKU_TVon":
+                            {
+                                DelockSocketAdapter hdmiDelockTransmitSupply = GetDelockAdapter("HDMI_Extender_Transmitter");
+                                DelockSocketAdapter hdmiDelockTVReceiverSupply = GetDelockAdapter("HDMI_Extender_TV_Receiver");
+                                if (hdmiDelockTransmitSupply != null)
+                                {
+                                    hdmiDelockTransmitSupply.TurnOnSocket(1);
+                                    _logDat?.sendInfoMessage("JokiAutomation\nRoku HDMI Extender TV Receiver Steckdose eingeschaltet.");
+                                }
+
                                 Thread.Sleep(1000);
-                                _rokuTV.SwitchToHDMI2();
-                                _logDat?.sendInfoMessage("JokiAutomation\nRoku TV eingeschaltet.");
-                            }
-                        }
-                        break;
 
-                    case "ROKU_TVoff":
-                        {
-                            DelockSocketAdapter hdmiDelockTransmitSupply = GetDelockAdapter("HDMI_Extender_Transmitter");
-                            DelockSocketAdapter hdmiDelockTVReceiverSupply = GetDelockAdapter("HDMI_Extender_TV_Receiver");
-                            if (_rokuTV != null)
+                                if (hdmiDelockTVReceiverSupply != null)
+                                {
+                                    hdmiDelockTVReceiverSupply.TurnOnSocket(1);
+                                    _logDat?.sendInfoMessage("JokiAutomation\nRoku HDMI Extender TV Receiver Steckdose eingeschaltet.");
+                                }
+
+                                Thread.Sleep(1000);
+
+                                if (_rokuTV != null)
+                                {
+                                    _rokuTV.PowerOn();
+                                    Thread.Sleep(1000);
+                                    _rokuTV.SwitchToHDMI2();
+                                    _logDat?.sendInfoMessage("JokiAutomation\nRoku TV eingeschaltet.");
+                                }
+                            }
+                            break;
+
+                        case "ROKU_TVoff":
                             {
-                                _rokuTV.PowerOff();
-                                _logDat?.sendInfoMessage("JokiAutomation\nRoku TV ausgeschaltet.");
+                                DelockSocketAdapter hdmiDelockTransmitSupply = GetDelockAdapter("HDMI_Extender_Transmitter");
+                                DelockSocketAdapter hdmiDelockTVReceiverSupply = GetDelockAdapter("HDMI_Extender_TV_Receiver");
+                                if (_rokuTV != null)
+                                {
+                                    _rokuTV.PowerOff();
+                                    _logDat?.sendInfoMessage("JokiAutomation\nRoku TV ausgeschaltet.");
+                                }
+
+                                Thread.Sleep(1000);
+
+                                if (hdmiDelockTVReceiverSupply != null)
+                                {
+                                    hdmiDelockTVReceiverSupply.TurnOffSocket(1);
+                                    _logDat?.sendInfoMessage("JokiAutomation\nRoku HDMI Extender TV Receiver Steckdose ausgeschaltet.");
+                                }
+
+                                Thread.Sleep(1000);
+
+                                if (hdmiDelockTransmitSupply != null)
+                                {
+                                    hdmiDelockTransmitSupply.TurnOffSocket(1);
+                                    _logDat?.sendInfoMessage("JokiAutomation\nRoku HDMI Extender TV Receiver Steckdose ausgeschaltet.");
+                                }
                             }
+                            break;
 
-                            Thread.Sleep(1000);
-
-                            if (hdmiDelockTVReceiverSupply != null)
-                            {
-                                hdmiDelockTVReceiverSupply.TurnOffSocket(1);
-                                _logDat?.sendInfoMessage("JokiAutomation\nRoku HDMI Extender TV Receiver Steckdose ausgeschaltet.");
-                            }
-
-                            Thread.Sleep(1000);
-
-                            if (hdmiDelockTransmitSupply != null)
-                            {
-                                hdmiDelockTransmitSupply.TurnOffSocket(1);
-                                _logDat?.sendInfoMessage("JokiAutomation\nRoku HDMI Extender TV Receiver Steckdose ausgeschaltet.");
-                            }
-                        }
-                        break;
-
-                    default:
-                        _logDat?.sendInfoMessage($"JokiAutomation\nUnbekanntes Kommando: '{cmd}'");
-                        break;
+                        default:
+                            _logDat?.sendInfoMessage($"JokiAutomation\nUnbekanntes Kommando: '{cmd}'");
+                            break;
+                    }
+                }
+                finally
+                {
+                    EndOperation("CommandInterpreter");
                 }
             }
             catch (Exception ex)
             {
-                _logDat?.sendInfoMessage($"JokiAutomation\nFehler beim Ausführen des Kommandos '{cmd}':\n{ex.Message}");
+                string failedCmd = (commands != null && commands.Length > 1) ? commands[1] : "<unbekannt>";
+                _logDat?.sendInfoMessage($"JokiAutomation\nFehler beim Ausführen des Kommandos '{failedCmd}':\n{ex.Message}");
             }
         }
 
@@ -1319,23 +1375,31 @@ namespace JokiAutomation
 
         // Add this method to your Form1 class
 
-        private void button6_Click(object sender, EventArgs e)
-        {
-            // TODO: Implement the logic for resetting the audiomix as needed.
-            // For now, you can leave it empty or add a comment.
-        }
 
+        // buttonhandler init Audiocontrol  enables activated audiochannels and sets volume to maximum  
         private void button5_Click(object sender, EventArgs e)
         {
-            // TODO: Implement the logic for the "Init" button in groupBox1 (Audiomix/Eingangssignale)
-            // For now, just show a message box as a placeholder.
-            MessageBox.Show("Init button clicked.");
+            int commandID = AudioMix.AM_ACTIVE;
+            for (int i = 0; i < 4; i++) // add active channels to ID
+            {
+                if (_audioMix.channelActive_[i] == true)
+                {
+                    commandID += 1 << i;
+                }
+            }
+            _audioMix.executeAudio(commandID);
+        }
+
+        // buttonhandler reset Audiocontrol resets volume, fader and mutes all audio channels
+        private void button6_Click(object sender, EventArgs e)
+        {
+            _audioMix.executeAudio(AudioMix.AM_AUDIO_RESET);
         }
 
         private void moveCamPos_Click(object sender, EventArgs e)
         {
-            // TODO: Implement the logic for moving the camera position.
-            // For now, you can leave it empty or add your intended functionality here.
+            _requestedFunction = 0;
+            _positionControl.moveToPos(listBoxCamPosControl.SelectedIndex);
         }
 
         /// <summary>
@@ -1438,7 +1502,7 @@ namespace JokiAutomation
 
             try
             {
-                ATEMControl.VideoSource source = (ATEMControl.VideoSource)((int)input - 1);
+                ATEMControl.VideoSource source = (ATEMControl.VideoSource)((int)input);
                 _atemControl.TransitionToProgramInput(source);
 
                 string sourceName = GetATEMInputName(input);

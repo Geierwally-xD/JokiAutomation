@@ -236,6 +236,21 @@ namespace JokiAutomation
         }
 
         /// <summary>
+        /// Indicates whether camera positioning movement is currently in progress
+        /// </summary>
+        /// <returns>True if camera is moving, false if idle</returns>
+        public bool IsMoving()
+        {
+            // Check if RasPi thread exists and is still alive
+            if (_rasPi?._RasPiThread != null && _rasPi._RasPiThread.IsAlive)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Release unmanaged resources and optionally release managed resources
         /// </summary>
         /// <param name="disposing">True to release both managed and unmanaged resources; false to release only unmanaged resources</param>

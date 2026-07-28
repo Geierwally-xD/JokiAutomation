@@ -9,6 +9,8 @@ namespace JokiAutomation
 {
     internal class ATEMControl : IDisposable
     {
+        private const int MAKRO_INIT = 0;
+        private const int MAKRO_SHUT_DOWN = 1;
         private IBMDSwitcher _switcher;
         private IBMDSwitcherMixEffectBlock _mixEffectBlock;
         private bool _isConnected;
@@ -304,16 +306,38 @@ namespace JokiAutomation
             SetDownstreamKeyerOnAir(0, false);
             Thread.Sleep(1000);
 
-            // ✅ Verwende weichen Übergang statt hartem Cut
-            TransitionToProgramInput(VideoSource.Input3);
-            Thread.Sleep(1000);
+            uint macroToRun = MAKRO_INIT;              // first Makro (Index)
 
-            Thread.Sleep(1000);
+            RunMacro(_switcher, macroToRun);  
+            Console.WriteLine($"Makro {macroToRun} gestartet.");
 
             Debug.WriteLine("✓ ATEM Video-Initialisierung abgeschlossen");
             Debug.WriteLine("ℹ Audio wurde beim Connect() konfiguriert (MIC 1=ON, MIC 2=OFF)");
             Debug.WriteLine("=== ATEM Initialisierung ENDE ===");
         }
+
+
+        public static uint GetMacroCount(IBMDSwitcher switcher)
+        {
+            // Makropool ist am Switcher-Objekt verfügbar
+            var macroPool = (IBMDSwitcherMacroPool)switcher;
+            macroPool.GetMaxCount(out uint maxCount);
+            return maxCount;
+        }
+
+        public static string GetMacroDescription(IBMDSwitcher switcher, uint index)
+        {
+            var macroPool = (IBMDSwitcherMacroPool)switcher;
+            macroPool.GetDescription(index, out string description);
+            return description;
+        }
+
+        public static void RunMacro(IBMDSwitcher switcher, uint index)
+        {
+            var macroControl = (IBMDSwitcherMacroControl)switcher;
+            macroControl.Run(index);
+        }
+
 
         public void SetAudioMixerInput(ushort audioSource, bool enable)
         {

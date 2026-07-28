@@ -115,5 +115,3 @@ F:\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\obj\Debug\JokiAuto.69
 F:\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.exe
 F:\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.pdb
 I:\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\bin\Debug\Network.cfg
-I:\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\obj\Debug\Interop.BMDSwitcherAPI.dll
-I:\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\obj\Debug\JokiAutomation.csproj.ResolveComReference.cache
