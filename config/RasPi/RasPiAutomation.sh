@@ -1,6 +1,6 @@
 #!/bin/bash
 
-APP="JokiAutomation/RasPiAutomation"
+APP="/home/pi/JokiAutomation/RasPiAutomation"
 
 init_gpio()
 {
@@ -34,7 +34,7 @@ case "$1" in
     pkill -9 RasPiAutomation
     ;;
 
-10|11|20|21|30|31|40|41|42|43|44|52)
+10|11|20|21|30|31|40|41|42|43|44|50|52|60|61|62|63)
     start_app "$1" "$2"
     ;;
 
@@ -48,7 +48,7 @@ case "$1" in
 
 *)
     echo "Invalid parameter!"
-    echo "Valid values: 0, 00, 10, 11, 20, 21, 30, 31, 40, 41, 42, 43, 44, 50, 52"
+    echo "Valid values: 0, 00, 10, 11, 20, 21, 30, 31, 40, 41, 42, 43, 44, 50, 52, 60, 61, 62, 63"
     exit 1
     ;;
 

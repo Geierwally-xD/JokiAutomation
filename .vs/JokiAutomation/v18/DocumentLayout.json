@@ -3,20 +3,26 @@
   "WorkspaceRootPath": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|i:\\mygitrepos\\jokiautomation\\jokiautomation\\jokiautomation\\raspi.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\raspi.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{8B5E5B5E-8B5E-4B5E-8B5E-8B5E5B5E8B5E}|CanonRemoteControl\\CanonRemoteControl.csproj|i:\\mygitrepos\\jokiautomation\\jokiautomation\\canonremotecontrol\\app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8B5E5B5E-8B5E-4B5E-8B5E-8B5E5B5E8B5E}|CanonRemoteControl\\CanonRemoteControl.csproj|solutionrelative:canonremotecontrol\\app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\jokiautomation\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|i:\\mygitrepos\\jokiautomation\\jokiautomation\\jokiautomation\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\jokiautomation\\autozoomcontrol.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\autozoomcontrol.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{00000000-0000-0000-0000-000000000000}|\u003CSolution\u003E|JokiAutomation||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\jokiautomation\\delocksocketadapter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\delocksocketadapter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\jokiautomation\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|i:\\mygitrepos\\jokiautomation\\jokiautomation\\jokiautomation\\network.cfg||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\network.cfg||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|i:\\mygitrepos\\jokiautomation\\jokiautomation\\jokiautomation\\||{B270807C-D8C6-49EB-8EBE-8E8D566637A1}|6185191f-1008-4fb2-a715-3a4e4f27e610"
     }
   ],
   "DocumentGroupContainers": [
@@ -55,14 +61,52 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "RasPi.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\RasPi.cs",
-              "RelativeDocumentMoniker": "JokiAutomation\\RasPi.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\RasPi.cs",
-              "RelativeToolTip": "JokiAutomation\\RasPi.cs",
-              "ViewState": "AgIAAJkAAAAAAAAAAAAhwAAAAAAAAAAAAAAAAA==",
+              "Title": "App.xaml.cs",
+              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\App.xaml.cs",
+              "RelativeDocumentMoniker": "CanonRemoteControl\\App.xaml.cs",
+              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\App.xaml.cs",
+              "RelativeToolTip": "CanonRemoteControl\\App.xaml.cs",
+              "ViewState": "AgIAABkAAAAAAAAAAAAQwAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-07-26T17:24:31.569Z",
+              "WhenOpened": "2026-08-02T12:24:36.541Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Network.cfg",
+              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Network.cfg",
+              "RelativeDocumentMoniker": "JokiAutomation\\Network.cfg",
+              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Network.cfg",
+              "RelativeToolTip": "JokiAutomation\\Network.cfg",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-08-02T11:05:07.078Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Form1.cs",
+              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.cs",
+              "RelativeDocumentMoniker": "JokiAutomation\\Form1.cs",
+              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.cs",
+              "RelativeToolTip": "JokiAutomation\\Form1.cs",
+              "ViewState": "AgIAAGsBAAAAAAAAAAAuwIABAAAcAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-01T14:49:03.245Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "JokiAutomation",
+              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\JokiAutomation.csproj",
+              "RelativeDocumentMoniker": "JokiAutomation\\JokiAutomation.csproj",
+              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\JokiAutomation.csproj",
+              "RelativeToolTip": "JokiAutomation\\JokiAutomation.csproj",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-08-01T14:36:50.699Z",
               "EditorCaption": ""
             },
             {
@@ -73,33 +117,10 @@
               "RelativeDocumentMoniker": "JokiAutomation\\Program.cs",
               "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Program.cs",
               "RelativeToolTip": "JokiAutomation\\Program.cs",
-              "ViewState": "AgIAAKUAAAAAAAAAAAAkwLcAAAAnAAAAAAAAAA==",
+              "ViewState": "AgIAAAsAAAAAAAAAAAAAALcAAAAnAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-15T12:38:43.19Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "AutoZoomControl.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\AutoZoomControl.cs",
-              "RelativeDocumentMoniker": "JokiAutomation\\AutoZoomControl.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\AutoZoomControl.cs",
-              "RelativeToolTip": "JokiAutomation\\AutoZoomControl.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-31T18:13:47.51Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "DelockSocketAdapter.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\DelockSocketAdapter.cs",
-              "RelativeDocumentMoniker": "JokiAutomation\\DelockSocketAdapter.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\DelockSocketAdapter.cs",
-              "RelativeToolTip": "JokiAutomation\\DelockSocketAdapter.cs",
-              "ViewState": "AgIAABQBAAAAAAAAAAAAAA4AAAASAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-31T16:43:21.619Z"
+              "WhenOpened": "2026-02-15T12:38:43.19Z",
+              "EditorCaption": ""
             }
           ]
         }

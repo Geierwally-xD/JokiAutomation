@@ -200,6 +200,12 @@
   <ItemGroup>
     <Content Include="JokiAutomation.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CanonRemoteControl\CanonRemoteControl.csproj">
+      <Project>{8B5E5B5E-8B5E-4B5E-8B5E-8B5E5B5E8B5E}</Project>
+      <Name>CanonRemoteControl</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\System.ValueTuple.4.6.1\build\net471\System.ValueTuple.targets" Condition="Exists('..\packages\System.ValueTuple.4.6.1\build\net471\System.ValueTuple.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

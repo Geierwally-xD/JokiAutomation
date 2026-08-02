@@ -172,20 +172,20 @@ namespace JokiAutomation
                 // müssen wir eine minimale Form-Instanz erstellen
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
-                
+
                 Form1 form = new Form1();
-                
+
                 // Prepare args array: CommandInterpreter in Form1 erwartet args[0] = Programmname, args[1] = Kommando
                 string[] formArgs = new string[args.Length + 1];
                 formArgs[0] = "JokiAutomation.exe"; // Programmname als erstes Argument
                 Array.Copy(args, 0, formArgs, 1, args.Length);
-                
+
                 // Rufe CommandInterpreter aus Form1 auf
                 form.CommandInterpreter(formArgs);
-                
+
                 logData.sendInfoMessage("=== Kommando abgeschlossen ===");
                 logData.sendInfoMessage("=================================================");
-                
+
                 // Dispose Form
                 form.Dispose();
             }
@@ -371,15 +371,15 @@ namespace JokiAutomation
                         
                     case "gopro":
                         logData.sendInfoMessage(">>> Setze Input auf HDMI 1 (GoPro)...");
-                        atem.TransitionToProgramInput(ATEMControl.VideoSource.Input1);
-                        logData.sendInfoMessage(">>> ERFOLG: ATEM auf GoPro (HDMI 1) umgeschaltet");
+                        atem.TransitionToProgramInput(ATEMControl.VideoSource.Input2);
+                        logData.sendInfoMessage(">>> ERFOLG: ATEM auf GoPro (HDMI 2) umgeschaltet");
                         break;
                         
                     case "band":
                     case "text":
                         logData.sendInfoMessage(">>> Setze Input auf HDMI 2 (Laptop)...");
-                        atem.TransitionToProgramInput(ATEMControl.VideoSource.Input2);
-                        logData.sendInfoMessage(">>> ERFOLG: ATEM auf Laptop (HDMI 2) umgeschaltet");
+                        atem.TransitionToProgramInput(ATEMControl.VideoSource.Input1);
+                        logData.sendInfoMessage(">>> ERFOLG: ATEM auf Laptop (HDMI 1) umgeschaltet");
                         break;
                         
                     case "atem_init":

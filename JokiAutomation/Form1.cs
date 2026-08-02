@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CanonRemoteControl;
 
 namespace JokiAutomation
 {
@@ -29,8 +30,8 @@ namespace JokiAutomation
         // ATEM HDMI Input Enum
         public enum ATEMInput
         {
-            GoPro = 1,              // HDMI 1: GoPro Actionkamera
-            Laptop = 2,             // HDMI 2: Laptop/Computer
+            Laptop = 1,             // HDMI 1: Laptop  
+            GoPro = 2,              // HDMI 2: GoPro Actionkamera
             CamcorderMain = 3,      // HDMI 3: Camcorder Schwenkneiger (Hauptkamera)
             CamcorderPreacher = 4   // HDMI 4: Camcorder Empore (Predigtkamera)
         }
@@ -57,7 +58,17 @@ namespace JokiAutomation
         private const string NETWORK_CONFIG_FILE = "Network.cfg";
         private Dictionary<string, NetworkDevice> _networkDevices;
         private Dictionary<string, DelockSocketAdapter> _delockAdapters;
-        private Dictionary<string, string> _userPasswords; // ✅ NEU
+        private Dictionary<string, string> _userPasswords;
+
+        // PTZ Camera Configuration
+        private const string PTZ_MODE_CONFIG_KEY = "PTZ_CAM";
+        private const string CANON_CAMERA_CONFIG_KEY = "CANON_CRN100";
+        private const string PTZ_PRESET_RECALL_PATH_CONFIG_KEY = "PTZ_PRESET_RECALL_PATH";
+        private const string PTZ_PRESET_RECALL_PATHS_CONFIG_KEY = "PTZ_PRESET_RECALL_PATHS";
+        private bool _isPtzCameraMode;
+        private CanonCrn100Controller _canonCrn100Api;
+        private string _ptzPresetRecallPath;
+        private List<string> _ptzPresetRecallFallbackPaths = new List<string>();
 
         private readonly object _operationLock = new object();
         private volatile bool _isOperationInProgress = false;
@@ -88,15 +99,23 @@ namespace JokiAutomation
             _logDat.initLogData(this);
             _infraredControl.InitIR(this);
             _audioMix.initAudio(this);
-            _positionControl.initPC(this);
-            _autoZoom.initAZ(this);
 
             InitializeNetworkConfig();
+            InitializeCanonCrn100();
+
+            // Initialize PositionControl with PTZ mode and Canon API
+            _positionControl.initPC(this, _isPtzCameraMode, _canonCrn100Api);
+
+            _autoZoom.initAZ(this);
             InitializeATEMControl();
             //rvtest InitializeRokuTV();
 
             _Inputtimer.Interval = TIMER_INTERVAL_MS;  // check rich text box each 1000ms
             _Inputtimer.Tick += new System.EventHandler(Inputtimer_Elapsed);
+
+            // Configure UI based on PTZ mode (must be after InitializeComponent)
+            ConfigureUIForPtzMode();
+
             listBox1.SelectedIndex = 0;
             listBox2.SelectedIndex = 0;
             listBox3.SelectedIndex = 0;
@@ -148,6 +167,43 @@ namespace JokiAutomation
                     }
 
                     string deviceName = parts[0].Trim();
+
+                    // PTZ Camera Mode Configuration
+                    if (deviceName.Equals(PTZ_MODE_CONFIG_KEY, StringComparison.OrdinalIgnoreCase))
+                    {
+                        bool enabled;
+                        if (bool.TryParse(parts[1].Trim(), out enabled))
+                        {
+                            _isPtzCameraMode = enabled;
+                            _logDat?.sendInfoMessage($"JokiAutomation\nPTZ_CAM = {_isPtzCameraMode}");
+                        }
+                        continue;
+                    }
+
+                    // PTZ Preset Recall Path Configuration
+                    if (deviceName.Equals(PTZ_PRESET_RECALL_PATH_CONFIG_KEY, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _ptzPresetRecallPath = parts[1].Trim();
+                        _logDat?.sendInfoMessage($"JokiAutomation\nPTZ_PRESET_RECALL_PATH = {_ptzPresetRecallPath}");
+                        continue;
+                    }
+
+                    // PTZ Preset Recall Fallback Paths Configuration
+                    if (deviceName.Equals(PTZ_PRESET_RECALL_PATHS_CONFIG_KEY, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _ptzPresetRecallFallbackPaths.Clear();
+                        string[] templates = parts[1].Split('|');
+                        foreach (string template in templates)
+                        {
+                            string trimmed = template.Trim();
+                            if (!string.IsNullOrWhiteSpace(trimmed))
+                            {
+                                _ptzPresetRecallFallbackPaths.Add(trimmed);
+                            }
+                        }
+                        _logDat?.sendInfoMessage($"JokiAutomation\nPTZ_PRESET_RECALL_PATHS geladen: {_ptzPresetRecallFallbackPaths.Count}");
+                        continue;
+                    }
 
                     // ✅ Check if this is a user credential entry
                     if (deviceName.StartsWith("USER_"))
@@ -243,7 +299,8 @@ namespace JokiAutomation
         /// Interprets command line arguments and executes corresponding automation commands.
         /// </summary>
         /// <param name="commands">Command line arguments array</param>
-        public void CommandInterpreter(string[] commands)
+        public void 
+            CommandInterpreter(string[] commands)
         {
             if (!TryBeginOperation("CommandInterpreter"))
                 return;
@@ -314,6 +371,16 @@ namespace JokiAutomation
                             break;
 
                         case "Altar":
+                            // Kamera-Positionierung abhängig vom Modus:
+                            // PTZ_CAM=true: Canon PTZ bewegt Kamera | PTZ_CAM=false: RasPi Motor bewegt Kamera
+                            // IR-Sequenz wird IMMER über RasPi ausgeführt (Beamer, andere Geräte)
+                            if (_isPtzCameraMode && _canonCrn100Api != null)
+                            {
+                                // Canon PTZ: Bewege Kamera zu Preset "Altar"
+                                Task.Run(async () => await _canonCrn100Api.RecallAltar());
+                                _logDat?.sendInfoMessage("JokiAutomation\nCanon PTZ: Bewege zu Preset 2 (Altar)");
+                            }
+                            // RasPi IR-Sequenz (Beamer-Umschaltung + ggf. Motor-Steuerung im Non-PTZ Modus)
                             _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_POSCAM_VIEW);
                             DisablePictureInPicture();
                             SwitchATEMInput(ATEMInput.CamcorderMain);
@@ -455,11 +522,25 @@ namespace JokiAutomation
                             break;
 
                         case "AutoZoom":
-                            _autoZoom?.openDialog(this);
+                            if (_isPtzCameraMode)
+                            {
+                                _logDat?.sendInfoMessage("JokiAutomation\nAutoZoom nicht verfügbar im PTZ-Modus (Canon Zoom über Kamera steuern)");
+                            }
+                            else
+                            {
+                                _autoZoom?.openDialog(this);
+                            }
                             break;
 
                         case "ZoomReferenz":
-                            moveZoomReference();
+                            if (_isPtzCameraMode)
+                            {
+                                _logDat?.sendInfoMessage("JokiAutomation\nZoomReferenz nicht verfügbar im PTZ-Modus");
+                            }
+                            else
+                            {
+                                moveZoomReference();
+                            }
                             break;
 
                         case "ATEM_Init":
@@ -1403,6 +1484,33 @@ namespace JokiAutomation
         }
 
         /// <summary>
+        /// Initializes Canon CR-N100 PTZ camera if PTZ_CAM mode is enabled
+        /// Note: Raspberry Pi is ALWAYS active for IR/Audio control regardless of this setting
+        /// </summary>
+        private void InitializeCanonCrn100()
+        {
+            if (!_isPtzCameraMode)
+            {
+                _logDat?.sendInfoMessage("JokiAutomation\nPTZ_CAM = false, Kamera-Positionierung via RasPi Motor");
+                return;
+            }
+
+            if (!_networkDevices.ContainsKey(CANON_CAMERA_CONFIG_KEY))
+            {
+                _logDat?.sendInfoMessage($"JokiAutomation\nPTZ_CAM aktiv, aber {CANON_CAMERA_CONFIG_KEY} fehlt in Network.cfg");
+                return;
+            }
+
+            NetworkDevice camera = _networkDevices[CANON_CAMERA_CONFIG_KEY];
+            _canonCrn100Api = new CanonCrn100Controller(
+                camera.IPAddress,
+                camera.Username ?? "admin",
+                camera.Password ?? "");
+
+            _logDat?.sendInfoMessage($"JokiAutomation\nCanon CR-N100 initialisiert: {camera.IPAddress}:{camera.Port} (Kamera-Positionierung via PTZ)");
+        }
+
+        /// <summary>
         /// Initializes the ATEM Mini Pro control connection
         /// </summary>
         private void InitializeATEMControl()
@@ -1432,6 +1540,37 @@ namespace JokiAutomation
             {
                 _logDat?.sendInfoMessage($"JokiAutomation\nATEM Verbindungsfehler: {ex.Message}");
                 _atemControl = null;
+            }
+        }
+
+        /// <summary>
+        /// Configure UI elements based on PTZ camera mode
+        /// Disables teach tabs when using Canon PTZ camera (presets configured via camera interface)
+        /// Note: Raspberry Pi remains active in both modes for IR/Audio control
+        /// </summary>
+        private void ConfigureUIForPtzMode()
+        {
+            if (_isPtzCameraMode)
+            {
+                // Disable Position Control and AutoZoom Config tabs in PTZ mode
+                // Canon PTZ presets must be configured via camera interface
+                if (TabControl1.TabPages.Contains(TabControl1.TabPages[TAB_INDEX_POSITION_CONTROL]))
+                {
+                    TabControl1.TabPages[TAB_INDEX_POSITION_CONTROL].Enabled = false;
+                    TabControl1.TabPages[TAB_INDEX_POSITION_CONTROL].Text += " (PTZ: deaktiviert)";
+                }
+
+                if (TabControl1.TabPages.Contains(TabControl1.TabPages[TAB_INDEX_AUTOZOOM_CONFIG]))
+                {
+                    TabControl1.TabPages[TAB_INDEX_AUTOZOOM_CONFIG].Enabled = false;
+                    TabControl1.TabPages[TAB_INDEX_AUTOZOOM_CONFIG].Text += " (PTZ: deaktiviert)";
+                }
+
+                _logDat?.sendInfoMessage("JokiAutomation\nUI: Teach-Tabs deaktiviert (PTZ-Modus), RasPi IR/Audio aktiv");
+            }
+            else
+            {
+                _logDat?.sendInfoMessage("JokiAutomation\nUI: Alle Tabs aktiv (RasPi Motor-Modus), RasPi IR/Audio aktiv");
             }
         }
 

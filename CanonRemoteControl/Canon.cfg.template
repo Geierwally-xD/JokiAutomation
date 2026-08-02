@@ -1,0 +1,15 @@
+# Canon CRN-100 Konfiguration
+# Beispiel: Bitte anpassen an Ihre Umgebung
+
+# IP-Adresse der Canon CRN-100
+CANON_IP=192.168.1.100
+
+# Optional: Benutzername und Passwort (falls die Kamera geschützt ist)
+CANON_USER=admin
+CANON_PASSWORD=
+
+# Preset-Zuordnung (1-100)
+PRESET_TAUFSTEIN=1
+PRESET_ALTAR=2
+PRESET_KANZEL=3
+PRESET_ORGEL=4
