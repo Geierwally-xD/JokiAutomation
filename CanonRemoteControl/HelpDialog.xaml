@@ -1,71 +1,103 @@
 <Window x:Class="CanonRemoteControl.HelpDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Tastaturkuerzel" 
-        Height="650" 
+        Title="&#220;ber JoKi Automation" 
+        Height="620" 
         Width="650"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        SizeToContent="Height">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <ScrollViewer Grid.Row="0" Margin="20">
+        <!-- Header: JoKi Automation + Version -->
+        <Border Grid.Row="0" 
+                Background="#FF2196F3" 
+                Padding="20,25">
             <StackPanel>
-                <TextBlock Text="Canon CRN-100 Tastaturkuerzel" 
-                           FontSize="18" 
+                <TextBlock Text="JoKi Automation" 
+                           FontSize="28" 
                            FontWeight="Bold" 
-                           Margin="0,0,0,20"/>
-
-                <TextBlock Text="Kamerabewegung (Pan/Tilt)" 
+                           Foreground="White"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,8"/>
+                <TextBlock x:Name="VersionTextBlock"
+                           Text="Version wird geladen..." 
                            FontSize="14" 
-                           FontWeight="Bold" 
-                           Margin="0,0,0,10"/>
-                <TextBlock Text="Ctrl+Shift+Oben - Kamera nach oben" Margin="0,0,0,5"/>
-                <TextBlock Text="Ctrl+Shift+Unten - Kamera nach unten" Margin="0,0,0,5"/>
-                <TextBlock Text="Ctrl+Shift+Links - Kamera nach links" Margin="0,0,0,5"/>
-                <TextBlock Text="Ctrl+Shift+Rechts - Kamera nach rechts" Margin="0,0,0,15"/>
-
-                <TextBlock Text="Zoom" 
-                           FontSize="14" 
-                           FontWeight="Bold" 
-                           Margin="0,0,0,10"/>
-                <TextBlock Text="Ctrl+Shift++ - Zoom hinein" Margin="0,0,0,5"/>
-                <TextBlock Text="Ctrl+Shift+- - Zoom heraus" Margin="0,0,0,15"/>
-
-                <TextBlock Text="Preset-Positionen" 
-                           FontSize="14" 
-                           FontWeight="Bold" 
-                           Margin="0,0,0,10"/>
-                <TextBlock Text="Ctrl+Shift+T - Taufsteinposition" Margin="0,0,0,5"/>
-                <TextBlock Text="Ctrl+Shift+A - Altarposition" Margin="0,0,0,5"/>
-                <TextBlock Text="Ctrl+Shift+K - Kanzelposition" Margin="0,0,0,5"/>
-                <TextBlock Text="Ctrl+Shift+O - Orgelposition" Margin="0,0,0,15"/>
-
-                <TextBlock Text="Live-Tracking" 
-                           FontSize="14" 
-                           FontWeight="Bold" 
-                           Margin="0,0,0,10"/>
-                <TextBlock Text="Ctrl+Shift+E - Live-Track Einzelperson ein" Margin="0,0,0,5"/>
-                <TextBlock Text="Ctrl+Shift+G - Live-Track Gruppe ein" Margin="0,0,0,5"/>
-                <TextBlock Text="Ctrl+Shift+N - Live-Tracking aus" Margin="0,0,0,15"/>
-
-                <TextBlock Text="Sonstiges" 
-                           FontSize="14" 
-                           FontWeight="Bold" 
-                           Margin="0,0,0,10"/>
-                <TextBlock Text="Ctrl+Shift+H - Dieser Hilfedialog" Margin="0,0,0,5"/>
+                           Foreground="White"
+                           HorizontalAlignment="Center"
+                           Opacity="0.9"/>
             </StackPanel>
-        </ScrollViewer>
+        </Border>
 
-        <Button Grid.Row="1" 
+        <!-- Tastaturkuerzel -->
+        <StackPanel Grid.Row="1" Margin="20">
+            <TextBlock Text="Canon CRN-100 Tastaturkuerzel" 
+                       FontSize="16" 
+                       FontWeight="Bold" 
+                       Margin="0,0,0,15"
+                       Foreground="#FF2196F3"/>
+
+            <TextBlock Text="Kamerabewegung (Pan/Tilt)" 
+                       FontSize="14" 
+                       FontWeight="Bold" 
+                       Margin="0,0,0,10"/>
+            <TextBlock Text="Ctrl+Shift+Oben - Kamera nach oben" Margin="0,0,0,5"/>
+            <TextBlock Text="Ctrl+Shift+Unten - Kamera nach unten" Margin="0,0,0,5"/>
+            <TextBlock Text="Ctrl+Shift+Links - Kamera nach links" Margin="0,0,0,5"/>
+            <TextBlock Text="Ctrl+Shift+Rechts - Kamera nach rechts" Margin="0,0,0,15"/>
+
+            <TextBlock Text="Zoom" 
+                       FontSize="14" 
+                       FontWeight="Bold" 
+                       Margin="0,0,0,10"/>
+            <TextBlock Text="Ctrl+Shift++ - Zoom hinein" Margin="0,0,0,5"/>
+            <TextBlock Text="Ctrl+Shift+- - Zoom heraus" Margin="0,0,0,15"/>
+
+            <TextBlock Text="Preset-Positionen" 
+                       FontSize="14" 
+                       FontWeight="Bold" 
+                       Margin="0,0,0,10"/>
+            <TextBlock Text="Ctrl+Shift+T - Taufsteinposition" Margin="0,0,0,5"/>
+            <TextBlock Text="Ctrl+Shift+A - Altarposition" Margin="0,0,0,5"/>
+            <TextBlock Text="Ctrl+Shift+K - Kanzelposition" Margin="0,0,0,5"/>
+            <TextBlock Text="Ctrl+Shift+O - Orgelposition" Margin="0,0,0,5"/>
+            <TextBlock Text="Ctrl+Shift+S - Aktuelle Position als letzten Preset speichern" 
+                       Margin="0,0,0,15"
+                       FontWeight="SemiBold"
+                       Foreground="#FF4CAF50"/>
+
+            <TextBlock Text="Live-Tracking" 
+                       FontSize="14" 
+                       FontWeight="Bold" 
+                       Margin="0,0,0,10"/>
+            <TextBlock Text="Ctrl+Shift+E - Live-Track Einzelperson ein" Margin="0,0,0,5"/>
+            <TextBlock Text="Ctrl+Shift+G - Live-Track Gruppe ein" Margin="0,0,0,5"/>
+            <TextBlock Text="Ctrl+Shift+N - Live-Tracking aus" Margin="0,0,0,15"/>
+
+            <TextBlock Text="Sonstiges" 
+                       FontSize="14" 
+                       FontWeight="Bold" 
+                       Margin="0,0,0,10"/>
+            <TextBlock Text="Ctrl+Shift+H - Dieser Hilfedialog" Margin="0,0,0,5"/>
+        </StackPanel>
+
+        <!-- OK Button -->
+        <Button Grid.Row="2" 
                 Content="OK" 
                 Width="100" 
                 Height="35" 
                 Margin="0,0,0,20" 
                 Click="OK_Click" 
-                IsDefault="True"/>
+                IsDefault="True"
+                Background="#FF2196F3"
+                Foreground="White"
+                BorderThickness="0"
+                FontWeight="SemiBold"
+                Cursor="Hand"/>
     </Grid>
 </Window>

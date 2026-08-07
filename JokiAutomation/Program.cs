@@ -154,20 +154,21 @@ namespace JokiAutomation
                 // Erstelle minimale Komponenten ohne Form
                 logData = new LogData();
                 logData.initLogData(null); // Kein Form → Logging geht in Datei
-                
+        
                 logData.sendInfoMessage("=================================================");
                 logData.sendInfoMessage("=== JokiAutomation Kommandozeilen-Modus START ===");
                 logData.sendInfoMessage($"Argumente: {string.Join(" ", args)}");
                 logData.sendInfoMessage($"Anzahl Argumente: {args.Length}");
-                
+        
                 // DEBUG: Alle Argumente einzeln ausgeben
                 for (int i = 0; i < args.Length; i++)
                 {
                     logData.sendInfoMessage($"  args[{i}] = '{args[i]}'");
                 }
-                
+        
                 logData.sendInfoMessage($"Arbeitsverzeichnis: {AppDomain.CurrentDomain.BaseDirectory}");
-                
+                logData.sendInfoMessage($"Build-Konfiguration: {GetBuildConfiguration()}");
+        
                 // Da die Form1.CommandInterpreter Zugriff auf Form-Komponenten benötigt,
                 // müssen wir eine minimale Form-Instanz erstellen
                 Application.EnableVisualStyles();
@@ -175,13 +176,71 @@ namespace JokiAutomation
 
                 Form1 form = new Form1();
 
+                logData.sendInfoMessage(">>> Form1 erstellt, warte auf Initialisierung...");
+        
+                // ✅ WICHTIG: Warte bis PTZ-Kamera initialisiert ist (max 15 Sekunden)
+                int maxWaitMs = 15000;
+                int waitedMs = 0;
+                int checkIntervalMs = 200; // Längeres Intervall für Release-Build
+        
+                while (waitedMs < maxWaitMs)
+                {
+                    // Prüfe Status
+                    bool isInitialized = form.IsPtzInitialized();
+                    
+                    if (isInitialized)
+                    {
+                        logData.sendInfoMessage($">>> PTZ-Kamera erfolgreich initialisiert nach {waitedMs}ms");
+                        break;
+                    }
+                    
+                    // Warte und verarbeite UI-Events
+                    Thread.Sleep(checkIntervalMs);
+                    waitedMs += checkIntervalMs;
+                    
+                    // Wichtig für Release-Build: Explizit UI-Thread bedienen
+                    Application.DoEvents();
+                    
+                    if (waitedMs % 1000 == 0) // Alle 1 Sekunde Status ausgeben
+                    {
+                        logData.sendInfoMessage($">>> Warte auf PTZ-Initialisierung... ({waitedMs}ms)");
+                    }
+                }
+        
+                if (!form.IsPtzInitialized())
+                {
+                    logData.sendInfoMessage($">>> WARNUNG: PTZ-Kamera nicht initialisiert nach {maxWaitMs}ms");
+                    logData.sendInfoMessage(">>> Prüfen Sie:");
+                    logData.sendInfoMessage(">>>   - Network.cfg vorhanden und korrekt");
+                    logData.sendInfoMessage(">>>   - Canon PTZ Kamera eingeschaltet");
+                    logData.sendInfoMessage(">>>   - Netzwerkverbindung zur Kamera");
+                }
+
                 // Prepare args array: CommandInterpreter in Form1 erwartet args[0] = Programmname, args[1] = Kommando
                 string[] formArgs = new string[args.Length + 1];
                 formArgs[0] = "JokiAutomation.exe"; // Programmname als erstes Argument
                 Array.Copy(args, 0, formArgs, 1, args.Length);
 
-                // Rufe CommandInterpreter aus Form1 auf
-                form.CommandInterpreter(formArgs);
+                // Rufe CommandInterpreterAsync aus Form1 auf
+                logData.sendInfoMessage(">>> Führe Kommando aus...");
+
+                try
+                {
+                    // ✅ Verwende GetAwaiter().GetResult() statt Wait() für bessere Exception-Behandlung
+                    var commandTask = form.CommandInterpreterAsync(formArgs);
+                    commandTask.GetAwaiter().GetResult(); // Wirft Original-Exception ohne AggregateException
+
+                    logData.sendInfoMessage(">>> Kommando abgeschlossen");
+                }
+                catch (Exception ex)
+                {
+                    logData.sendInfoMessage($"FEHLER beim Ausführen des Kommandos: {ex.Message}");
+                    logData.sendInfoMessage($"StackTrace:\n{ex.StackTrace}");
+                    // Programm läuft weiter und beendet sich sauber
+                }
+
+                // ✅ Zusätzliche Wartezeit für Release-Build, um sicherzustellen dass alles fertig ist
+                Thread.Sleep(500);
 
                 logData.sendInfoMessage("=== Kommando abgeschlossen ===");
                 logData.sendInfoMessage("=================================================");
@@ -203,6 +262,15 @@ namespace JokiAutomation
                     File.AppendAllText(logPath, $"\n{DateTime.Now}: FEHLER - {ex.Message}\n{ex.StackTrace}\n");
                 }
             }
+        }
+
+        private static string GetBuildConfiguration()
+        {
+            #if DEBUG
+                return "DEBUG";
+            #else
+                return "RELEASE";
+            #endif
         }
 
         private static Dictionary<string, NetworkDevice> LoadNetworkConfig(LogData logData)

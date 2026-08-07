@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using CanonRemoteControl;
-//using System.Threading.Tasks;
+using CanonPtzCommon;
 
 namespace JokiAutomation
 {
@@ -24,11 +24,11 @@ namespace JokiAutomation
         /// </summary>
         /// <param name="winForm">Parent form for logging and UI updates</param>
         /// <param name="isPtzMode">True to use Canon PTZ for camera positioning, false to use RasPi motor control</param>
-        /// <param name="canonApi">Canon CR-N100 Controller instance (required if isPtzMode is true)</param>
-        public void initPC(Form1 winForm, bool isPtzMode = false, CanonCrn100Controller canonApi = null)
+        /// <param name="canonPtzController">Canon PTZ Controller instance (required if isPtzMode is true)</param>
+        public void initPC(Form1 winForm, bool isPtzMode = false, ICanonPtzController canonPtzController = null)
         {
             _isPtzMode = isPtzMode;
-            _canonApi = canonApi;
+            _canonPtzController = canonPtzController;
 
             // RasPi wird IMMER initialisiert (für IR-Steuerung)
             _rasPi.initRasPi(winForm);
@@ -38,6 +38,16 @@ namespace JokiAutomation
 
             string mode = _isPtzMode ? "Canon PTZ (Kamera-Positionierung)" : "RasPi Motor (Kamera-Positionierung)";
             _PCForm._logDat.sendInfoMessage($"JokiAutomation\nPosition Control: {mode} + RasPi IR-Steuerung");
+        }
+
+        /// <summary>
+        /// Update PTZ controller (used when reconnecting to camera)
+        /// </summary>
+        /// <param name="canonPtzController">New Canon PTZ Controller instance</param>
+        public void UpdatePtzController(ICanonPtzController canonPtzController)
+        {
+            _canonPtzController = canonPtzController;
+            _PCForm._logDat.sendInfoMessage("PositionControl\nPTZ Controller aktualisiert");
         }
 
         /// <summary>
@@ -90,14 +100,29 @@ namespace JokiAutomation
         }
 
         /// <summary>
+        /// Maps Raspberry Pi position IDs (0-based) to Canon PTZ preset numbers (1-based)
+        /// RasPi uses: 0=Altar, 1=Taufstein, 2=Kanzel, 3=Orgel, 4=Mittelgang, 5=Orgel2, 6=Mittelgang2, 7=Altarbild, 8=Liedtafel
+        /// Canon PTZ uses: 1=Altar, 2=Taufstein, 3=Kanzel, 4=Orgel, 5=Mittelgang, 6=Orgel2, 7=Mittelgang2, 8=Altarbild, 9=Liedtafel
+        /// </summary>
+        private int MapRaspiPositionToCanonPreset(int raspiPositionId)
+        {
+            // Canon PTZ verwendet 1-basierte Preset-Nummern
+            // RasPi verwendet 0-basierte Positions-IDs
+            // Einfaches Mapping: Canon Preset = RasPi Position + 1
+            return raspiPositionId + 1;
+        }
+
+        /// <summary>
         /// Move camcorder to specified position
         /// </summary>
         /// <param name="ID">Position ID to move to (0-based index)</param>
         public void movePC(int ID)
         {
-            if (_isPtzMode && _canonApi != null)
+            if (_isPtzMode && _canonPtzController != null)
             {
-                Task.Run(async () => await _canonApi.RecallPreset(ID));
+                int canonPreset = MapRaspiPositionToCanonPreset(ID);
+                SharedPresetState.SetLastPreset(canonPreset);
+                Task.Run(async () => await _canonPtzController.RecallPresetAsync(canonPreset));
             }
             else
             {
@@ -106,20 +131,106 @@ namespace JokiAutomation
         }
 
         /// <summary>
-        /// Teach/program a camcorder position
-        /// Stores current camcorder position as specified ID
-        /// Note: Canon PTZ camera presets must be saved manually via camera interface
+        /// Teach current camcorder position
         /// </summary>
-        /// <param name="ID">Position ID to teach/program (0-based index)</param>
+        /// <param name="ID">Position ID to store (0-19 for regular positions, 20 for null position)</param>
         public void teachPC(int ID)
         {
-            if (_isPtzMode && _canonApi != null)
+            if (_isPtzMode && _canonPtzController != null)
             {
-                _PCForm._logDat.sendInfoMessage("JokiAutomation\nCanon PTZ: Presets müssen manuell an der Kamera gespeichert werden");
+                int presetNumber = MapRaspiPositionToCanonPreset(ID);
+                _PCForm._logDat.sendInfoMessage($"PositionControl\nSpeichere Canon PTZ Preset {presetNumber}...");
+                
+                Task.Run(async () =>
+                {
+                    var result = await _canonPtzController.StorePresetAsync(presetNumber);
+                    if (result.Success)
+                    {
+                        _PCForm._logDat.sendInfoMessage($"PositionControl\n✓ Preset {presetNumber} gespeichert");
+                    }
+                    else
+                    {
+                        _PCForm._logDat.sendInfoMessage($"PositionControl\n✗ Fehler: {result.Message}");
+                    }
+                });
             }
             else
             {
                 _rasPi.rasPiExecute(PC_TEACH, ID);
+            }
+        }
+
+        /// <summary>
+        /// Teach camcorder position with user feedback
+        /// Prompts user to adjust position description after teaching
+        /// </summary>
+        /// <param name="ID">Position ID to teach (0-20, where 20 is null position)</param>
+        public async void teachPos(int ID)
+        {
+            if (_isPtzMode && _canonPtzController != null)
+            {
+                int presetNumber = MapRaspiPositionToCanonPreset(ID);
+                
+                if (!_canonPtzController.IsConnected)
+                {
+                    System.Windows.Forms.MessageBox.Show("Kamera nicht verbunden!", "Fehler", 
+                        System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                    return;
+                }
+                
+                try
+                {
+                    _PCForm._logDat.sendInfoMessage($"PositionControl\nSpeichere Canon PTZ Preset {presetNumber}...");
+                    
+                    var storeResult = await _canonPtzController.StorePresetAsync(presetNumber);
+                    
+                    if (storeResult.Success)
+                    {
+                        _PCForm._logDat.sendInfoMessage($"PositionControl\n✓ Preset {presetNumber} gespeichert");
+                        
+                        if (ID < 20)
+                        {
+                            System.Windows.Forms.DialogResult dialogResult = System.Windows.Forms.MessageBox.Show(
+                                "Position ändern?", 
+                                "Positionsverwaltung", 
+                                System.Windows.Forms.MessageBoxButtons.YesNo);
+                            
+                            if (dialogResult == System.Windows.Forms.DialogResult.Yes)
+                            {
+                                _PCForm.listBoxCamPosControl.SelectedIndex = ID;
+                                _PCForm.listBoxCamPosControl.Focus();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        _PCForm._logDat.sendInfoMessage($"PositionControl\n✗ Fehler: {storeResult.Message}");
+                        System.Windows.Forms.MessageBox.Show($"Fehler:\n{storeResult.Message}", "Fehler", 
+                            System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _PCForm._logDat.sendInfoMessage($"PositionControl\nFehler beim Speichern: {ex.Message}");
+                    System.Windows.Forms.MessageBox.Show($"Fehler:\n{ex.Message}", "Fehler", 
+                        System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                }
+            }
+            else
+            {
+                // Legacy RasPi-Modus
+                _rasPi.rasPiExecute(PC_TEACH, ID);
+                if (ID < 20)
+                {
+                    _PCForm._logDat.sendInfoMessage("PositionControl\nPosition " + ID + " speichern - JA oder Position ändern - NEIN");
+                    System.Threading.Thread.Sleep(100);
+                    System.Windows.Forms.DialogResult dialogResult = System.Windows.Forms.MessageBox.Show("Position ändern?", "Positionsverwaltung", System.Windows.Forms.MessageBoxButtons.YesNo);
+                    if (dialogResult == System.Windows.Forms.DialogResult.Yes)
+                    {
+                        _PCForm.listBoxCamPosControl.SelectedIndex = ID;
+                        _PCForm.listBoxCamPosControl.Focus();
+                    }
+                }
             }
         }
 
@@ -140,44 +251,51 @@ namespace JokiAutomation
         }
 
         /// <summary>
-        /// Teach camcorder position with user feedback
-        /// Prompts user to adjust position description after teaching
-        /// </summary>
-        /// <param name="ID">Position ID to teach (0-20, where 20 is null position)</param>
-        public void teachPos(int ID)
-        {
-            if (_isPtzMode && _canonApi != null)
-            {
-                _PCForm._logDat.sendInfoMessage("JokiAutomation\nCanon PTZ: Presets müssen manuell an der Kamera gespeichert werden");
-            }
-            else
-            {
-                _rasPi.rasPiExecute(PC_TEACH, ID);
-                if (ID < 20)
-            	{
-                	string positionText = _PCForm.listBoxCamPosControl.Items[ID].ToString();
-                	_PCForm._logDat.sendInfoMessage("Teach camcorder position, adjust description and confirm with <ENTER>\n" + positionText);
-                	_PCForm.richTextBox3.Select(_PCForm.richTextBox3.Text.Length, 0);
-                	_PCForm.richTextBox3.ScrollToCaret();
-            	}
-            }
-
-
-        }
-
-        /// <summary>
         /// Move to specified camcorder position
         /// </summary>
         /// <param name="ID">Position ID to move to (0-based index)</param>
         public void moveToPos(int ID)
         {
-            if (_isPtzMode && _canonApi != null)
+            try
             {
-                Task.Run(async () => await _canonApi.RecallPreset(ID));
+                if (_isPtzMode && _canonPtzController != null)
+                {
+                    int canonPreset = MapRaspiPositionToCanonPreset(ID);
+                    _PCForm._logDat.sendInfoMessage($"PositionControl\nPTZ-Modus: Sende Preset {canonPreset} an Canon Kamera (ListBox Index {ID})");
+                    SharedPresetState.SetLastPreset(canonPreset);
+                    Task.Run(async () => 
+                    {
+                        try
+                        {
+                            var result = await _canonPtzController.RecallPresetAsync(canonPreset);
+                            if (result.Success)
+                            {
+                                _PCForm._logDat.sendInfoMessage($"PositionControl\nPreset {canonPreset} erfolgreich abgerufen");
+                            }
+                            else
+                            {
+                                _PCForm._logDat.sendInfoMessage($"PositionControl\nFehler beim Abrufen von Preset {canonPreset}: {result.Message}");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _PCForm._logDat.sendInfoMessage($"PositionControl\nException beim PTZ Preset-Abruf: {ex.Message}");
+                        }
+                    });
+                }
+                else if (_isPtzMode && _canonPtzController == null)
+                {
+                    _PCForm._logDat.sendInfoMessage("PositionControl\nFehler: PTZ-Modus aktiv, aber Canon Controller ist null!");
+                }
+                else
+                {
+                    _PCForm._logDat.sendInfoMessage($"PositionControl\nRasPi-Modus: Sende Position {ID} an RaspberryPi");
+                    _rasPi.rasPiExecute(PC_MOVE, ID);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                _rasPi.rasPiExecute(PC_MOVE, ID);
+                _PCForm._logDat.sendInfoMessage($"PositionControl\nmoveToPos Exception: {ex.Message}\n{ex.StackTrace}");
             }
         }
 
@@ -187,7 +305,7 @@ namespace JokiAutomation
         /// </summary>
         /// <param name="position">Position name to move to</param>
         /// <param name="cam_audio">Two-character code: first char=camera view (A/G/K/L), second char=audio profile (D/G/P/T/B)
-        /// Camera views: A=Altar (main camcorder), G=GoPro, K=Kanzel (preacher), L=Laptop
+        /// Camera views: A=Altar (Canon PTZ Main), G=GoPro, K=Kanzel (Canon PTZ Preacher), L=Laptop
         /// Audio profiles: D=Diashow (slideshow), G=Gottesdienst (worship), P=Predigt (sermon), T=Text, B=Band</param>
         /// <exception cref="ArgumentException">Thrown when position is not found or cam_audio format is invalid</exception>
         public void sequence(string position, string cam_audio)
@@ -241,12 +359,15 @@ namespace JokiAutomation
                             }
                         }
 
-                        if (_isPtzMode && _canonApi != null)
+                        if (_isPtzMode && _canonPtzController != null)
                         {
                             // In PTZ mode: Only move to position, ignore encoded camera/audio switching
                             // (Camera/Audio switching is handled by Form1.CommandInterpreter)
-                            Task.Run(async () => await _canonApi.RecallPreset(positionID & 0xFF)); // Use only lower 8 bits (position ID)
-                            _PCForm._logDat.sendInfoMessage($"JokiAutomation\nCanon PTZ: Bewege zu Preset {positionID & 0xFF} (Position: {position})");
+                            int presetId = positionID & 0xFF; // Use only lower 8 bits (position ID)
+                            int canonPreset = MapRaspiPositionToCanonPreset(presetId);
+                            SharedPresetState.SetLastPreset(canonPreset);
+                            Task.Run(async () => await _canonPtzController.RecallPresetAsync(canonPreset));
+                            _PCForm._logDat.sendInfoMessage($"JokiAutomation\nCanon PTZ: Bewege zu Preset {canonPreset} (Position: {position}, ListBox Index: {presetId})");
                         }
                         else
                         {
@@ -276,26 +397,26 @@ namespace JokiAutomation
         /// <param name="ID">Button ID (1=up, 2=down, 3=left, 4=right, 5=released)</param>
         public void moveButtonPressed(int ID)
         {
-            if (_isPtzMode && _canonApi != null)
+            if (_isPtzMode && _canonPtzController != null)
             {
                 Task.Run(async () =>
                 {
                     switch (ID)
                     {
                         case PC_BUTTON_UP:
-                            await _canonApi.PanTiltUp();
+                            await _canonPtzController.StartTiltUpAsync();
                             break;
                         case PC_BUTTON_DOWN:
-                            await _canonApi.PanTiltDown();
+                            await _canonPtzController.StartTiltDownAsync();
                             break;
                         case PC_BUTTON_LEFT:
-                            await _canonApi.PanTiltLeft();
+                            await _canonPtzController.StartPanLeftAsync();
                             break;
                         case PC_BUTTON_RIGHT:
-                            await _canonApi.PanTiltRight();
+                            await _canonPtzController.StartPanRightAsync();
                             break;
                         case PC_BUTTON_RELEASED:
-                            // Canon PTZ stops automatically
+                            await _canonPtzController.StopAllAsync();
                             break;
                     }
                 });
@@ -337,7 +458,7 @@ namespace JokiAutomation
         /// <returns>True if camera is moving, false if idle</returns>
         public bool IsMoving()
         {
-            if (_isPtzMode && _canonApi != null)
+            if (_isPtzMode && _canonPtzController != null)
             {
                 // Canon PTZ doesn't provide movement status
                 return false;
@@ -397,7 +518,7 @@ namespace JokiAutomation
         public const int PC_BUTTON_RELEASED = 5;
 
         private static RasPi _rasPi = new RasPi(); // Raspberry Pi functionality
-        private CanonCrn100Controller _canonApi; // Canon PTZ camera controller
+        private ICanonPtzController _canonPtzController; // Canon PTZ camera controller
         private bool _isPtzMode = false; // True = Canon PTZ, False = Raspberry Pi
         private string _JokiAutomationPath = Environment.GetEnvironmentVariable("JokiAutomation");
         private static Form1 _PCForm;

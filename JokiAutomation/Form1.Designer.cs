@@ -18,35 +18,71 @@ namespace JokiAutomation
         {
             if (disposing)
             {
-                // Stop and dispose input timer
-                if (_Inputtimer != null)
+                try
                 {
-                    _Inputtimer.Stop();
-                    _Inputtimer.Tick -= Inputtimer_Elapsed;
-                    _Inputtimer.Dispose();
-                    _Inputtimer = null;
+                    // Stop and dispose input timer
+                    if (_Inputtimer != null)
+                    {
+                        _Inputtimer.Stop();
+                        _Inputtimer.Tick -= Inputtimer_Elapsed;
+                        _Inputtimer.Dispose();
+                        _Inputtimer = null;
+                    }
+
+                    // Cleanup Canon PTZ Controller
+                    if (_canonPtzController != null)
+                    {
+                        if (_canonPtzController.IsConnected)
+                        {
+                            var task = _canonPtzController.DisconnectAsync();
+                            task.Wait(TimeSpan.FromSeconds(2));
+                        }
+
+                        if (_canonPtzController is IDisposable disposable)
+                        {
+                            disposable.Dispose();
+                        }
+
+                        _canonPtzController = null;
+                    }
+
+                    // Cleanup ATEM Controller
+                    if (_atemControl != null)
+                    {
+                        _atemControl.Disconnect();
+                        _atemControl = null;
+                    }
+
+                    // Cleanup Delock Adapters
+                    if (_delockAdapters != null)
+                    {
+                        foreach (var adapter in _delockAdapters.Values)
+                        {
+                            adapter?.Dispose();
+                        }
+                        _delockAdapters.Clear();
+                    }
+
+                    // Dispose other controls
+                    _infraredControl?.Dispose();
+                    _eventTimer?.Dispose();
+                    _audioMix?.Dispose();
+                    _positionControl?.Dispose();
+                    _autoZoom?.Dispose();
+
+                    // Dispose designer components
+                    if (components != null)
+                    {
+                        components.Dispose();
+                    }
                 }
-
-                // ✅ Dispose ATEM Control (NEU)
-                _atemControl?.Dispose();
-                
-                // Dispose InfraredControl
-                _infraredControl?.Dispose();
-                
-                // Dispose other controls
-                _eventTimer?.Dispose();
-                _audioMix?.Dispose();
-                _positionControl?.Dispose();
-                _autoZoom?.Dispose();
-
-                // Dispose designer components
-                if (components != null)
+                catch (Exception ex)
                 {
-                    components.Dispose();
+                    System.Diagnostics.Debug.WriteLine($"Dispose error: {ex.Message}");
                 }
             }
             base.Dispose(disposing);
-        }
+        }  
 
         #region Windows Form Designer generated code
 
@@ -103,6 +139,7 @@ namespace JokiAutomation
             this.listBox3 = new System.Windows.Forms.ListBox();
             this.richTextBox2 = new System.Windows.Forms.RichTextBox();
             this.tabPage4 = new System.Windows.Forms.TabPage();
+            this.richTextBox3 = new System.Windows.Forms.RichTextBox();
             this.buttonZoomServoMiddle = new System.Windows.Forms.Button();
             this.buttonZoomTestMiddle = new System.Windows.Forms.Button();
             this.buttonZoomReference = new System.Windows.Forms.Button();
@@ -115,12 +152,15 @@ namespace JokiAutomation
             this.moveLeft = new System.Windows.Forms.Button();
             this.moveDown = new System.Windows.Forms.Button();
             this.moveUp = new System.Windows.Forms.Button();
+            this.zoomIn = new System.Windows.Forms.Button();
+            this.zoomOut = new System.Windows.Forms.Button();
             this.testPosSwitch = new System.Windows.Forms.Button();
             this.label10 = new System.Windows.Forms.Label();
             this.listBoxCamPosControl = new System.Windows.Forms.ListBox();
             this.teachCamPos = new System.Windows.Forms.Button();
             this.resetCamPos = new System.Windows.Forms.Button();
             this.moveCamPos = new System.Windows.Forms.Button();
+            this.buttonAutoTracking = new System.Windows.Forms.Button();
             this.tabPage5 = new System.Windows.Forms.TabPage();
             this.buttonAZReset = new System.Windows.Forms.Button();
             this.buttonZoomTest = new System.Windows.Forms.Button();
@@ -142,7 +182,6 @@ namespace JokiAutomation
             this.labelServoMiddle = new System.Windows.Forms.Label();
             this.labelAutoZoomConfig = new System.Windows.Forms.Label();
             this.richTextBoxZoomConfig = new System.Windows.Forms.RichTextBox();
-            this.richTextBox3 = new System.Windows.Forms.RichTextBox();
             this.TabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
@@ -188,7 +227,7 @@ namespace JokiAutomation
             this.tabPage1.Controls.Add(this.menuStrip1);
             this.tabPage1.Location = new System.Drawing.Point(4, 22);
             this.tabPage1.Name = "tabPage1";
-            this.tabPage1.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
             this.tabPage1.Size = new System.Drawing.Size(768, 505);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Event Timer";
@@ -317,7 +356,7 @@ namespace JokiAutomation
             this.tabPage2.Controls.Add(this.richTextBox1);
             this.tabPage2.Location = new System.Drawing.Point(4, 22);
             this.tabPage2.Name = "tabPage2";
-            this.tabPage2.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
             this.tabPage2.Size = new System.Drawing.Size(768, 505);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Infrarot Fernbedienung";
@@ -429,7 +468,7 @@ namespace JokiAutomation
             this.tabPage3.Controls.Add(this.richTextBox2);
             this.tabPage3.Location = new System.Drawing.Point(4, 22);
             this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPage3.Padding = new System.Windows.Forms.Padding(3);
             this.tabPage3.Size = new System.Drawing.Size(768, 505);
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "Audiomix";
@@ -694,19 +733,30 @@ namespace JokiAutomation
             this.tabPage4.Controls.Add(this.moveLeft);
             this.tabPage4.Controls.Add(this.moveDown);
             this.tabPage4.Controls.Add(this.moveUp);
+            this.tabPage4.Controls.Add(this.zoomIn);
+            this.tabPage4.Controls.Add(this.zoomOut);
             this.tabPage4.Controls.Add(this.testPosSwitch);
             this.tabPage4.Controls.Add(this.label10);
             this.tabPage4.Controls.Add(this.listBoxCamPosControl);
             this.tabPage4.Controls.Add(this.teachCamPos);
             this.tabPage4.Controls.Add(this.resetCamPos);
             this.tabPage4.Controls.Add(this.moveCamPos);
+            this.tabPage4.Controls.Add(this.buttonAutoTracking);
             this.tabPage4.Location = new System.Drawing.Point(4, 22);
             this.tabPage4.Name = "tabPage4";
-            this.tabPage4.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPage4.Padding = new System.Windows.Forms.Padding(3);
             this.tabPage4.Size = new System.Drawing.Size(768, 505);
             this.tabPage4.TabIndex = 3;
             this.tabPage4.Text = "Position Camcorder";
             this.tabPage4.UseVisualStyleBackColor = true;
+            // 
+            // richTextBox3
+            // 
+            this.richTextBox3.Location = new System.Drawing.Point(6, 329);
+            this.richTextBox3.Name = "richTextBox3";
+            this.richTextBox3.Size = new System.Drawing.Size(751, 170);
+            this.richTextBox3.TabIndex = 26;
+            this.richTextBox3.Text = "";
             // 
             // buttonZoomServoMiddle
             // 
@@ -763,7 +813,7 @@ namespace JokiAutomation
             // 
             this.zoomValue.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.1F);
             this.zoomValue.Location = new System.Drawing.Point(355, 261);
-            this.zoomValue.Margin = new System.Windows.Forms.Padding(1, 1, 1, 1);
+            this.zoomValue.Margin = new System.Windows.Forms.Padding(1);
             this.zoomValue.Name = "zoomValue";
             this.zoomValue.Size = new System.Drawing.Size(43, 32);
             this.zoomValue.TabIndex = 20;
@@ -833,6 +883,34 @@ namespace JokiAutomation
             this.moveUp.UseVisualStyleBackColor = true;
             this.moveUp.MouseDown += new System.Windows.Forms.MouseEventHandler(this.moveUpHandler);
             this.moveUp.MouseUp += new System.Windows.Forms.MouseEventHandler(this.moveDoneHandler);
+            // 
+            // zoomIn
+            // 
+            this.zoomIn.Enabled = false;
+            this.zoomIn.Font = new System.Drawing.Font("Microsoft Sans Serif", 24F, System.Drawing.FontStyle.Bold);
+            this.zoomIn.Location = new System.Drawing.Point(473, 19);
+            this.zoomIn.Name = "zoomIn";
+            this.zoomIn.Size = new System.Drawing.Size(85, 85);
+            this.zoomIn.TabIndex = 26;
+            this.zoomIn.Text = "+";
+            this.zoomIn.UseVisualStyleBackColor = true;
+            this.zoomIn.Visible = false;
+            this.zoomIn.MouseDown += new System.Windows.Forms.MouseEventHandler(this.zoomInHandler);
+            this.zoomIn.MouseUp += new System.Windows.Forms.MouseEventHandler(this.zoomStopHandler);
+            // 
+            // zoomOut
+            // 
+            this.zoomOut.Enabled = false;
+            this.zoomOut.Font = new System.Drawing.Font("Microsoft Sans Serif", 24F, System.Drawing.FontStyle.Bold);
+            this.zoomOut.Location = new System.Drawing.Point(473, 198);
+            this.zoomOut.Name = "zoomOut";
+            this.zoomOut.Size = new System.Drawing.Size(85, 85);
+            this.zoomOut.TabIndex = 27;
+            this.zoomOut.Text = "-";
+            this.zoomOut.UseVisualStyleBackColor = true;
+            this.zoomOut.Visible = false;
+            this.zoomOut.MouseDown += new System.Windows.Forms.MouseEventHandler(this.zoomOutHandler);
+            this.zoomOut.MouseUp += new System.Windows.Forms.MouseEventHandler(this.zoomStopHandler);
             // 
             // testPosSwitch
             // 
@@ -915,6 +993,19 @@ namespace JokiAutomation
             this.moveCamPos.UseVisualStyleBackColor = true;
             this.moveCamPos.Click += new System.EventHandler(this.moveCamPos_Click);
             // 
+            // buttonAutoTracking
+            // 
+            this.buttonAutoTracking.BackColor = System.Drawing.Color.Red;
+            this.buttonAutoTracking.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonAutoTracking.ForeColor = System.Drawing.Color.White;
+            this.buttonAutoTracking.Location = new System.Drawing.Point(318, 223);
+            this.buttonAutoTracking.Name = "buttonAutoTracking";
+            this.buttonAutoTracking.Size = new System.Drawing.Size(132, 60);
+            this.buttonAutoTracking.TabIndex = 50;
+            this.buttonAutoTracking.Text = "Auto-Track\r\nAUS";
+            this.buttonAutoTracking.UseVisualStyleBackColor = false;
+            this.buttonAutoTracking.Click += new System.EventHandler(this.buttonAutoTracking_Click);
+            // 
             // tabPage5
             // 
             this.tabPage5.Controls.Add(this.buttonAZReset);
@@ -925,7 +1016,7 @@ namespace JokiAutomation
             this.tabPage5.Controls.Add(this.labelAutoZoomConfig);
             this.tabPage5.Controls.Add(this.richTextBoxZoomConfig);
             this.tabPage5.Location = new System.Drawing.Point(4, 22);
-            this.tabPage5.Margin = new System.Windows.Forms.Padding(1, 1, 1, 1);
+            this.tabPage5.Margin = new System.Windows.Forms.Padding(1);
             this.tabPage5.Name = "tabPage5";
             this.tabPage5.Size = new System.Drawing.Size(768, 505);
             this.tabPage5.TabIndex = 4;
@@ -961,9 +1052,9 @@ namespace JokiAutomation
             this.groupBoxZoomCalib.Controls.Add(this.labelZoomCalibTime);
             this.groupBoxZoomCalib.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F);
             this.groupBoxZoomCalib.Location = new System.Drawing.Point(52, 47);
-            this.groupBoxZoomCalib.Margin = new System.Windows.Forms.Padding(1, 1, 1, 1);
+            this.groupBoxZoomCalib.Margin = new System.Windows.Forms.Padding(1);
             this.groupBoxZoomCalib.Name = "groupBoxZoomCalib";
-            this.groupBoxZoomCalib.Padding = new System.Windows.Forms.Padding(1, 1, 1, 1);
+            this.groupBoxZoomCalib.Padding = new System.Windows.Forms.Padding(1);
             this.groupBoxZoomCalib.Size = new System.Drawing.Size(260, 217);
             this.groupBoxZoomCalib.TabIndex = 36;
             this.groupBoxZoomCalib.TabStop = false;
@@ -984,7 +1075,7 @@ namespace JokiAutomation
             // 
             this.textBoxZoomCalibTime.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.1F);
             this.textBoxZoomCalibTime.Location = new System.Drawing.Point(146, 81);
-            this.textBoxZoomCalibTime.Margin = new System.Windows.Forms.Padding(1, 1, 1, 1);
+            this.textBoxZoomCalibTime.Margin = new System.Windows.Forms.Padding(1);
             this.textBoxZoomCalibTime.Name = "textBoxZoomCalibTime";
             this.textBoxZoomCalibTime.Size = new System.Drawing.Size(103, 32);
             this.textBoxZoomCalibTime.TabIndex = 35;
@@ -1027,9 +1118,9 @@ namespace JokiAutomation
             this.groupBoxServoAdjust.Controls.Add(this.labelServoMiddle);
             this.groupBoxServoAdjust.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F);
             this.groupBoxServoAdjust.Location = new System.Drawing.Point(450, 47);
-            this.groupBoxServoAdjust.Margin = new System.Windows.Forms.Padding(1, 1, 1, 1);
+            this.groupBoxServoAdjust.Margin = new System.Windows.Forms.Padding(1);
             this.groupBoxServoAdjust.Name = "groupBoxServoAdjust";
-            this.groupBoxServoAdjust.Padding = new System.Windows.Forms.Padding(1, 1, 1, 1);
+            this.groupBoxServoAdjust.Padding = new System.Windows.Forms.Padding(1);
             this.groupBoxServoAdjust.Size = new System.Drawing.Size(255, 270);
             this.groupBoxServoAdjust.TabIndex = 28;
             this.groupBoxServoAdjust.TabStop = false;
@@ -1039,7 +1130,7 @@ namespace JokiAutomation
             // 
             this.textBoxServoControl.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.1F);
             this.textBoxServoControl.Location = new System.Drawing.Point(143, 132);
-            this.textBoxServoControl.Margin = new System.Windows.Forms.Padding(1, 1, 1, 1);
+            this.textBoxServoControl.Margin = new System.Windows.Forms.Padding(1);
             this.textBoxServoControl.Name = "textBoxServoControl";
             this.textBoxServoControl.Size = new System.Drawing.Size(76, 32);
             this.textBoxServoControl.TabIndex = 34;
@@ -1050,7 +1141,7 @@ namespace JokiAutomation
             // 
             this.textBoxServoControlInv.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.1F);
             this.textBoxServoControlInv.Location = new System.Drawing.Point(143, 187);
-            this.textBoxServoControlInv.Margin = new System.Windows.Forms.Padding(1, 1, 1, 1);
+            this.textBoxServoControlInv.Margin = new System.Windows.Forms.Padding(1);
             this.textBoxServoControlInv.Name = "textBoxServoControlInv";
             this.textBoxServoControlInv.Size = new System.Drawing.Size(76, 32);
             this.textBoxServoControlInv.TabIndex = 37;
@@ -1072,7 +1163,7 @@ namespace JokiAutomation
             // 
             this.textBoxServoReference.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.1F);
             this.textBoxServoReference.Location = new System.Drawing.Point(143, 78);
-            this.textBoxServoReference.Margin = new System.Windows.Forms.Padding(1, 1, 1, 1);
+            this.textBoxServoReference.Margin = new System.Windows.Forms.Padding(1);
             this.textBoxServoReference.Name = "textBoxServoReference";
             this.textBoxServoReference.Size = new System.Drawing.Size(76, 32);
             this.textBoxServoReference.TabIndex = 33;
@@ -1125,7 +1216,7 @@ namespace JokiAutomation
             // 
             this.textBoxServoMiddle.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.1F);
             this.textBoxServoMiddle.Location = new System.Drawing.Point(143, 31);
-            this.textBoxServoMiddle.Margin = new System.Windows.Forms.Padding(1, 1, 1, 1);
+            this.textBoxServoMiddle.Margin = new System.Windows.Forms.Padding(1);
             this.textBoxServoMiddle.Name = "textBoxServoMiddle";
             this.textBoxServoMiddle.Size = new System.Drawing.Size(76, 32);
             this.textBoxServoMiddle.TabIndex = 26;
@@ -1160,14 +1251,6 @@ namespace JokiAutomation
             this.richTextBoxZoomConfig.Size = new System.Drawing.Size(756, 154);
             this.richTextBoxZoomConfig.TabIndex = 24;
             this.richTextBoxZoomConfig.Text = "";
-            // 
-            // richTextBox3
-            // 
-            this.richTextBox3.Location = new System.Drawing.Point(6, 329);
-            this.richTextBox3.Name = "richTextBox3";
-            this.richTextBox3.Size = new System.Drawing.Size(751, 170);
-            this.richTextBox3.TabIndex = 26;
-            this.richTextBox3.Text = "";
             // 
             // Form1
             // 
@@ -1263,9 +1346,10 @@ namespace JokiAutomation
         private Button moveLeft;
         private Button moveDown;
         private Button testPos;
+        private Button zoomIn;          // ✅ NEU
+        private Button zoomOut;         // ✅ NEU
         private MenuStrip menuStrip1;
         private Label labelAutozoom;
-        public TextBox zoomValue;
         private TabPage tabPage5;
         private Button buttonZoom;
         private Label labelAutoZoomConfig;
@@ -1292,6 +1376,8 @@ namespace JokiAutomation
         private Button buttonZoomReference;
         private Button buttonZoomServoMiddle;
         public RichTextBox richTextBox3;
+        private System.Windows.Forms.TextBox zoomValue;  // ✅ Fehlende Deklaration
+        private System.Windows.Forms.Button buttonAutoTracking;
     }
 }
 
@@ -1306,6 +1392,4 @@ internal class PositionControl : IDisposable
         // stream?.Dispose();
     }
 }
-
-
 

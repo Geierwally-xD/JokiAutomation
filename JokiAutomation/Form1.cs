@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Configuration; // ✅ ADD THIS
+using System.Configuration;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using CanonRemoteControl;
+using CanonPtzCommon;
 
 namespace JokiAutomation
 {
@@ -32,8 +33,8 @@ namespace JokiAutomation
         {
             Laptop = 1,             // HDMI 1: Laptop  
             GoPro = 2,              // HDMI 2: GoPro Actionkamera
-            CamcorderMain = 3,      // HDMI 3: Camcorder Schwenkneiger (Hauptkamera)
-            CamcorderPreacher = 4   // HDMI 4: Camcorder Empore (Predigtkamera)
+            CanonPtzMain = 3,       // HDMI 3: Canon PTZ (Hauptkamera)
+            CanonPtzPreacher = 4    // HDMI 4: Canon PTZ (Predigtkamera)
         }
 
         // Tab Indices
@@ -66,12 +67,13 @@ namespace JokiAutomation
         private const string PTZ_PRESET_RECALL_PATH_CONFIG_KEY = "PTZ_PRESET_RECALL_PATH";
         private const string PTZ_PRESET_RECALL_PATHS_CONFIG_KEY = "PTZ_PRESET_RECALL_PATHS";
         private bool _isPtzCameraMode;
-        private CanonCrn100Controller _canonCrn100Api;
+        private ICanonPtzController _canonPtzController;
         private string _ptzPresetRecallPath;
         private List<string> _ptzPresetRecallFallbackPaths = new List<string>();
 
         private readonly object _operationLock = new object();
-        private volatile bool _isOperationInProgress = false;
+        //private volatile bool _isOperationInProgress = false;
+        //private Keys _lastPtzKeyPressed = Keys.None; // <-- NEU: Für PTZ Tastatur-Steuerung
 
         // Network Device Information
         private class NetworkDevice
@@ -101,10 +103,9 @@ namespace JokiAutomation
             _audioMix.initAudio(this);
 
             InitializeNetworkConfig();
-            InitializeCanonCrn100();
+            _ = InitializeCanonPtzControlAsync();
 
-            // Initialize PositionControl with PTZ mode and Canon API
-            _positionControl.initPC(this, _isPtzCameraMode, _canonCrn100Api);
+            _positionControl.initPC(this, _isPtzCameraMode, _canonPtzController);
 
             _autoZoom.initAZ(this);
             InitializeATEMControl();
@@ -134,15 +135,23 @@ namespace JokiAutomation
         private void InitializeNetworkConfig()
         {
             _networkDevices = new Dictionary<string, NetworkDevice>();
-            _userPasswords = new Dictionary<string, string>(); // ✅ NEU
-            string configPath = Path.Combine(Application.StartupPath, NETWORK_CONFIG_FILE);
-
-            if (!File.Exists(configPath))
+            _userPasswords = new Dictionary<string, string>();
+            
+            // ✅ Suche Network.cfg an mehreren möglichen Orten
+            string configPath = FindNetworkConfigFile();
+            
+            if (configPath == null)
             {
-                _logDat?.sendInfoMessage($"JokiAutomation\nNetzwerk-Konfigurationsdatei nicht gefunden: {configPath}");
+                _logDat?.sendInfoMessage($"JokiAutomation\nNetzwerk-Konfigurationsdatei nicht gefunden!");
+                _logDat?.sendInfoMessage($"JokiAutomation\nGesucht in:");
+                _logDat?.sendInfoMessage($"JokiAutomation\n  - {Path.Combine(Application.StartupPath, NETWORK_CONFIG_FILE)}");
+                _logDat?.sendInfoMessage($"JokiAutomation\n  - {Path.Combine(AppDomain.CurrentDomain.BaseDirectory, NETWORK_CONFIG_FILE)}");
+                _logDat?.sendInfoMessage($"JokiAutomation\n  - {Path.Combine(Directory.GetCurrentDirectory(), NETWORK_CONFIG_FILE)}");
                 _logDat?.sendInfoMessage($"JokiAutomation\nERROR: Keine Geräte-Konfiguration vorhanden!");
                 return;
             }
+
+            _logDat?.sendInfoMessage($"JokiAutomation\nNetwork.cfg gefunden: {configPath}");
 
             try
             {
@@ -157,16 +166,31 @@ namespace JokiAutomation
                     // Expected formats:
                     // Standard Device: DeviceName;IPAddress or DeviceName;IPAddress;Port
                     // Delock Device:   DeviceName;IPAddress;Port;Username;Password
+                    // Canon PTZ:       DeviceName;IPAddress;Port;Username;Password;Protocol;PanSpeed;TiltSpeed;ZoomSpeed
                     // User Credential: USER_[Role];Password
                     string[] parts = line.Split(';');
 
-                    if (parts.Length < 2 || parts.Length > 5)
+                    if (parts.Length < 2)
                     {
                         _logDat?.sendInfoMessage($"JokiAutomation\nUngültige Zeile in {NETWORK_CONFIG_FILE}: {line}");
                         continue;
                     }
 
                     string deviceName = parts[0].Trim();
+
+                    // ✅ Skip Canon PTZ camera entries (processed separately by NetworkCfgReader.LoadCamera)
+                    if (deviceName.Equals(CANON_CAMERA_CONFIG_KEY, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _logDat?.sendInfoMessage($"JokiAutomation\nCanon PTZ Konfiguration erkannt (wird separat geladen): {deviceName}");
+                        continue;
+                    }
+
+                    // ✅ Validate length AFTER Canon check
+                    if (parts.Length > 5)
+                    {
+                        _logDat?.sendInfoMessage($"JokiAutomation\nUngültige Zeile in {NETWORK_CONFIG_FILE}: {line}");
+                        continue;
+                    }
 
                     // PTZ Camera Mode Configuration
                     if (deviceName.Equals(PTZ_MODE_CONFIG_KEY, StringComparison.OrdinalIgnoreCase))
@@ -283,14 +307,14 @@ namespace JokiAutomation
                 return false;
             }
 
-            _isOperationInProgress = true;
+           // _isOperationInProgress = true;
             Debug.WriteLine($"→ Operation '{operationName}' started");
             return true;
         }
 
         private void EndOperation(string operationName)
         {
-            _isOperationInProgress = false;
+           // _isOperationInProgress = false;
             Debug.WriteLine($"← Operation '{operationName}' finished");
             Monitor.Exit(_operationLock);
         }
@@ -299,342 +323,386 @@ namespace JokiAutomation
         /// Interprets command line arguments and executes corresponding automation commands.
         /// </summary>
         /// <param name="commands">Command line arguments array</param>
-        public void 
-            CommandInterpreter(string[] commands)
+        public async Task CommandInterpreterAsync(string[] commands)
         {
-            if (!TryBeginOperation("CommandInterpreter"))
+            // Validate input BEFORE trying to acquire lock
+            if (commands == null || commands.Length < 2)
+            {
+                _logDat?.sendInfoMessage("JokiAutomation\nKeine gültigen Kommandozeilenargumente übergeben.");
                 return;
+            }
+
+            string cmd = commands[1];
+            _logDat?.sendInfoMessage($"JokiAutomation\n>>> Kommando '{cmd}' wird ausgeführt...");
+
+            if (!TryBeginOperation("CommandInterpreter"))
+            {
+                _logDat?.sendInfoMessage($"JokiAutomation\n⚠ Kommando '{cmd}' wird übersprungen - eine andere Operation läuft bereits");
+                return;
+            }
 
             try
             {
-
-                // Validate input
-                if (commands == null || commands.Length < 2)
+                // Commands requiring 4 parameters
+                if ((cmd == "Pause" || cmd == "BEAMER_VideoClip") && commands.Length < 4)
                 {
-                    _logDat?.sendInfoMessage("JokiAutomation\nKeine gültigen Kommandozeilenargumente übergeben.");
+                    _logDat?.sendInfoMessage($"JokiAutomation\nKommando '{cmd}' benötigt 2 zusätzliche Parameter.");
                     return;
                 }
 
-                string cmd = commands[1];
-
-                try
+                if (cmd == "PositionControl" && commands.Length < 4)
                 {
-                    // Commands requiring 4 parameters
-                    if ((cmd == "Pause" || cmd == "BEAMER_VideoClip") && commands.Length < 4)
-                    {
-                        _logDat?.sendInfoMessage($"JokiAutomation\nKommando '{cmd}' benötigt 2 zusätzliche Parameter.");
-                        return;
-                    }
+                    _logDat?.sendInfoMessage("JokiAutomation\nKommando 'PositionControl' benötigt 2 Parameter: Position und Profil.");
+                    return;
+                }
 
-                    if (cmd == "PositionControl" && commands.Length < 4)
-                    {
-                        _logDat?.sendInfoMessage("JokiAutomation\nKommando 'PositionControl' benötigt 2 Parameter: Position und Profil.");
-                        return;
-                    }
+                // Execute command
+                switch (cmd)
+                {
+                    case "Pause":
+                        DisablePictureInPicture();
+                        SwitchATEMInput(ATEMInput.Laptop);
+                        ExecutePauseCommand(commands[2], commands[3]);
+                        break;
 
-                    // Execute command
-                    switch (cmd)
-                    {
-                        case "Pause":
-                            DisablePictureInPicture();
-                            SwitchATEMInput(ATEMInput.Laptop);
-                            ExecutePauseCommand(commands[2], commands[3]);
-                            break;
+                    case "Timer":
+                        if (commands.Length < 3)
+                        {
+                            _logDat?.sendInfoMessage("JokiAutomation\nKommando 'Timer' benötigt einen Zeit-Parameter.");
+                            return;
+                        }
+                        DisablePictureInPicture();
+                        SwitchATEMInput(ATEMInput.Laptop);
+                        ExecuteTimerCommand(commands[2]);
+                        break;
 
-                        case "Timer":
-                            if (commands.Length < 3)
-                            {
-                                _logDat?.sendInfoMessage("JokiAutomation\nKommando 'Timer' benötigt einen Zeit-Parameter.");
-                                return;
-                            }
-                            DisablePictureInPicture();
-                            SwitchATEMInput(ATEMInput.Laptop);
-                            ExecuteTimerCommand(commands[2]);
-                            break;
+                    case "Band":
+                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PPP_VIEW);
+                        DisablePictureInPicture();
+                        SwitchATEMInput(ATEMInput.Laptop);
+                        break;
 
-                        case "Band":
-                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PPP_VIEW);
-                            DisablePictureInPicture();
-                            SwitchATEMInput(ATEMInput.Laptop);
-                            break;
+                    case "Text":
+                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_TEXT_VIEW);
+                        DisablePictureInPicture();
+                        SwitchATEMInput(ATEMInput.Laptop);
+                        break;
 
-                        case "Text":
-                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_TEXT_VIEW);
-                            DisablePictureInPicture();
-                            SwitchATEMInput(ATEMInput.Laptop);
-                            break;
+                    case "GoPro":
+                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_GOPRO_VIEW);
+                        DisablePictureInPicture();
+                        SwitchATEMInput(ATEMInput.GoPro);
+                        break;
 
-                        case "GoPro":
-                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_GOPRO_VIEW);
-                            DisablePictureInPicture();
-                            SwitchATEMInput(ATEMInput.GoPro);
-                            break;
-
-                        case "Altar":
-                            // Kamera-Positionierung abhängig vom Modus:
-                            // PTZ_CAM=true: Canon PTZ bewegt Kamera | PTZ_CAM=false: RasPi Motor bewegt Kamera
-                            // IR-Sequenz wird IMMER über RasPi ausgeführt (Beamer, andere Geräte)
-                            if (_isPtzCameraMode && _canonCrn100Api != null)
-                            {
-                                // Canon PTZ: Bewege Kamera zu Preset "Altar"
-                                Task.Run(async () => await _canonCrn100Api.RecallAltar());
-                                _logDat?.sendInfoMessage("JokiAutomation\nCanon PTZ: Bewege zu Preset 2 (Altar)");
-                            }
+                    case "Altar":
+                        _logDat?.sendInfoMessage("JokiAutomation\nFühre 'Altar' Kommando aus...");
+                        // Kamera-Positionierung abhängig vom Modus:
+                        // PTZ_CAM=true: Canon PTZ bewegt Kamera | PTZ_CAM=false: RasPi Motor bewegt Kamera
+                        // IR-Sequenz wird IMMER über RasPi ausgeführt (Beamer, andere Geräte)
+                        if (_isPtzCameraMode && _canonPtzController != null)
+                        {
+                            _logDat?.sendInfoMessage("JokiAutomation\nPTZ-Modus: Rufe ExecuteCanonSceneAsync auf...");
+                            await ExecuteCanonSceneAsync("Altar", 2, ATEMInput.CanonPtzMain);
+                            _logDat?.sendInfoMessage("JokiAutomation\nExecuteCanonSceneAsync abgeschlossen");
+                        }
+                        else
+                        {
+                            _logDat?.sendInfoMessage("JokiAutomation\nLegacy-Modus: RasPi IR-Sequenz");
                             // RasPi IR-Sequenz (Beamer-Umschaltung + ggf. Motor-Steuerung im Non-PTZ Modus)
                             _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_POSCAM_VIEW);
                             DisablePictureInPicture();
-                            SwitchATEMInput(ATEMInput.CamcorderMain);
-                            break;
+                            SwitchATEMInput(ATEMInput.CanonPtzMain);
+                        }
+                        break;
 
-                        case "Predigt":
+                    case "Predigt":
+                        _logDat?.sendInfoMessage("JokiAutomation\nFühre 'Predigt' Kommando aus...");
+                        if (_isPtzCameraMode && _canonPtzController != null)
+                        {
+                            _logDat?.sendInfoMessage("JokiAutomation\nPTZ-Modus: Rufe ExecuteCanonSceneAsync auf...");
+                            await ExecuteCanonSceneAsync("Predigt", 3, ATEMInput.CanonPtzPreacher);
+                            _logDat?.sendInfoMessage("JokiAutomation\nExecuteCanonSceneAsync abgeschlossen");
+                        }
+                        else
+                        {
+                            _logDat?.sendInfoMessage("JokiAutomation\nLegacy-Modus: RasPi IR-Sequenz");
                             _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PREACHER_VIEW);
                             DisablePictureInPicture();
-                            SwitchATEMInput(ATEMInput.CamcorderPreacher);
-                            break;
+                            SwitchATEMInput(ATEMInput.CanonPtzPreacher);
+                        }
+                        break;
 
-                        case "Gebet":
-                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PRAYER_VIEW);
-                            SwitchATEMInput(ATEMInput.Laptop);
-                            Thread.Sleep(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
-                            EnablePictureInPicture();
-                            break;
+                    case "Gebet":
+                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PRAYER_VIEW);
+                        SwitchATEMInput(ATEMInput.Laptop);
+                        Thread.Sleep(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
+                        EnablePictureInPicture();
+                        break;
 
-                        case "LesungMulti":
-                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_READER_VIEW);
-                            SwitchATEMInput(ATEMInput.Laptop);
-                            Thread.Sleep(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
-                            EnablePictureInPicture();
-                            break;
+                    case "LesungMulti":
+                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_READER_VIEW);
+                        SwitchATEMInput(ATEMInput.Laptop);
+                        Thread.Sleep(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
+                        EnablePictureInPicture();
+                        break;
 
-                        case "BandMulti":
-                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SONG_VIEW);
-                            SwitchATEMInput(ATEMInput.Laptop);
-                            Thread.Sleep(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
-                            EnablePictureInPicture();
-                            break;
+                    case "BandMulti":
+                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SONG_VIEW);
+                        SwitchATEMInput(ATEMInput.Laptop);
+                        Thread.Sleep(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
+                        EnablePictureInPicture();
+                        break;
 
-                        case "BEAMER_LiveVideo":
-                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_LIVE_VIDEO);
+                    case "BEAMER_LiveVideo":
+                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_LIVE_VIDEO);
+                        DisablePictureInPicture();
+                        SwitchATEMInput(ATEMInput.Laptop);
+                        break;
+
+                    case "BEAMER_LiveStream":
+                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_TOGGLE);
+                        break;
+
+                    case "BEAMER_VideoClip":
+                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_ANALOG);
+                        SwitchATEMInput(ATEMInput.Laptop);
+                        ExecutePauseCommand(commands[2], commands[3]);
+                        break;
+
+                    case "BEAMER_Mute":
+                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_MUTE);
+                        break;
+
+                    case "BEAMER_ON":
+                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_ON);
+                        break;
+
+                    case "Backup_Start":
+                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_START_BACKUP);
+                        break;
+
+                    case "Backup_Stop":
+                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_STOP_BACKUP);
+                        break;
+
+                    case "Backup_Switch":
+                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SWITCH_BACKUP);
+                        break;
+
+                    case "Ausschaltsequenz":
+                        _logDat?.sendInfoMessage("JokiAutomation\n");
+                        _logDat?.sendInfoMessage("JokiAutomation\n╔═══════════════════════════════════════════════════╗");
+                        _logDat?.sendInfoMessage("JokiAutomation\n║     AUSSCHALTSEQUENZ GESTARTET                   ║");
+                        _logDat?.sendInfoMessage("JokiAutomation\n╚═══════════════════════════════════════════════════╝");
+                        _logDat?.sendInfoMessage("JokiAutomation\n");
+                        
+                        // Step 1: PTZ Camera shutdown (if in PTZ mode)
+                        if (_isPtzCameraMode)
+                        {
+                            _logDat?.sendInfoMessage("JokiAutomation\n[1/2] Canon PTZ Kamera herunterfahren...");
+                            await ShutdownPtzCameraAsync();
+                        }
+                        else
+                        {
+                            _logDat?.sendInfoMessage("JokiAutomation\n[1/2] Kein PTZ-Modus - Kamera-Shutdown übersprungen");
+                        }
+                        
+                        _logDat?.sendInfoMessage("JokiAutomation\n");
+                        
+                        // Step 2: RasPi IR shutdown sequence (Beamer, etc.)
+                        _logDat?.sendInfoMessage("JokiAutomation\n[2/2] RasPi IR-Shutdown-Sequenz (Beamer, etc.)...");
+                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SHUTDOWN);
+                        
+                        _logDat?.sendInfoMessage("JokiAutomation\n");
+                        _logDat?.sendInfoMessage("JokiAutomation\n╔═══════════════════════════════════════════════════╗");
+                        _logDat?.sendInfoMessage("JokiAutomation\n║     AUSSCHALTSEQUENZ ABGESCHLOSSEN               ║");
+                        _logDat?.sendInfoMessage("JokiAutomation\n╚═══════════════════════════════════════════════════╝");
+                        break;
+
+                    case "RasPi_Reset":
+                        _audioMix?._rasPi?.rasPiStop();
+                        break;
+
+                    case "PositionControl":
+                        // Auswerten des ersten Buchstabens von commands[3] für ATEM-Steuerung
+                        if (commands.Length >= 4 && !string.IsNullOrEmpty(commands[3]))
+                        {
+                            char firstChar = char.ToUpper(commands[3][0]);
                             DisablePictureInPicture();
-                            SwitchATEMInput(ATEMInput.Laptop);
-                            break;
 
-                        case "BEAMER_LiveStream":
-                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_TOGGLE);
-                            break;
+                            _logDat?.sendInfoMessage($"JokiAutomation\nPositionControl: Position={commands[2]}, Profil={commands[3]}, Modus={firstChar}");
 
-                        case "BEAMER_VideoClip":
-                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_ANALOG);
-                            SwitchATEMInput(ATEMInput.Laptop);
-                            ExecutePauseCommand(commands[2], commands[3]);
-                            break;
-
-                        case "BEAMER_Mute":
-                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_MUTE);
-                            break;
-
-                        case "BEAMER_ON":
-                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_ON);
-                            break;
-
-                        case "Backup_Start":
-                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_START_BACKUP);
-                            break;
-
-                        case "Backup_Stop":
-                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_STOP_BACKUP);
-                            break;
-
-                        case "Backup_Switch":
-                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SWITCH_BACKUP);
-                            break;
-
-                        case "Ausschaltsequenz":
-                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SHUTDOWN);
-                            break;
-
-                        case "RasPi_Reset":
-                            _audioMix?._rasPi?.rasPiStop();
-                            break;
-
-                        case "PositionControl":
-                            // Auswerten des ersten Buchstabens von commands[3] für ATEM-Steuerung
-                            if (commands.Length >= 4 && !string.IsNullOrEmpty(commands[3]))
+                            switch (firstChar)
                             {
-                                char firstChar = char.ToUpper(commands[3][0]);
-                                DisablePictureInPicture();
+                                case 'A':  // Altar = Canon PTZ Main
+                                    SwitchATEMInput(ATEMInput.CanonPtzMain);
+                                    break;
 
-                                _logDat?.sendInfoMessage($"JokiAutomation\nPositionControl: Position={commands[2]}, Profil={commands[3]}, Modus={firstChar}");
+                                case 'G':  // GoPro = GoPro Actionkamera
+                                    SwitchATEMInput(ATEMInput.GoPro);
+                                    break;
 
-                                switch (firstChar)
-                                {
-                                    case 'A':  // Altar = Camcorder Main
-                                        SwitchATEMInput(ATEMInput.CamcorderMain);
-                                        break;
+                                case 'K':  // Kanzel = Canon PTZ Preacher
+                                    SwitchATEMInput(ATEMInput.CanonPtzPreacher);
+                                    break;
 
-                                    case 'G':  // GoPro = GoPro Actionkamera
-                                        SwitchATEMInput(ATEMInput.GoPro);
-                                        break;
+                                case 'L':  // Laptop = Laptop/Computer
+                                    SwitchATEMInput(ATEMInput.Laptop);
+                                    break;
 
-                                    case 'K':  // Kanzel = Camcorder Preacher
-                                        SwitchATEMInput(ATEMInput.CamcorderPreacher);
-                                        break;
-
-                                    case 'L':  // Laptop = Laptop/Computer
-                                        SwitchATEMInput(ATEMInput.Laptop);
-                                        break;
-
-                                    default:
-                                        _logDat?.sendInfoMessage($"JokiAutomation\nUnbekannter Profil-Typ: {firstChar}, PiP wird deaktiviert");
-                                        DisablePictureInPicture();
-                                        break;
-                                }
+                                default:
+                                    _logDat?.sendInfoMessage($"JokiAutomation\nUnbekannter Profil-Typ: {firstChar}, PiP wird deaktiviert");
+                                    DisablePictureInPicture();
+                                    break;
                             }
-                            else
+                        }
+                        else
+                        {
+                            _logDat?.sendInfoMessage("JokiAutomation\nKeine Profil-Information vorhanden");
+                            DisablePictureInPicture();
+                        }
+
+                        // Warte bis Position Control fertig ist (max. 80 Sekunden)
+                        int maxWaitMs = 80000;
+                        int waitIntervalMs = 100;
+                        int elapsedMs = 0;
+
+                        _positionControl?.sequence(commands[2], commands[3]);
+                        while (_positionControl != null && _positionControl.IsMoving() && elapsedMs < maxWaitMs)
+                        {
+                            Thread.Sleep(waitIntervalMs);
+                            elapsedMs += waitIntervalMs;
+                            Application.DoEvents(); // UI responsive halten
+                        }
+
+                        if (elapsedMs >= maxWaitMs)
+                        {
+                            _logDat?.sendInfoMessage("JokiAutomation\nWARNUNG: Position Control Timeout nach 15s");
+                        }
+                        else
+                        {
+                            _logDat?.sendInfoMessage($"JokiAutomation\nPosition Control abgeschlossen nach {elapsedMs}ms");
+                        }
+
+                        SwitchATEMInput(ATEMInput.CanonPtzMain);
+                        break;
+
+                    case "AutoZoom":
+                        if (_isPtzCameraMode)
+                        {
+                            _logDat?.sendInfoMessage("JokiAutomation\nAutoZoom nicht verfügbar im PTZ-Modus (Canon Zoom über Kamera steuern)");
+                        }
+                        else
+                        {
+                            _autoZoom?.openDialog(this);
+                        }
+                        break;
+
+                    case "ZoomReferenz":
+                        if (_isPtzCameraMode)
+                        {
+                            _logDat?.sendInfoMessage("JokiAutomation\nZoomReferenz nicht verfügbar im PTZ-Modus");
+                        }
+                        else
+                        {
+                            moveZoomReference();
+                        }
+                        break;
+
+                    case "ATEM_Init":
+                        InitializeATEMToDefault();
+                        break;
+
+                    case "ATEM_MIC1_On":
+                        SetATEMMicrophone(1, true);
+                        break;
+
+                    case "ATEM_MIC1_Off":
+                        SetATEMMicrophone(1, false);
+                        break;
+
+                    case "ATEM_MIC2_On":
+                        SetATEMMicrophone(2, true);
+                        break;
+
+                    case "ATEM_MIC2_Off":
+                        SetATEMMicrophone(2, false);
+                        break;
+
+                    case "ROKU_TVon":
+                        {
+                            DelockSocketAdapter hdmiDelockTransmitSupply = GetDelockAdapter("HDMI_Extender_Transmitter");
+                            DelockSocketAdapter hdmiDelockTVReceiverSupply = GetDelockAdapter("HDMI_Extender_TV_Receiver");
+                            if (hdmiDelockTransmitSupply != null)
                             {
-                                _logDat?.sendInfoMessage("JokiAutomation\nKeine Profil-Information vorhanden");
-                                DisablePictureInPicture();
+                                hdmiDelockTransmitSupply.TurnOnSocket(1);
+                                _logDat?.sendInfoMessage("JokiAutomation\nRoku HDMI Extender TV Receiver Steckdose eingeschaltet.");
                             }
 
-                            // Warte bis Position Control fertig ist (max. 80 Sekunden)
-                            int maxWaitMs = 80000;
-                            int waitIntervalMs = 100;
-                            int elapsedMs = 0;
+                            Thread.Sleep(1000);
 
-                            _positionControl?.sequence(commands[2], commands[3]);
-                            while (_positionControl != null && _positionControl.IsMoving() && elapsedMs < maxWaitMs)
+                            if (hdmiDelockTVReceiverSupply != null)
                             {
-                                Thread.Sleep(waitIntervalMs);
-                                elapsedMs += waitIntervalMs;
-                                Application.DoEvents(); // UI responsive halten
+                                hdmiDelockTVReceiverSupply.TurnOnSocket(1);
+                                _logDat?.sendInfoMessage("JokiAutomation\nRoku HDMI Extender TV Receiver Steckdose eingeschaltet.");
                             }
 
-                            if (elapsedMs >= maxWaitMs)
+                            Thread.Sleep(1000);
+
+                            if (_rokuTV != null)
                             {
-                                _logDat?.sendInfoMessage("JokiAutomation\nWARNUNG: Position Control Timeout nach 15s");
-                            }
-                            else
-                            {
-                                _logDat?.sendInfoMessage($"JokiAutomation\nPosition Control abgeschlossen nach {elapsedMs}ms");
-                            }
-
-                            SwitchATEMInput(ATEMInput.CamcorderMain);
-                            break;
-
-                        case "AutoZoom":
-                            if (_isPtzCameraMode)
-                            {
-                                _logDat?.sendInfoMessage("JokiAutomation\nAutoZoom nicht verfügbar im PTZ-Modus (Canon Zoom über Kamera steuern)");
-                            }
-                            else
-                            {
-                                _autoZoom?.openDialog(this);
-                            }
-                            break;
-
-                        case "ZoomReferenz":
-                            if (_isPtzCameraMode)
-                            {
-                                _logDat?.sendInfoMessage("JokiAutomation\nZoomReferenz nicht verfügbar im PTZ-Modus");
-                            }
-                            else
-                            {
-                                moveZoomReference();
-                            }
-                            break;
-
-                        case "ATEM_Init":
-                            InitializeATEMToDefault();
-                            break;
-
-                        case "ATEM_MIC1_On":
-                            SetATEMMicrophone(1, true);
-                            break;
-
-                        case "ATEM_MIC1_Off":
-                            SetATEMMicrophone(1, false);
-                            break;
-
-                        case "ATEM_MIC2_On":
-                            SetATEMMicrophone(2, true);
-                            break;
-
-                        case "ATEM_MIC2_Off":
-                            SetATEMMicrophone(2, false);
-                            break;
-
-                        case "ROKU_TVon":
-                            {
-                                DelockSocketAdapter hdmiDelockTransmitSupply = GetDelockAdapter("HDMI_Extender_Transmitter");
-                                DelockSocketAdapter hdmiDelockTVReceiverSupply = GetDelockAdapter("HDMI_Extender_TV_Receiver");
-                                if (hdmiDelockTransmitSupply != null)
-                                {
-                                    hdmiDelockTransmitSupply.TurnOnSocket(1);
-                                    _logDat?.sendInfoMessage("JokiAutomation\nRoku HDMI Extender TV Receiver Steckdose eingeschaltet.");
-                                }
-
+                                _rokuTV.PowerOn();
                                 Thread.Sleep(1000);
-
-                                if (hdmiDelockTVReceiverSupply != null)
-                                {
-                                    hdmiDelockTVReceiverSupply.TurnOnSocket(1);
-                                    _logDat?.sendInfoMessage("JokiAutomation\nRoku HDMI Extender TV Receiver Steckdose eingeschaltet.");
-                                }
-
-                                Thread.Sleep(1000);
-
-                                if (_rokuTV != null)
-                                {
-                                    _rokuTV.PowerOn();
-                                    Thread.Sleep(1000);
-                                    _rokuTV.SwitchToHDMI2();
-                                    _logDat?.sendInfoMessage("JokiAutomation\nRoku TV eingeschaltet.");
-                                }
+                                _rokuTV.SwitchToHDMI2();
+                                _logDat?.sendInfoMessage("JokiAutomation\nRoku TV eingeschaltet.");
                             }
-                            break;
+                        }
+                        break;
 
-                        case "ROKU_TVoff":
+                    case "ROKU_TVoff":
+                        {
+                            DelockSocketAdapter hdmiDelockTransmitSupply = GetDelockAdapter("HDMI_Extender_Transmitter");
+                            DelockSocketAdapter hdmiDelockTVReceiverSupply = GetDelockAdapter("HDMI_Extender_TV_Receiver");
+                            if (_rokuTV != null)
                             {
-                                DelockSocketAdapter hdmiDelockTransmitSupply = GetDelockAdapter("HDMI_Extender_Transmitter");
-                                DelockSocketAdapter hdmiDelockTVReceiverSupply = GetDelockAdapter("HDMI_Extender_TV_Receiver");
-                                if (_rokuTV != null)
-                                {
-                                    _rokuTV.PowerOff();
-                                    _logDat?.sendInfoMessage("JokiAutomation\nRoku TV ausgeschaltet.");
-                                }
-
-                                Thread.Sleep(1000);
-
-                                if (hdmiDelockTVReceiverSupply != null)
-                                {
-                                    hdmiDelockTVReceiverSupply.TurnOffSocket(1);
-                                    _logDat?.sendInfoMessage("JokiAutomation\nRoku HDMI Extender TV Receiver Steckdose ausgeschaltet.");
-                                }
-
-                                Thread.Sleep(1000);
-
-                                if (hdmiDelockTransmitSupply != null)
-                                {
-                                    hdmiDelockTransmitSupply.TurnOffSocket(1);
-                                    _logDat?.sendInfoMessage("JokiAutomation\nRoku HDMI Extender TV Receiver Steckdose ausgeschaltet.");
-                                }
+                                _rokuTV.PowerOff();
+                                _logDat?.sendInfoMessage("JokiAutomation\nRoku TV ausgeschaltet.");
                             }
-                            break;
 
-                        default:
-                            _logDat?.sendInfoMessage($"JokiAutomation\nUnbekanntes Kommando: '{cmd}'");
-                            break;
-                    }
+                            Thread.Sleep(1000);
+
+                            if (hdmiDelockTVReceiverSupply != null)
+                            {
+                                hdmiDelockTVReceiverSupply.TurnOffSocket(1);
+                                _logDat?.sendInfoMessage("JokiAutomation\nRoku HDMI Extender TV Receiver Steckdose ausgeschaltet.");
+                            }
+
+                            Thread.Sleep(1000);
+
+                            if (hdmiDelockTransmitSupply != null)
+                            {
+                                hdmiDelockTransmitSupply.TurnOffSocket(1);
+                                _logDat?.sendInfoMessage("JokiAutomation\nRoku HDMI Extender TV Receiver Steckdose ausgeschaltet.");
+                            }
+                        }
+                        break;
+
+                    default:
+                        _logDat?.sendInfoMessage($"JokiAutomation\nUnbekanntes Kommando: '{cmd}'");
+                        break;
                 }
-                finally
-                {
-                    EndOperation("CommandInterpreter");
-                }
+
+                _logDat?.sendInfoMessage($"JokiAutomation\n✓ Kommando '{cmd}' erfolgreich abgeschlossen");
             }
             catch (Exception ex)
             {
-                string failedCmd = (commands != null && commands.Length > 1) ? commands[1] : "<unbekannt>";
-                _logDat?.sendInfoMessage($"JokiAutomation\nFehler beim Ausführen des Kommandos '{failedCmd}':\n{ex.Message}");
+                _logDat?.sendInfoMessage($"JokiAutomation\nFehler beim Ausführen des Kommandos '{cmd}':\n{ex.Message}");
+                _logDat?.sendInfoMessage($"JokiAutomation\nStackTrace:\n{ex.StackTrace}");
+            }
+            finally
+            {
+                EndOperation("CommandInterpreter");
+                _logDat?.sendInfoMessage($"JokiAutomation\n<<< Kommando '{cmd}' beendet\n");
             }
         }
 
@@ -788,7 +856,7 @@ namespace JokiAutomation
         }
 
         // tab control index changed initialize Audiomix for channel 1 and 2 if page opens
-        private void TabControl1_SelectedIndexChanged(Object sender, EventArgs e)
+        private async void TabControl1_SelectedIndexChanged(Object sender, EventArgs e)
         {
             if (TabControl1.SelectedIndex == TAB_INDEX_AUTOZOOM_CONFIG)
             {
@@ -811,6 +879,9 @@ namespace JokiAutomation
                     byte zoomVal = GetZoomValueSafely(listBoxCamPosControl.SelectedIndex);
                     _autoZoom?.setZoomValue(zoomVal);
                     zoomValue.Text = zoomVal.ToString();
+                    
+                    // ✅ NEU: Update Auto-Tracking Button Status
+                    await UpdateAutoTrackingButtonStateAsync();
                 }
                 catch (Exception ex)
                 {
@@ -1053,23 +1124,21 @@ namespace JokiAutomation
             }
         }
 
-        // teach selected position of camcorder; this method needs super user log in
+        // teach selected position of camcorder
         private void teachCamPos_Click(object sender, EventArgs e)
         {
             richTextBox3.Clear();
-            _requestedFunction = FUNCTION_TEACH_POSITION;
 
-            if (loginUser("SuperUser"))
+            int selectedPosition = listBoxCamPosControl.SelectedIndex;
+            
+            if (selectedPosition < 0)
             {
-                _positionControl?.teachPos(listBoxCamPosControl.SelectedIndex);
-
-                if (_autoZoom?._AZ_ZoomValue != null &&
-                    listBoxCamPosControl.SelectedIndex < _autoZoom._AZ_ZoomValue.Length &&
-                    TEMP_ZOOM_INDEX < _autoZoom._AZ_ZoomValue.Length)
-                {
-                    _autoZoom._AZ_ZoomValue[listBoxCamPosControl.SelectedIndex] = _autoZoom._AZ_ZoomValue[TEMP_ZOOM_INDEX];
-                }
+                _logDat?.sendInfoMessage("JokiAutomation\nBitte wählen Sie eine Position aus!");
+                return;
             }
+
+            // Delegiere an PositionControl - funktioniert sowohl für PTZ als auch RasPi
+            _positionControl?.teachPos(selectedPosition);
         }
 
         // eventhandler teach null position
@@ -1086,27 +1155,66 @@ namespace JokiAutomation
         // eventhandler move up
         private void moveUpHandler(object sender, EventArgs e)
         {
-            _positionControl.moveButtonPressed(PositionControl.PC_BUTTON_UP);
+            if (_isPtzCameraMode && _canonPtzController != null)
+            {
+                Task.Run(async () => await _canonPtzController.StartTiltUpAsync());
+            }
+            else
+            {
+                _positionControl.moveButtonPressed(PositionControl.PC_BUTTON_UP);
+            }
         }
+
         // eventhandler move down
         private void moveDownHandler(object sender, EventArgs e)
         {
-            _positionControl.moveButtonPressed(PositionControl.PC_BUTTON_DOWN);
+            if (_isPtzCameraMode && _canonPtzController != null)
+            {
+                Task.Run(async () => await _canonPtzController.StartTiltDownAsync());
+            }
+            else
+            {
+                _positionControl.moveButtonPressed(PositionControl.PC_BUTTON_DOWN);
+            }
         }
+
         // eventhandler move left
         private void moveLeftHandler(object sender, EventArgs e)
         {
-            _positionControl.moveButtonPressed(PositionControl.PC_BUTTON_LEFT);
+            if (_isPtzCameraMode && _canonPtzController != null)
+            {
+                Task.Run(async () => await _canonPtzController.StartPanLeftAsync());
+            }
+            else
+            {
+                _positionControl.moveButtonPressed(PositionControl.PC_BUTTON_LEFT);
+            }
         }
+
         // eventhandler move right
         private void moveRightHandler(object sender, EventArgs e)
         {
-            _positionControl.moveButtonPressed(PositionControl.PC_BUTTON_RIGHT);
+            if (_isPtzCameraMode && _canonPtzController != null)
+            {
+                Task.Run(async () => await _canonPtzController.StartPanRightAsync());
+            }
+            else
+            {
+                _positionControl.moveButtonPressed(PositionControl.PC_BUTTON_RIGHT);
+            }
         }
+
         // eventhandler move button released handler
         private void moveDoneHandler(object sender, EventArgs e)
         {
-            _positionControl.moveButtonPressed(PositionControl.PC_BUTTON_RELEASED);
+            if (_isPtzCameraMode && _canonPtzController != null)
+            {
+                Task.Run(async () => await _canonPtzController.StopAllAsync());
+            }
+            else
+            {
+                _positionControl.moveButtonPressed(PositionControl.PC_BUTTON_RELEASED);
+            }
         }
         // eventhandler test position control moves to top five positions in list
         private void testPos_Click(object sender, EventArgs e)
@@ -1456,427 +1564,844 @@ namespace JokiAutomation
 
         // Add this method to your Form1 class
 
+/// <summary>
+/// Configures the UI based on PTZ camera mode.
+/// Disables and hides Zoom-related controls and AutoZoom Config tab in PTZ mode.
+/// </summary>
+private void ConfigureUIForPtzMode()
+{
+    if (_isPtzCameraMode)
+    {
+        // ============================================
+        // PTZ MODE: Hide legacy zoom controls, show PTZ zoom buttons
+        // ============================================
+        
+        // Hide Legacy Zoom Controls
+        testPos.Visible = false;
+        testPos.Enabled = false;
+        
+        testPosSwitch.Visible = false;
+        testPosSwitch.Enabled = false;
+        
+        teachNullPos.Visible = false;
+        teachNullPos.Enabled = false;
+        
+        buttonZoomReference.Visible = false;
+        buttonZoomReference.Enabled = false;
+        
+        buttonZoom.Visible = false;
+        buttonZoom.Enabled = false;
+        
+        zoomValue.Visible = false;
+        zoomValue.Enabled = false;
+        
+        labelAutozoom.Visible = false;
+        labelAutozoom.Enabled = false;
 
-        // buttonhandler init Audiocontrol  enables activated audiochannels and sets volume to maximum  
-        private void button5_Click(object sender, EventArgs e)
+        buttonZoomServoMiddle.Visible = false;
+        buttonZoomServoMiddle.Enabled = false;
+        
+        buttonZoomTestMiddle.Visible = false;
+        buttonZoomTestMiddle.Enabled = false;
+        
+        // ✅ Show PTZ Zoom Buttons
+        zoomIn.Visible = true;
+        zoomIn.Enabled = true;
+        
+        zoomOut.Visible = true;
+        zoomOut.Enabled = true;
+        
+        // Hide AutoZoom Config Tab
+        TabControl1.TabPages.Remove(tabPage5);
+        
+        _logDat?.sendInfoMessage("JokiAutomation\nPTZ-Modus: Legacy Zoom deaktiviert, PTZ Zoom-Buttons aktiviert");
+    }
+    else
+    {
+        // ============================================
+        // LEGACY MODE: Show legacy zoom controls, hide PTZ zoom buttons
+        // ============================================
+        
+        // Show Legacy Zoom Controls
+        testPos.Visible = true;
+        testPos.Enabled = true;
+        
+        testPosSwitch.Visible = true;
+        testPosSwitch.Enabled = true;
+        
+        teachNullPos.Visible = true;
+        teachNullPos.Enabled = true;
+        
+        buttonZoomReference.Visible = true;
+        buttonZoomReference.Enabled = true;
+        
+        buttonZoom.Visible = true;
+        buttonZoom.Enabled = true;
+        
+        zoomValue.Visible = true;
+        zoomValue.Enabled = true;
+        
+        labelAutozoom.Visible = true;
+        labelAutozoom.Enabled = true;
+
+        buttonZoomServoMiddle.Visible = true;
+        buttonZoomServoMiddle.Enabled = true;
+        
+        buttonZoomTestMiddle.Visible = true;
+        buttonZoomTestMiddle.Enabled = true;
+        
+        // ✅ Hide PTZ Zoom Buttons
+        zoomIn.Visible = false;
+        zoomIn.Enabled = false;
+        
+        zoomOut.Visible = false;
+        zoomOut.Enabled = false;
+        
+        // Show AutoZoom Config Tab
+        if (!TabControl1.TabPages.Contains(tabPage5))
         {
-            int commandID = AudioMix.AM_ACTIVE;
-            for (int i = 0; i < 4; i++) // add active channels to ID
+            TabControl1.TabPages.Add(tabPage5);
+        }
+        
+        _logDat?.sendInfoMessage("JokiAutomation\nLegacy-Modus: Zoom-Controls aktiviert, PTZ Zoom-Buttons deaktiviert");
+    }
+}
+
+// buttonhandler init Audiocontrol  enables activated audiochannels and sets volume to maximum  
+private void button5_Click(object sender, EventArgs e)
+{
+    int commandID = AudioMix.AM_ACTIVE;
+    for (int i = 0; i < 4; i++) // add active channels to ID
+    {
+        if (_audioMix.channelActive_[i] == true)
+        {
+            commandID += 1 << i;
+        }
+    }
+    _audioMix.executeAudio(commandID);
+}
+
+// buttonhandler reset Audiocontrol resets volume, fader and mutes all audio channels
+private void button6_Click(object sender, EventArgs e)
+{
+    _audioMix.executeAudio(AudioMix.AM_AUDIO_RESET);
+}
+
+private void moveCamPos_Click(object sender, EventArgs e)
+{
+    try
+    {
+        _requestedFunction = 0;
+        int selectedPosition = listBoxCamPosControl.SelectedIndex;
+
+        if (selectedPosition < 0)
+        {
+            _logDat?.sendInfoMessage("JokiAutomation\nBitte wählen Sie eine Position aus!");
+            return;
+        }
+
+        string positionName = listBoxCamPosControl.Items[selectedPosition].ToString();
+
+        if (_isPtzCameraMode)
+        {
+            if (_canonPtzController == null || !_canonPtzController.IsConnected)
             {
-                if (_audioMix.channelActive_[i] == true)
-                {
-                    commandID += 1 << i;
-                }
+                _logDat?.sendInfoMessage("JokiAutomation\n⚠ PTZ-Kamera nicht verbunden!");
+                _logDat?.sendInfoMessage("JokiAutomation\nBitte prüfen Sie die Kamera-Verbindung");
+                return;
             }
-            _audioMix.executeAudio(commandID);
+            _logDat?.sendInfoMessage($"JokiAutomation\nBewege PTZ-Kamera zu Position {selectedPosition}: {positionName}");
+        }
+        else
+        {
+            _logDat?.sendInfoMessage($"JokiAutomation\nBewege RasPi-Motor zu Position {selectedPosition}: {positionName}");
         }
 
-        // buttonhandler reset Audiocontrol resets volume, fader and mutes all audio channels
-        private void button6_Click(object sender, EventArgs e)
+        _positionControl.moveToPos(selectedPosition);
+    }
+    catch (Exception ex)
+    {
+        _logDat?.sendInfoMessage($"JokiAutomation\nFehler beim Bewegen der Position:\n{ex.Message}\n{ex.StackTrace}");
+    }
+}
+
+/// <summary>
+/// Initializes Canon CR-N100 PTZ camera if PTZ_CAM mode is enabled
+/// </summary>
+private async Task InitializeCanonPtzControlAsync()
+{
+    if (!_isPtzCameraMode)
+    {
+        _logDat?.sendInfoMessage("JokiAutomation\nPTZ_CAM = false, Kamera-Positionierung via RasPi Motor");
+        return;
+    }
+
+    try
+    {
+        string configPath = Path.Combine(Application.StartupPath, NETWORK_CONFIG_FILE);
+
+        if (!File.Exists(configPath))
         {
-            _audioMix.executeAudio(AudioMix.AM_AUDIO_RESET);
+            _logDat?.sendInfoMessage($"JokiAutomation\nFehler: {NETWORK_CONFIG_FILE} nicht gefunden!");
+            return;
         }
 
-        private void moveCamPos_Click(object sender, EventArgs e)
+        _logDat?.sendInfoMessage($"JokiAutomation\nLade Canon PTZ Konfiguration aus {NETWORK_CONFIG_FILE}...");
+
+        CameraConfig config = NetworkCfgReader.LoadCamera(configPath, CANON_CAMERA_CONFIG_KEY);
+
+        _logDat?.sendInfoMessage($"JokiAutomation\nKonfiguration geladen:");
+        _logDat?.sendInfoMessage($"JokiAutomation\n  IP: {config.IpAddress}:{config.Port}");
+        _logDat?.sendInfoMessage($"JokiAutomation\n  User: {config.Username ?? "admin"}");
+        _logDat?.sendInfoMessage($"JokiAutomation\n  Protocol: {config.Protocol ?? "XC"}");
+        _logDat?.sendInfoMessage($"JokiAutomation\n  HTTPS: {config.UseHttps}");
+
+        _canonPtzController = CreatePtzController(config);
+
+        _logDat?.sendInfoMessage($"JokiAutomation\nVerbinde mit Canon PTZ: {config.IpAddress}:{config.Port}...");
+
+        var connectResult = await _canonPtzController.ConnectAsync();
+
+        if (connectResult.Success)
         {
-            _requestedFunction = 0;
-            _positionControl.moveToPos(listBoxCamPosControl.SelectedIndex);
+            _logDat?.sendInfoMessage($"JokiAutomation\n✓ Canon CR-N100 verbunden ({config.Protocol ?? "XC"} Protocol)");
+        }
+        else
+        {
+            _logDat?.sendInfoMessage($"JokiAutomation\n✗ Canon CR-N100 Verbindungsfehler: {connectResult.Message}");
+            _canonPtzController = null;
+        }
+    }
+    catch (Exception ex)
+    {
+        _logDat?.sendInfoMessage($"JokiAutomation\n✗ Canon PTZ Initialisierungsfehler: {ex.Message}");
+        _canonPtzController = null;
+    }
+}
+
+/// <summary>
+/// Create PTZ controller
+/// </summary>
+private ICanonPtzController CreatePtzController(CameraConfig config)
+{
+    if (string.Equals(config.Protocol, "XC", StringComparison.OrdinalIgnoreCase))
+    {
+        _logDat?.sendInfoMessage("JokiAutomation\nVerwende XC Protocol Controller");
+        return new XcCanonPtzController(config);
+    }
+
+    _logDat?.sendInfoMessage("JokiAutomation\nVerwende Legacy AW Protocol Controller");
+    return new LegacyAwPtzController(
+        config.IpAddress,
+        config.Port,
+        config.Username ?? "admin",
+        config.Password ?? "",
+        config.UseHttps);
+}
+
+/// <summary>
+/// Initializes the ATEM Mini Pro control connection
+/// </summary>
+private void InitializeATEMControl()
+{
+    try
+    {
+        if (!_networkDevices.ContainsKey("ATEM_MiniPro"))
+        {
+            _logDat?.sendInfoMessage("JokiAutomation\nATEM Mini Pro nicht in Network.cfg konfiguriert!");
+            return;
         }
 
-        /// <summary>
-        /// Initializes Canon CR-N100 PTZ camera if PTZ_CAM mode is enabled
-        /// Note: Raspberry Pi is ALWAYS active for IR/Audio control regardless of this setting
-        /// </summary>
-        private void InitializeCanonCrn100()
+        string atemIP = _networkDevices["ATEM_MiniPro"].IPAddress;
+        _atemControl = new ATEMControl(atemIP);
+        bool connected = _atemControl.Connect();
+
+        if (connected)
         {
-            if (!_isPtzCameraMode)
+            _logDat?.sendInfoMessage($"JokiAutomation\nATEM Mini Pro erfolgreich verbunden ({atemIP})");
+        }
+        else
+        {
+            _logDat?.sendInfoMessage($"JokiAutomation\nATEM Mini Pro Verbindung fehlgeschlagen ({atemIP})");
+        }
+    }
+    catch (Exception ex)
+    {
+        _logDat?.sendInfoMessage($"JokiAutomation\nATEM Verbindungsfehler: {ex.Message}");
+        _atemControl = null;
+    }
+}
+
+/// <summary>
+/// Initialize ATEM Mini Pro to default state
+/// </summary>
+private void InitializeATEMToDefault()
+{
+    try
+    {
+        if (!_networkDevices.ContainsKey("ATEM_MiniPro"))
+        {
+            _logDat?.sendInfoMessage("JokiAutomation\nATEM Mini Pro nicht in Network.cfg konfiguriert!");
+            return;
+        }
+
+        if (_atemControl == null || !_atemControl.IsConnected)
+        {
+            string atemIP = _networkDevices["ATEM_MiniPro"].IPAddress;
+            _atemControl = new ATEMControl(atemIP);
+
+            if (!_atemControl.Connect())
             {
-                _logDat?.sendInfoMessage("JokiAutomation\nPTZ_CAM = false, Kamera-Positionierung via RasPi Motor");
+                _logDat?.sendInfoMessage($"JokiAutomation\nATEM Verbindung fehlgeschlagen ({atemIP}:9910)");
                 return;
             }
 
-            if (!_networkDevices.ContainsKey(CANON_CAMERA_CONFIG_KEY))
+            _logDat?.sendInfoMessage($"JokiAutomation\nATEM Mini Pro verbunden ({atemIP})");
+        }
+
+        _logDat?.sendInfoMessage("JokiAutomation\nATEM Mini Pro wird initialisiert...");
+
+        if (_atemControl != null && _atemControl.IsConnected)
+        {
+            _atemControl.InitializeToDefaultState();
+        }
+    }
+    catch (Exception ex)
+    {
+        _logDat?.sendInfoMessage($"JokiAutomation\nATEM Initialisierung fehlgeschlagen:\n{ex.Message}");
+    }
+}
+
+/// <summary>
+/// Switch ATEM to specified HDMI input
+/// </summary>
+private void SwitchATEMInput(ATEMInput input)
+{
+    if (_atemControl == null || !_atemControl.IsConnected)
+    {
+        _logDat?.sendInfoMessage("JokiAutomation\nATEM nicht verbunden");
+        return;
+    }
+
+    try
+    {
+        ATEMControl.VideoSource source = (ATEMControl.VideoSource)((int)input);
+        _atemControl.TransitionToProgramInput(source);
+
+        string sourceName = GetATEMInputName(input);
+        _logDat?.sendInfoMessage($"JokiAutomation\nATEM umgeschaltet auf {sourceName} (HDMI {(int)input})");
+    }
+    catch (Exception ex)
+    {
+        _logDat?.sendInfoMessage($"JokiAutomation\nATEM Fehler: {ex.Message}");
+    }
+}
+
+private string GetATEMInputName(ATEMInput input)
+{
+    switch (input)
+    {
+        case ATEMInput.GoPro:
+            return "GoPro Actionkamera";
+        case ATEMInput.Laptop:
+            return "Laptop";
+        case ATEMInput.CanonPtzMain:
+            return "Canon PTZ Hauptkamera";
+        case ATEMInput.CanonPtzPreacher:
+            return "Canon PTZ Predigtkamera";
+        default:
+            return $"HDMI {(int)input}";
+    }
+}
+
+/// <summary>
+/// Enable Picture-in-Picture mode
+/// </summary>
+private void EnablePictureInPicture()
+{
+    if (_atemControl == null || !_atemControl.IsConnected)
+    {
+        _logDat?.sendInfoMessage("JokiAutomation\nATEM nicht verbunden");
+        return;
+    }
+
+    try
+    {
+        _atemControl.EnablePictureInPicture(
+            ATEMControl.VideoSource.Input1,
+            ATEMControl.PiPPosition.BottomRight,
+            ATEMControl.PiPSize.Small
+        );
+
+        if (_atemControl.IsPiPActive())
+        {
+            _logDat?.sendInfoMessage("JokiAutomation\nBild-in-Bild aktiviert");
+        }
+        
+        Thread.Sleep(500);
+    }
+    catch (Exception ex)
+    {
+        _logDat?.sendInfoMessage($"JokiAutomation\nBild-in-Bild Fehler: {ex.Message}");
+    }
+}
+
+/// <summary>
+/// Disable Picture-in-Picture mode
+/// </summary>
+private void DisablePictureInPicture()
+{
+    if (_atemControl == null || !_atemControl.IsConnected)
+    {
+        _logDat?.sendInfoMessage("JokiAutomation\nATEM nicht verbunden");
+        return;
+    }
+
+    try
+    {
+        _atemControl.DisablePictureInPicture();
+        _logDat?.sendInfoMessage("JokiAutomation\nBild-in-Bild deaktiviert");
+    }
+    catch (Exception ex)
+    {
+        _logDat?.sendInfoMessage($"JokiAutomation\nBild-in-Bild Fehler: {ex.Message}");
+    }
+}
+
+/// <summary>
+/// Set ATEM microphone on/off
+/// </summary>
+private void SetATEMMicrophone(int micNumber, bool enable)
+{
+    if (_atemControl == null || !_atemControl.IsConnected)
+    {
+        _logDat?.sendInfoMessage("JokiAutomation\nATEM nicht verbunden");
+        return;
+    }
+
+    try
+    {
+        ATEMControl.VideoSource audioSource;
+        if (micNumber == 1)
+        {
+            audioSource = ATEMControl.VideoSource.Input1;
+        }
+        else if (micNumber == 2)
+        {
+            audioSource = ATEMControl.VideoSource.Input2;
+        }
+        else
+        {
+            throw new ArgumentOutOfRangeException(nameof(micNumber), "Nur Mikrofon 1 oder 2 werden unterstützt");
+        }
+
+        _atemControl.SetAudioMixerInput((ushort)audioSource, enable);
+        string state = enable ? "eingeschaltet" : "ausgeschaltet";
+        _logDat?.sendInfoMessage($"JokiAutomation\nMikrofon {micNumber} {state}");
+    }
+    catch (Exception ex)
+    {
+        _logDat?.sendInfoMessage($"JokiAutomation\nMikrofon-Fehler: {ex.Message}");
+    }
+}
+
+/// <summary>
+/// Get Delock adapter from cache or create new connection
+/// </summary>
+private DelockSocketAdapter GetDelockAdapter(string name)
+{
+    if (_delockAdapters != null && _delockAdapters.ContainsKey(name))
+    {
+        return _delockAdapters[name];
+    }
+
+    if (!_networkDevices.ContainsKey(name))
+    {
+        _logDat?.sendInfoMessage($"JokiAutomation\nDelock Adapter '{name}' nicht in Network.cfg konfiguriert");
+        return null;
+    }
+
+    NetworkDevice device = _networkDevices[name];
+    
+    if (!device.IsDelockDevice)
+    {
+        _logDat?.sendInfoMessage($"JokiAutomation\nGerät '{name}' hat keine Delock-Zugangsdaten");
+        return null;
+    }
+    
+    var adapter = new DelockSocketAdapter(
+        name,                        
+        device.IPAddress,           
+        device.Port,                
+        device.Username,            
+        device.Password             
+    );
+    
+    if (_delockAdapters == null)
+        _delockAdapters = new Dictionary<string, DelockSocketAdapter>();
+    
+    _delockAdapters[name] = adapter;
+    
+    if (!adapter.Connect())
+    {
+        _logDat?.sendInfoMessage($"JokiAutomation\nVerbindung zu {name} fehlgeschlagen");
+        return null;
+    }
+    
+    _logDat?.sendInfoMessage($"JokiAutomation\n{name} verbunden ({device.IPAddress}:{device.Port})");
+    return adapter;
+}
+
+/// <summary>
+/// Execute Canon PTZ camera scene
+/// </summary>
+private async Task ExecuteCanonSceneAsync(string sceneName, int presetNumber, ATEMInput atemInput, bool enablePiP = false)
+{
+    if (_canonPtzController == null || !_canonPtzController.IsConnected)
+    {
+        _logDat?.sendInfoMessage($"JokiAutomation\nCanon PTZ nicht verbunden");
+        return;
+    }
+
+    try
+    {
+        _logDat?.sendInfoMessage($"JokiAutomation\nSzene '{sceneName}' wird ausgeführt...");
+
+        var recallResult = await _canonPtzController.RecallPresetAsync(presetNumber);
+        if (recallResult.Success)
+        {
+            _logDat?.sendInfoMessage($"JokiAutomation\nCanon PTZ: Preset {presetNumber} ({sceneName}) angefahren");
+        }
+        else
+        {
+            _logDat?.sendInfoMessage($"JokiAutomation\nCanon PTZ Fehler: {recallResult.Message}");
+            return;
+        }
+
+        await Task.Delay(2000);
+
+        SwitchATEMInput(atemInput);
+
+        if (enablePiP)
+        {
+            EnablePictureInPicture();
+        }
+        else
+        {
+            DisablePictureInPicture();
+        }
+
+        _logDat?.sendInfoMessage($"JokiAutomation\nSzene '{sceneName}' erfolgreich");
+    }
+    catch (Exception ex)
+    {
+        _logDat?.sendInfoMessage($"JokiAutomation\nFehler: {ex.Message}");
+    }
+}
+
+        // ============================================
+        // PTZ ZOOM CONTROL EVENT HANDLERS
+        // ============================================
+
+        /// <summary>
+        /// Zoom In Button pressed (PTZ Mode only)
+        /// </summary>
+        private void zoomInHandler(object sender, MouseEventArgs e)
+        {
+            if (_isPtzCameraMode && _canonPtzController != null)
             {
-                _logDat?.sendInfoMessage($"JokiAutomation\nPTZ_CAM aktiv, aber {CANON_CAMERA_CONFIG_KEY} fehlt in Network.cfg");
-                return;
+                Task.Run(async () => await _canonPtzController.StartZoomInAsync());
             }
-
-            NetworkDevice camera = _networkDevices[CANON_CAMERA_CONFIG_KEY];
-            _canonCrn100Api = new CanonCrn100Controller(
-                camera.IPAddress,
-                camera.Username ?? "admin",
-                camera.Password ?? "");
-
-            _logDat?.sendInfoMessage($"JokiAutomation\nCanon CR-N100 initialisiert: {camera.IPAddress}:{camera.Port} (Kamera-Positionierung via PTZ)");
         }
 
         /// <summary>
-        /// Initializes the ATEM Mini Pro control connection
+        /// Zoom Out Button pressed (PTZ Mode only)
         /// </summary>
-        private void InitializeATEMControl()
+        private void zoomOutHandler(object sender, MouseEventArgs e)
         {
+            if (_isPtzCameraMode && _canonPtzController != null)
+            {
+                Task.Run(async () => await _canonPtzController.StartZoomOutAsync());
+            }
+        }
+
+        /// <summary>
+        /// Zoom Button released (PTZ Mode only)
+        /// </summary>
+        private void zoomStopHandler(object sender, MouseEventArgs e)
+        {
+            if (_isPtzCameraMode && _canonPtzController != null)
+            {
+                Task.Run(async () => await _canonPtzController.StopZoomAsync());
+            }
+        }
+
+       // Auto-Tracking Toggle Button - Position Control Tab
+        private async void buttonAutoTracking_Click(object sender, EventArgs e)
+        {
+            if (!_isPtzCameraMode || _canonPtzController == null)
+            {
+                _logDat?.sendInfoMessage("Position Control\nAuto-Tracking nur im PTZ-Kamera-Modus verfügbar");
+                return;
+            }
+
+            if (!_canonPtzController.IsConnected)
+            {
+                _logDat?.sendInfoMessage("Position Control\nKamera nicht verbunden");
+                MessageBox.Show("Kamera ist nicht verbunden!", "Auto-Tracking", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             try
             {
-                if (!_networkDevices.ContainsKey("ATEM_MiniPro"))
+                buttonAutoTracking.Enabled = false;
+                
+                CommandResult result;
+                var xcController = _canonPtzController as XcCanonPtzController;
+                
+                if (xcController != null)
                 {
-                    _logDat?.sendInfoMessage("JokiAutomation\nATEM Mini Pro nicht in Network.cfg konfiguriert!");
-                    return;
-                }
-
-                string atemIP = _networkDevices["ATEM_MiniPro"].IPAddress;
-                _atemControl = new ATEMControl(atemIP);
-                bool connected = _atemControl.Connect();
-
-                if (connected)
-                {
-                    _logDat?.sendInfoMessage($"JokiAutomation\nATEM Mini Pro erfolgreich verbunden ({atemIP})");
+                    var autoTrackingService = xcController.GetAutoTrackingService();
+                    bool isCurrentlyEnabled = await autoTrackingService.IsEnabledAsync();
+                    
+                    if (isCurrentlyEnabled)
+                    {
+                        _logDat?.sendInfoMessage("Position Control\nDeaktiviere Auto-Tracking...");
+                        result = await _canonPtzController.DisableTrackingAsync();
+                    }
+                    else
+                    {
+                        _logDat?.sendInfoMessage("Position Control\nStoppe Kamera-Bewegung...");
+                        await _canonPtzController.StopAllAsync();
+                        await Task.Delay(500);
+                        
+                        _logDat?.sendInfoMessage("Position Control\nAktiviere Auto-Tracking...");
+                        result = await _canonPtzController.EnableTrackingSingleAsync();
+                    }
                 }
                 else
                 {
-                    _logDat?.sendInfoMessage($"JokiAutomation\nATEM Mini Pro Verbindung fehlgeschlagen ({atemIP})");
+                    await _canonPtzController.StopAllAsync();
+                    await Task.Delay(500);
+                    result = await _canonPtzController.EnableTrackingSingleAsync();
+                }
+                
+                if (result.Success)
+                {
+                    _logDat?.sendInfoMessage($"Position Control\n✓ {result.Message}");
+                    await UpdateAutoTrackingButtonStateAsync();
+                }
+                else
+                {
+                    _logDat?.sendInfoMessage($"Position Control\n✗ Auto-Tracking Fehler:\n{result.Message}");
+                    MessageBox.Show($"Auto-Tracking Fehler:\n\n{result.Message}", "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
             {
-                _logDat?.sendInfoMessage($"JokiAutomation\nATEM Verbindungsfehler: {ex.Message}");
-                _atemControl = null;
+                _logDat?.sendInfoMessage($"Position Control\nAuto-Tracking Exception:\n{ex.Message}");
+                MessageBox.Show($"Fehler:\n{ex.Message}", "Auto-Tracking Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                buttonAutoTracking.Enabled = true;
             }
         }
 
-        /// <summary>
-        /// Configure UI elements based on PTZ camera mode
-        /// Disables teach tabs when using Canon PTZ camera (presets configured via camera interface)
-        /// Note: Raspberry Pi remains active in both modes for IR/Audio control
-        /// </summary>
-        private void ConfigureUIForPtzMode()
+        // Update Auto-Tracking Button Status (Farbe und Text)
+        private async Task UpdateAutoTrackingButtonStateAsync()
         {
-            if (_isPtzCameraMode)
+            if (!_isPtzCameraMode || _canonPtzController == null || !_canonPtzController.IsConnected)
             {
-                // Disable Position Control and AutoZoom Config tabs in PTZ mode
-                // Canon PTZ presets must be configured via camera interface
-                if (TabControl1.TabPages.Contains(TabControl1.TabPages[TAB_INDEX_POSITION_CONTROL]))
-                {
-                    TabControl1.TabPages[TAB_INDEX_POSITION_CONTROL].Enabled = false;
-                    TabControl1.TabPages[TAB_INDEX_POSITION_CONTROL].Text += " (PTZ: deaktiviert)";
-                }
-
-                if (TabControl1.TabPages.Contains(TabControl1.TabPages[TAB_INDEX_AUTOZOOM_CONFIG]))
-                {
-                    TabControl1.TabPages[TAB_INDEX_AUTOZOOM_CONFIG].Enabled = false;
-                    TabControl1.TabPages[TAB_INDEX_AUTOZOOM_CONFIG].Text += " (PTZ: deaktiviert)";
-                }
-
-                _logDat?.sendInfoMessage("JokiAutomation\nUI: Teach-Tabs deaktiviert (PTZ-Modus), RasPi IR/Audio aktiv");
+                buttonAutoTracking.BackColor = Color.Gray;
+                buttonAutoTracking.ForeColor = Color.White;
+                buttonAutoTracking.Text = "Auto-Track\n(nicht verfügbar)";
+                buttonAutoTracking.Enabled = false;
+                return;
             }
-            else
-            {
-                _logDat?.sendInfoMessage("JokiAutomation\nUI: Alle Tabs aktiv (RasPi Motor-Modus), RasPi IR/Audio aktiv");
-            }
-        }
 
-        /// <summary>
-        /// Initialize ATEM Mini Pro to default state
-        /// MIC 1: ON, MIC 2: OFF
-        /// Source: MainCamcorder (HDMI 3)
-        /// PiP: OFF
-        /// Transition: MIX, 1.0s duration, AUTO ON
-        /// Recording: OFF, Streaming: OFF
-        /// </summary>
-        private void InitializeATEMToDefault()
-        {
             try
             {
-                // Prüfen, ob ATEM in Network.cfg konfiguriert ist
-                if (!_networkDevices.ContainsKey("ATEM_MiniPro"))
+                var xcController = _canonPtzController as XcCanonPtzController;
+                
+                if (xcController != null)
                 {
-                    _logDat?.sendInfoMessage("JokiAutomation\nATEM Mini Pro nicht in Network.cfg konfiguriert!");
-                    return;
-                }
-
-                // ATEM-Verbindung initialisieren, falls noch nicht verbunden
-                if (_atemControl == null || !_atemControl.IsConnected)
-                {
-                    string atemIP = _networkDevices["ATEM_MiniPro"].IPAddress;
-                    _atemControl = new ATEMControl(atemIP);
-
-                    if (!_atemControl.Connect())
+                    var autoTrackingService = xcController.GetAutoTrackingService();
+                    bool isEnabled = await autoTrackingService.IsEnabledAsync();
+                    
+                    if (isEnabled)
                     {
-                        _logDat?.sendInfoMessage($"JokoAutomation\nATEM Verbindung fehlgeschlagen ({atemIP}:9910)");
-                        _logDat?.sendInfoMessage("JokiAutomation\nBitte prüfen:\n" +
-                                                "- ATEM Mini Pro ist eingeschaltet\n" +
-                                                "- Netzwerkkabel ist verbunden\n" +
-                                                "- IP-Adresse ist korrekt\n" +
-                                                "- Firewall blockiert Port 9910 nicht");
-                        return;
+                        buttonAutoTracking.BackColor = Color.LimeGreen;
+                        buttonAutoTracking.ForeColor = Color.Black;
+                        buttonAutoTracking.Text = "Auto-Track\nEIN";
                     }
-
-                    _logDat?.sendInfoMessage($"JokiAutomation\nATEM Mini Pro verbunden ({atemIP})");
-                }
-
-                _logDat?.sendInfoMessage("JokiAutomation\nATEM Mini Pro wird initialisiert...");
-
-                // Eingebaute Initialisierungsmethode aus ATEMControl aufrufen
-                if (_atemControl != null && _atemControl.IsConnected)
-                {
-                    _atemControl.InitializeToDefaultState();
-                }
-            }
-            catch (Exception ex)
-            {
-                _logDat?.sendInfoMessage($"JokiAutomation\nATEM Initialisierung fehlgeschlagen:\n{ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Switch ATEM to specified HDMI input
-        /// </summary>
-        /// <param name="input">ATEM input source</param>
-        private void SwitchATEMInput(ATEMInput input)
-        {
-            if (_atemControl == null || !_atemControl.IsConnected)
-            {
-                _logDat?.sendInfoMessage("JokiAutomation\nATEM nicht verbunden");
-                return;
-            }
-
-            try
-            {
-                ATEMControl.VideoSource source = (ATEMControl.VideoSource)((int)input);
-                _atemControl.TransitionToProgramInput(source);
-
-                string sourceName = GetATEMInputName(input);
-                _logDat?.sendInfoMessage($"JokiAutomation\nATEM umgeschaltet auf {sourceName} (HDMI {(int)input})");
-            }
-            catch (Exception ex)
-            {
-                _logDat?.sendInfoMessage($"JokiAutomation\nATEM Fehler: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Overload for backward compatibility with integer input
-        /// </summary>
-        /// <param name="inputNumber">HDMI Input number (1-4)</param>
-        private void SwitchATEMInput(int inputNumber)
-        {
-            if (Enum.IsDefined(typeof(ATEMInput), inputNumber))
-            {
-                SwitchATEMInput((ATEMInput)inputNumber);
-            }
-            else
-            {
-                _logDat?.sendInfoMessage($"JokiAutomation\nUngültige ATEM-Eingangsnummer: {inputNumber} (gültig: 1-4)");
-            }
-        }
-
-        /// <summary>
-        /// Get user-friendly name for ATEM input
-        /// </summary>
-        /// <param name="input">ATEM input source</param>
-        /// <returns>Descriptive name of the input source</returns>
-        private string GetATEMInputName(ATEMInput input)
-        {
-            switch (input)
-            {
-                case ATEMInput.GoPro:
-                    return "GoPro Actionkamera";
-                case ATEMInput.Laptop:
-                    return "Laptop";
-                case ATEMInput.CamcorderMain:
-                    return "Camcorder Schwenkneiger";
-                case ATEMInput.CamcorderPreacher:
-                    return "Camcorder Empore";
-                default:
-                    return $"HDMI {(int)input}";
-            }
-        }
-
-        /// <summary>
-        /// Enable Picture-in-Picture mode with GoPro in bottom-right corner and Laptop as main
-        /// </summary>
-        private void EnablePictureInPicture()
-        {
-            if (_atemControl == null || !_atemControl.IsConnected)
-            {
-                _logDat?.sendInfoMessage("JokiAutomation\nATEM nicht verbunden");
-                return;
-            }
-
-            try
-            {
-                // PiP aktivieren: Input 1 (GoPro) unten rechts, klein
-                _atemControl.EnablePictureInPicture(
-                    ATEMControl.VideoSource.Input1,
-                    ATEMControl.PiPPosition.BottomRight,
-                    ATEMControl.PiPSize.Small
-                );
-
-                // Status prüfen
-                if (_atemControl.IsPiPActive())
-                {
-                    _logDat?.sendInfoMessage("JokiAutomation\nBild-in-Bild aktiviert: GoPro (unten rechts, klein) + Laptop (Hauptbild)");
-                }
-                
-                Thread.Sleep(500); // Kurze Pause, um sicherzustellen, dass die PiP-Einstellungen übernommen werden
-            }
-            catch (Exception ex)
-            {
-                _logDat?.sendInfoMessage($"JokiAutomation\nBild-in-Bild Fehler: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Disable Picture-in-Picture mode
-        /// </summary>
-        private void DisablePictureInPicture()
-        {
-            if (_atemControl == null || !_atemControl.IsConnected)
-            {
-                _logDat?.sendInfoMessage("JokiAutomation\nATEM nicht verbunden");
-                return;
-            }
-
-            try
-            {
-                // ✅ NUR DisablePictureInPicture aufrufen (kein doppelter SetDownstreamKeyerOnAir Aufruf!)
-                _atemControl.DisablePictureInPicture();
-                _logDat?.sendInfoMessage("JokiAutomation\nBild-in-Bild deaktiviert");
-            }
-            catch (Exception ex)
-            {
-                _logDat?.sendInfoMessage($"JokiAutomation\nBild-in-Bild Fehler: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Perform ATEM cut transition
-        /// </summary>
-        private void ATEMPerformCut()
-        {
-            if (_atemControl == null || !_atemControl.IsConnected)
-            {
-                _logDat?.sendInfoMessage("JokiAutomation\nATEM nicht verbunden");
-                return;
-            }
-
-            try
-            {
-                // There is no PerformCut method in ATEMControl.
-                // Instead, send the appropriate transition style and duration, then switch program input.
-                // For a "cut", set transition style to Mix and duration to 0.
-                _atemControl.SetTransitionStyle(ATEMControl.TransitionStyle.Mix);
-                _atemControl.SetTransitionDuration(0);
-                // Optionally, you may want to switch program/preview inputs here if needed.
-                _logDat?.sendInfoMessage("JokiAutomation\nATEM Cut ausgeführt");
-            }
-            catch (Exception ex)
-            {
-                _logDat?.sendInfoMessage($"JokiAutomation\nATEM Fehler: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Set ATEM microphone on/off
-        /// </summary>
-        /// <param name="micNumber">Microphone number (1 or 2)</param>
-        /// <param name="enable">True to enable, false to disable</param>
-        private void SetATEMMicrophone(int micNumber, bool enable)
-        {
-            if (_atemControl == null || !_atemControl.IsConnected)
-            {
-                _logDat?.sendInfoMessage("JokiAutomation\nATEM nicht verbunden");
-                return;
-            }
-
-            try
-            {
-                ushort audioSource = (ushort)(micNumber - 1); // MIC 1 = 0, MIC 2 = 1
-                _atemControl.SetAudioMixerInput(audioSource, enable);
-
-                string state = enable ? "aktiviert" : "deaktiviert";
-                _logDat?.sendInfoMessage($"JokiAutomation\nMIC {micNumber} {state}");
-            }
-            catch (Exception ex)
-            {
-                _logDat?.sendInfoMessage($"JokiAutomation\nATEM MIC Fehler: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Returns a DelockSocketAdapter instance by name from Network.cfg.
-        /// Connects to the adapter if not already connected.
-        /// </summary>
-        /// <param name="name">Adapter name (e.g., "HDMI_Extender_Transmitter")</param>
-        /// <returns>DelockSocketAdapter instance or null if not found</returns>
-        private DelockSocketAdapter GetDelockAdapter(string name)
-        {
-            // Check if already cached
-            if (_delockAdapters != null && _delockAdapters.ContainsKey(name))
-            {
-                DelockSocketAdapter cachedAdapter = _delockAdapters[name];
-                
-                // Connect if not already connected
-                if (!cachedAdapter.IsConnected)
-                {
-                    if (!cachedAdapter.Connect())
+                    else
                     {
-                        _logDat?.sendInfoMessage($"JokiAutomation\nVerbindung zu {name} fehlgeschlagen");
-                        return null;
+                        buttonAutoTracking.BackColor = Color.Red;
+                        buttonAutoTracking.ForeColor = Color.White;
+                        buttonAutoTracking.Text = "Auto-Track\nAUS";
                     }
-                    _logDat?.sendInfoMessage($"JokiAutomation\n{name} verbunden");
+                    
+                    buttonAutoTracking.Enabled = true;
                 }
-                
-                return cachedAdapter;
+                else
+                {
+                    buttonAutoTracking.BackColor = Color.Gray;
+                    buttonAutoTracking.ForeColor = Color.White;
+                    buttonAutoTracking.Text = "Auto-Track\n(nicht verfügbar)";
+                    buttonAutoTracking.Enabled = false;
+                }
             }
-
-            // Load from network config
-            if (!_networkDevices.ContainsKey(name))
+            catch
             {
-                _logDat?.sendInfoMessage($"JokiAutomation\nDelock Adapter '{name}' nicht in Network.cfg konfiguriert");
-                return null;
+                buttonAutoTracking.BackColor = Color.Gray;
+                buttonAutoTracking.ForeColor = Color.White;
+                buttonAutoTracking.Text = "Auto-Track\n(Fehler)";
+                buttonAutoTracking.Enabled = false;
             }
-
-            NetworkDevice device = _networkDevices[name];
-            
-            // Validate Delock device has credentials
-            if (!device.IsDelockDevice)
-            {
-                _logDat?.sendInfoMessage($"JokiAutomation\nGerät '{name}' hat keine Delock-Zugangsdaten in Network.cfg");
-                return null;
-            }
-            
-            // Parse username as integer
-            if (!int.TryParse(device.Username, out int usernameInt))
-            {
-                _logDat?.sendInfoMessage($"JokiAutomation\nUngültiger Username für {name}: {device.Username}");
-                return null;
-            }
-            
-            // Create new adapter with credentials from config (using original constructor signature)
-            var adapter = new DelockSocketAdapter(
-                name,                        
-                device.IPAddress,           
-                device.Port,                
-                device.Username,            
-                device.Password             
-            );
-            
-            // Cache it
-            if (_delockAdapters == null)
-                _delockAdapters = new Dictionary<string, DelockSocketAdapter>();
-            
-            _delockAdapters[name] = adapter;
-            
-            // Connect
-            if (!adapter.Connect())
-            {
-                _logDat?.sendInfoMessage($"JokiAutomation\nVerbindung zu {name} fehlgeschlagen");
-                return null;
-            }
-            
-            _logDat?.sendInfoMessage($"JokiAutomation\n{name} verbunden ({device.IPAddress}:{device.Port})");
-            return adapter;
         }
+
+        public bool IsPtzInitialized()
+        {
+            // Wenn PTZ-Modus deaktiviert ist, gilt es als "initialisiert"
+            if (!_isPtzCameraMode)
+            {
+                return true;
+            }
+
+            // Im PTZ-Modus: Prüfe ob Controller existiert und verbunden ist
+            return _canonPtzController != null && _canonPtzController.IsConnected;
+        }
+
+        // Add this method to your Form1 class (anywhere in the class, e.g., near other config helpers)
+        private string FindNetworkConfigFile()
+        {
+            // Search in several common locations for the config file
+            string[] possiblePaths = new[]
+            {
+                Path.Combine(Application.StartupPath, NETWORK_CONFIG_FILE),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, NETWORK_CONFIG_FILE),
+                Path.Combine(Directory.GetCurrentDirectory(), NETWORK_CONFIG_FILE)
+            };
+
+            foreach (string path in possiblePaths)
+            {
+                if (File.Exists(path))
+                    return path;
+            }
+
+            return null;
+        }
+
+/// <summary>
+/// Shutdown PTZ Camera: Move to home position, enter standby, and disconnect
+/// </summary>
+private async Task ShutdownPtzCameraAsync()
+{
+    if (!_isPtzCameraMode || _canonPtzController == null)
+    {
+        _logDat?.sendInfoMessage("JokiAutomation\nPTZ-Kamera nicht konfiguriert - Shutdown übersprungen");
+        return;
+    }
+
+    if (!_canonPtzController.IsConnected)
+    {
+        _logDat?.sendInfoMessage("JokiAutomation\nPTZ-Kamera bereits getrennt");
+        return;
+    }
+
+    try
+    {
+        _logDat?.sendInfoMessage("JokiAutomation\n=== PTZ-Kamera Shutdown gestartet ===");
+        
+        // Step 1: Disable Auto-Tracking if active
+        _logDat?.sendInfoMessage("JokiAutomation\nSchritt 1: Deaktiviere Auto-Tracking...");
+        await _canonPtzController.DisableTrackingAsync();
+        await Task.Delay(500);
+        
+        // Step 2: Stop all movements
+        _logDat?.sendInfoMessage("JokiAutomation\nSchritt 2: Stoppe alle Bewegungen...");
+        await _canonPtzController.StopAllAsync();
+        await Task.Delay(500);
+        
+        // Step 3: Move to home/null position
+        _logDat?.sendInfoMessage("JokiAutomation\nSchritt 3: Fahre zu Nullposition...");
+        var homeResult = await _canonPtzController.RecallPresetAsync(0); // Preset 0 as "home"
+        
+        if (homeResult.Success)
+        {
+            _logDat?.sendInfoMessage($"JokiAutomation\n✓ {homeResult.Message}");
+        }
+        else
+        {
+            _logDat?.sendInfoMessage($"JokiAutomation\n⚠ Warnung: {homeResult.Message}");
+        }
+        
+        // Wait for camera to reach home position
+        await Task.Delay(3000);
+        
+        // Step 4: Enter standby mode
+        _logDat?.sendInfoMessage("JokiAutomation\nSchritt 4: Aktiviere Standby-Modus...");
+        var standbyResult = await _canonPtzController.SetStandbyAsync(true);
+        
+        if (standbyResult.Success)
+        {
+            _logDat?.sendInfoMessage($"JokiAutomation\n✓ {standbyResult.Message}");
+        }
+        else
+        {
+            _logDat?.sendInfoMessage($"JokiAutomation\n⚠ Warnung: {standbyResult.Message}");
+        }
+        
+        await Task.Delay(1000);
+        
+        // Step 5: Disconnect Canon Remote App
+        _logDat?.sendInfoMessage("JokiAutomation\nSchritt 5: Trenne Canon Remote App...");
+        var disconnectResult = await _canonPtzController.DisconnectAsync();
+        
+        if (disconnectResult.Success)
+        {
+            _logDat?.sendInfoMessage($"JokiAutomation\n✓ Canon Remote App getrennt");
+        }
+        else
+        {
+            _logDat?.sendInfoMessage($"JokiAutomation\n⚠ Warnung: {disconnectResult.Message}");
+        }
+        
+        // Step 6: Dispose controller to release resources
+        _logDat?.sendInfoMessage("JokiAutomation\nSchritt 6: Gebe Ressourcen frei...");
+        if (_canonPtzController is IDisposable disposable)
+        {
+            disposable.Dispose();
+            _logDat?.sendInfoMessage("JokiAutomation\n✓ Ressourcen freigegeben");
+        }
+        
+        // Clear reference
+        _canonPtzController = null;
+        
+        _logDat?.sendInfoMessage("JokiAutomation\n=== PTZ-Kamera Shutdown abgeschlossen ===");
+    }
+    catch (Exception ex)
+    {
+        _logDat?.sendInfoMessage($"JokiAutomation\n✗ PTZ-Kamera Shutdown Fehler: {ex.Message}");
+        _logDat?.sendInfoMessage($"JokiAutomation\nStackTrace: {ex.StackTrace}");
+        
+        // Try to dispose anyway
+        try
+        {
+            if (_canonPtzController is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+            _canonPtzController = null;
+        }
+        catch
+        {
+            // Ignore disposal errors
+        }
+    }
+}
+
     }
 }
 

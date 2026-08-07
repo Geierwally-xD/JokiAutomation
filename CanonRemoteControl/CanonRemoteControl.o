@@ -61,6 +61,7 @@
       <DependentUpon>PositionOverlay.xaml</DependentUpon>
     </Compile>
     <Compile Include="PositionPollingService.cs" />
+    <Compile Include="Services\AutoTrackingService.cs" />
     <Compile Include="XcCanonPtzController.cs" />
     <Page Include="HelpDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -112,11 +113,7 @@
   <ItemGroup>
     <Content Include="Canon.cfg.template">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\JokiAutomation\Network.cfg">
-      <Link>Network.cfg</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    </Content>`r`n    <Content Include="..\JokiAutomation\Network.cfg">`r`n      <Link>Network.cfg</Link>`r`n      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>`r`n    </Content>
   </ItemGroup>
   <ItemGroup>
     <Page Include="MainWindow.xaml">

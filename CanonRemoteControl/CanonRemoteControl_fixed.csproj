@@ -61,6 +61,7 @@
       <DependentUpon>PositionOverlay.xaml</DependentUpon>
     </Compile>
     <Compile Include="PositionPollingService.cs" />
+    <Compile Include="Services\AutoTrackingService.cs" />
     <Compile Include="XcCanonPtzController.cs" />
     <Page Include="HelpDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
