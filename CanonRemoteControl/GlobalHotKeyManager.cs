@@ -71,7 +71,6 @@ namespace CanonRemoteControl
 
             uint ctrlAlt = (uint)(KeyModifier.Control | KeyModifier.Alt | KeyModifier.NoRepeat);
 
-            bool success = true;
             int registeredCount = 0;
             int failedCount = 0;
 

@@ -1,0 +1,1 @@
+I:\MyGitRepos\JoKiAutomation\JokiAutomation\JokiAutomation\ATEM_SDK\SDK\Blackmagic ATEM Switchers SDK 10.2.1\Windows>regsvr32 BMDSwitcherAPI64.dll

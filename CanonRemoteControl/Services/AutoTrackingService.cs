@@ -196,6 +196,135 @@ namespace CanonRemoteControl.Services
             return string.Empty;
         }
 
+        public async Task<TrackInfo> GetTrackInfoAsync()
+        {
+            try
+            {
+                string url = $"{_baseUrl}/track_info.cgi";
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[AutoTracking] GetTrackInfo: GET {url}");
+#endif
+                var response = await _httpClient.GetAsync(url);
+                string body = await response.Content.ReadAsStringAsync();
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[AutoTracking] Response: HTTP {(int)response.StatusCode}");
+                System.Diagnostics.Debug.WriteLine($"[AutoTracking] Response Body: {body}");
+#endif
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return null;
+                }
+
+                int pan = ParseInt(body, "pan");
+                int tilt = ParseInt(body, "tilt");
+                int zoom = ParseInt(body, "zoom");
+
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[AutoTracking] Parsed values: Pan={pan}, Tilt={tilt}, Zoom={zoom}");
+#endif
+
+                return new TrackInfo
+                {
+                    Pan = pan,
+                    Tilt = tilt,
+                    Zoom = zoom
+                };
+            }
+            catch (Exception ex)
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[AutoTracking] GetTrackInfo Exception: {ex.Message}");
+#endif
+                return null;
+            }
+        }
+
+        public async Task<CommandResult> SetHomePositionAsync(string homePosition)
+        {
+            string commandName = "SetHomePosition";
+
+            try
+            {
+                // Canon RA-AT001 verwendet homePosition mit Doppelpunkt-Trennung (pan:tilt:zoom)
+                string url = $"{_baseUrl}/update_config.cgi?homePosition={homePosition}";
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[AutoTracking] {commandName}: GET {url}");
+#endif
+                var response = await _httpClient.GetAsync(url);
+                string body = await response.Content.ReadAsStringAsync();
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[AutoTracking] Response: HTTP {(int)response.StatusCode} - {body}");
+#endif
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return CommandResult.Fail(commandName, $"HTTP-Fehler: {(int)response.StatusCode}", response.StatusCode, body);
+                }
+
+                string statusCode = ParseString(body, "status_code");
+                if (string.Equals(statusCode, "G0_100", StringComparison.OrdinalIgnoreCase))
+                {
+                    return CommandResult.Ok(commandName, $"Home Position gesetzt: {homePosition}", response.StatusCode, body);
+                }
+
+                if (!string.IsNullOrEmpty(statusCode))
+                {
+                    return CommandResult.Fail(commandName, $"Fehlercode: {statusCode}", response.StatusCode, body);
+                }
+
+                return CommandResult.Fail(commandName, "Ungültige Antwort", response.StatusCode, body);
+            }
+            catch (Exception ex)
+            {
+                return CommandResult.Fail(commandName, "Kommunikationsfehler", exception: ex);
+            }
+        }
+
+        public async Task<CommandResult> EnableRecoveryControlAsync(int recoveryTimeSeconds)
+        {
+            string commandName = "EnableRecoveryControl";
+
+            try
+            {
+                string url = $"{_baseUrl}/update_config.cgi?recoveryControl=1&recoveryControlTime={recoveryTimeSeconds}";
+                
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[AutoTracking] {commandName}: GET {url}");
+#endif
+
+                var response = await _httpClient.GetAsync(url);
+                string body = await response.Content.ReadAsStringAsync();
+
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[AutoTracking] Response: HTTP {(int)response.StatusCode} - {body}");
+#endif
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return CommandResult.Fail(commandName, $"HTTP-Fehler: {(int)response.StatusCode}", response.StatusCode, body);
+                }
+
+                string statusCode = ParseString(body, "status_code");
+                if (string.Equals(statusCode, "G0_100", StringComparison.OrdinalIgnoreCase))
+                {
+                    return CommandResult.Ok(commandName, $"Recovery Control aktiviert ({recoveryTimeSeconds}s)", response.StatusCode, body);
+                }
+
+                if (!string.IsNullOrEmpty(statusCode))
+                {
+                    string description = ParseString(body, "description");
+                    return CommandResult.Fail(commandName, $"API-Fehlercode: {statusCode} - {description}", response.StatusCode, body);
+                }
+
+                return CommandResult.Fail(commandName, "Ungültige Antwort vom Auto-Tracking-Service", response.StatusCode, body);
+            }
+            catch (Exception ex)
+            {
+                return CommandResult.Fail(commandName, "Kommunikationsfehler Recovery Control", exception: ex);
+            }
+        }
+
         public void Dispose()
         {
             _httpClient.Dispose();

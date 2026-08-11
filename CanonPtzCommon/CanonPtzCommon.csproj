@@ -47,6 +47,8 @@
     <Compile Include="NetworkCfgReader.cs" />
     <Compile Include="PositionPollingService.cs" />
     <Compile Include="SharedPresetState.cs" />
+    <Compile Include="SharedSessionState.cs" />
+    <Compile Include="TrackInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

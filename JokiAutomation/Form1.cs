@@ -2326,7 +2326,7 @@ private async Task ShutdownPtzCameraAsync()
         
         // Step 3: Move to home/null position
         _logDat?.sendInfoMessage("JokiAutomation\nSchritt 3: Fahre zu Nullposition...");
-        var homeResult = await _canonPtzController.RecallPresetAsync(0); // Preset 0 as "home"
+        var homeResult = await _canonPtzController.RecallPresetAsync(1); // Preset 1 as "home"
         
         if (homeResult.Success)
         {

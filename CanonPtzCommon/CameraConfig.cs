@@ -2,17 +2,26 @@ namespace CanonPtzCommon
 {
     public sealed class CameraConfig
     {
-        public string DeviceName { get; set; } = "Canon_CRN100";
+        public string DeviceName { get; set; }
         public string IpAddress { get; set; }
-        public int Port { get; set; } = 80;
+        public int Port { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }
-        public string Protocol { get; set; } = "LegacyAw";
+        public string Protocol { get; set; }
         public bool UseHttps { get; set; }
+        public int PanSpeed { get; set; }
+        public int TiltSpeed { get; set; }
+        public int ZoomSpeed { get; set; }
 
-        // PTZ Speed Settings (XC Protocol)
-        public int PanSpeed { get; set; } = 1500;
-        public int TiltSpeed { get; set; } = 1500;
-        public int ZoomSpeed { get; set; } = 30;
+        // AutoTracking configuration
+        public int AutoTrackingHomePreset { get; set; }
+        public int AutoTrackingStartupDelayMs { get; set; }
+        public int AutoTrackingRecoveryTimeSeconds { get; set; }
+        
+        /// <summary>
+        /// Optional: Stored home position in format "pan:tilt:zoom" (e.g., "0:0:1000")
+        /// If configured, this will be used instead of AutoTrackingHomePreset
+        /// </summary>
+        public string AutoTrackingHomePosition { get; set; }
     }
 }

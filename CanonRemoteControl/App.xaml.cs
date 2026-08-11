@@ -195,33 +195,36 @@ namespace CanonRemoteControl
             return result.Success ? 0 : 1;
         }
 
-        private async Task<int> ShutdownRunningInstanceAsync()
+        private Task<int> ShutdownRunningInstanceAsync()
         {
-            try
+            return Task.Run(() =>
             {
-                var currentProcess = System.Diagnostics.Process.GetCurrentProcess();
-                var processes = System.Diagnostics.Process.GetProcessesByName(currentProcess.ProcessName);
-
-                foreach (var process in processes)
+                try
                 {
-                    if (process.Id != currentProcess.Id)
-                    {
-                        Console.WriteLine($"Beende Prozess {process.Id}...");
-                        process.Kill();
-                        process.WaitForExit(5000);
-                        Console.WriteLine("Prozess erfolgreich beendet.");
-                        return 0;
-                    }
-                }
+                    var currentProcess = System.Diagnostics.Process.GetCurrentProcess();
+                    var processes = System.Diagnostics.Process.GetProcessesByName(currentProcess.ProcessName);
 
-                Console.WriteLine("Keine laufende Instanz gefunden.");
-                return 1;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"FEHLER beim Beenden: {ex.Message}");
-                return 1;
-            }
+                    foreach (var process in processes)
+                    {
+                        if (process.Id != currentProcess.Id)
+                        {
+                            Console.WriteLine($"Beende Prozess {process.Id}...");
+                            process.Kill();
+                            process.WaitForExit(5000);
+                            Console.WriteLine("Prozess erfolgreich beendet.");
+                            return 0;
+                        }
+                    }
+
+                    Console.WriteLine("Keine laufende Instanz gefunden.");
+                    return 1;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"FEHLER beim Beenden: {ex.Message}");
+                    return 1;
+                }
+            });
         }
 
         private void ShowHelp()
