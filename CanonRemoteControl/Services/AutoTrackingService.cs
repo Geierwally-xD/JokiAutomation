@@ -233,9 +233,7 @@ namespace CanonRemoteControl.Services
             }
             catch (Exception ex)
             {
-#if DEBUG
                 System.Diagnostics.Debug.WriteLine($"[AutoTracking] GetTrackInfo Exception: {ex.Message}");
-#endif
                 return null;
             }
         }

@@ -250,8 +250,131 @@ namespace JokiAutomation
             _rasPi.PuttyRequestRasPi(PC_CALIBRATE, ID);
         }
 
+        // ── PTZ movement tracking ─────────────────────────────────────────────
+        private int _activeMoveCount = 0;
+
         /// <summary>
-        /// Move to specified camcorder position
+        /// Indicates whether camera positioning movement is currently in progress.
+        /// In PTZ mode uses a reference counter incremented/decremented around
+        /// the full <see cref="MoveToPosAsync"/> call.
+        /// In RasPi mode uses the RasPi thread status.
+        /// </summary>
+        public bool IsMoving()
+        {
+            if (_isPtzMode && _canonPtzController != null)
+            {
+                return System.Threading.Volatile.Read(ref _activeMoveCount) > 0;
+            }
+
+            if (_rasPi?._RasPiThread != null && _rasPi._RasPiThread.IsAlive)
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Moves to the specified position asynchronously.
+        /// In PTZ mode the returned task resolves only after
+        /// <see cref="XcCanonPtzController.RecallPresetAsync"/> finishes (command
+        /// accepted by camera).  The camera may still be physically moving after
+        /// the task returns because the Canon XC API confirms command acceptance,
+        /// not arrival at the target position.
+        /// If precise arrival confirmation is required, add a settling delay after
+        /// this call (see <see cref="PtzSettlingTimeMs"/>).
+        /// </summary>
+        public async Task<PositionMoveResult> MoveToPosAsync(
+            int id,
+            System.Threading.CancellationToken cancellationToken = default)
+        {
+            if (_isPtzMode)
+            {
+                if (_canonPtzController == null)
+                {
+                    string msg = "PTZ-Modus aktiv, aber Canon Controller ist null!";
+                    _PCForm._logDat.sendInfoMessage($"PositionControl\n{msg}");
+                    return PositionMoveResult.Fail(id, msg);
+                }
+
+                if (id < 0)
+                {
+                    string msg = $"Ungültige Positions-ID: {id}";
+                    _PCForm._logDat.sendInfoMessage($"PositionControl\n{msg}");
+                    return PositionMoveResult.Fail(id, msg);
+                }
+
+                int canonPreset = MapRaspiPositionToCanonPreset(id);
+                SharedPresetState.SetLastPreset(canonPreset);
+
+                System.Threading.Interlocked.Increment(ref _activeMoveCount);
+                try
+                {
+                    _PCForm._logDat.sendInfoMessage(
+                        $"PositionControl\nPosition requested — ListBox Index={id}, Canon Preset={canonPreset}");
+
+                    var result = await _canonPtzController.RecallPresetAsync(canonPreset);
+
+                    if (result.Success)
+                    {
+                        _PCForm._logDat.sendInfoMessage(
+                            $"PositionControl\nPosition command accepted — Preset {canonPreset}");
+
+                        // Settling time: command accepted but camera is still physically moving.
+                        // This is a time-based fallback — not a confirmed arrival.
+                        if (PtzSettlingTimeMs > 0)
+                        {
+                            _PCForm._logDat.sendInfoMessage(
+                                $"PositionControl\nWaiting settling time {PtzSettlingTimeMs}ms (estimated, not confirmed arrival)");
+                            await Task.Delay(PtzSettlingTimeMs, cancellationToken);
+                        }
+
+                        _PCForm._logDat.sendInfoMessage(
+                            $"PositionControl\nPosition settling time completed — Preset {canonPreset}");
+                        return PositionMoveResult.Ok(id, canonPreset, result.Message);
+                    }
+                    else
+                    {
+                        _PCForm._logDat.sendInfoMessage(
+                            $"PositionControl\nPosition command failed — Preset {canonPreset}: {result.Message}");
+                        return PositionMoveResult.Fail(id, result.Message);
+                    }
+                }
+                catch (System.OperationCanceledException)
+                {
+                    _PCForm._logDat.sendInfoMessage($"PositionControl\nMoveToPosAsync cancelled — Preset {id}");
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _PCForm._logDat.sendInfoMessage(
+                        $"PositionControl\nMoveToPosAsync exception — Preset {id}: {ex.Message}");
+                    return PositionMoveResult.Fail(id, ex.Message);
+                }
+                finally
+                {
+                    System.Threading.Interlocked.Decrement(ref _activeMoveCount);
+                }
+            }
+            else
+            {
+                // Legacy RasPi mode — fire and keep existing behaviour
+                _PCForm._logDat.sendInfoMessage($"PositionControl\nRasPi-Modus: Sende Position {id} an RaspberryPi");
+                _rasPi.rasPiExecute(PC_MOVE, id);
+                return PositionMoveResult.Ok(id, id, "RasPi move started");
+            }
+        }
+
+        /// <summary>
+        /// Settling time (ms) added after a Canon PTZ preset command is accepted.
+        /// The Canon XC API confirms command acceptance, not physical arrival.
+        /// Set to 0 to disable, or configure a suitable value (e.g. 2000–4000 ms)
+        /// depending on the maximum expected travel time.
+        /// Default: 3000 ms.
+        /// </summary>
+        public int PtzSettlingTimeMs { get; set; } = 3000;
+
+        /// <summary>
+        /// Move camcorder to specified position (legacy synchronous wrapper).
+        /// Prefer <see cref="MoveToPosAsync"/> in new code.
         /// </summary>
         /// <param name="ID">Position ID to move to (0-based index)</param>
         public void moveToPos(int ID)
@@ -263,23 +386,25 @@ namespace JokiAutomation
                     int canonPreset = MapRaspiPositionToCanonPreset(ID);
                     _PCForm._logDat.sendInfoMessage($"PositionControl\nPTZ-Modus: Sende Preset {canonPreset} an Canon Kamera (ListBox Index {ID})");
                     SharedPresetState.SetLastPreset(canonPreset);
-                    Task.Run(async () => 
+                    // Fire-and-forget kept only for legacy callers that cannot await
+                    Task.Run(async () =>
                     {
+                        System.Threading.Interlocked.Increment(ref _activeMoveCount);
                         try
                         {
                             var result = await _canonPtzController.RecallPresetAsync(canonPreset);
                             if (result.Success)
-                            {
-                                _PCForm._logDat.sendInfoMessage($"PositionControl\nPreset {canonPreset} erfolgreich abgerufen");
-                            }
+                                _PCForm._logDat.sendInfoMessage($"PositionControl\nPreset {canonPreset} erfolgreich angefordert (moveToPos legacy)");
                             else
-                            {
-                                _PCForm._logDat.sendInfoMessage($"PositionControl\nFehler beim Abrufen von Preset {canonPreset}: {result.Message}");
-                            }
+                                _PCForm._logDat.sendInfoMessage($"PositionControl\nFehler Preset {canonPreset}: {result.Message}");
                         }
                         catch (Exception ex)
                         {
-                            _PCForm._logDat.sendInfoMessage($"PositionControl\nException beim PTZ Preset-Abruf: {ex.Message}");
+                            _PCForm._logDat.sendInfoMessage($"PositionControl\nException Preset {canonPreset}: {ex.Message}");
+                        }
+                        finally
+                        {
+                            System.Threading.Interlocked.Decrement(ref _activeMoveCount);
                         }
                     });
                 }
@@ -453,27 +578,6 @@ namespace JokiAutomation
         }
 
         /// <summary>
-        /// Indicates whether camera positioning movement is currently in progress
-        /// </summary>
-        /// <returns>True if camera is moving, false if idle</returns>
-        public bool IsMoving()
-        {
-            if (_isPtzMode && _canonPtzController != null)
-            {
-                // Canon PTZ doesn't provide movement status
-                return false;
-            }
-
-            // Check if RasPi thread exists and is still alive
-            if (_rasPi?._RasPiThread != null && _rasPi._RasPiThread.IsAlive)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
         /// Release unmanaged resources and optionally release managed resources
         /// </summary>
         /// <param name="disposing">True to release both managed and unmanaged resources; false to release only unmanaged resources</param>
@@ -520,7 +624,10 @@ namespace JokiAutomation
         private static RasPi _rasPi = new RasPi(); // Raspberry Pi functionality
         private ICanonPtzController _canonPtzController; // Canon PTZ camera controller
         private bool _isPtzMode = false; // True = Canon PTZ, False = Raspberry Pi
-        private string _JokiAutomationPath = Environment.GetEnvironmentVariable("JokiAutomation");
+        private string _JokiAutomationPath =
+            Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.Process) ??
+            Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.User) ??
+            Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.Machine);
         private static Form1 _PCForm;
         private bool disposed = false;
     }

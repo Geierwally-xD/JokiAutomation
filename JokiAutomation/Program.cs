@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace JokiAutomation
 {
@@ -15,26 +17,66 @@ namespace JokiAutomation
         [STAThread]
         static void Main(string[] args)
         {
+            Mutex singleInstanceMutex = null;
+            bool mutexAcquired = false;
+
             try
             {
-                // Prüfe ob Kommandozeilen-Modus oder GUI-Modus
-                if (args.Length >= 1)
+                singleInstanceMutex = new Mutex(false, @"Global\JokiAutomation_SingleInstance");
+
+                try
                 {
-                    // Kommandozeilen-Modus: KEINE Form, direkte Ausführung
-                    CommandInterpreter(args);
+                    mutexAcquired = singleInstanceMutex.WaitOne(0, false);
                 }
-                else
+                catch (AbandonedMutexException)
                 {
-                    // GUI-Modus: Starte WinForms-Anwendung
-                    Application.SetCompatibleTextRenderingDefault(false);
-                    Application.EnableVisualStyles();
-                    JA = new Form1();
-                    Application.Run(JA);
+                    mutexAcquired = true;
+                }
+
+                if (!mutexAcquired)
+                {
+                    LogStartupMessage("JokiAutomation instance already running.");
+                    Environment.ExitCode = 2;
+                    return;
+                }
+
+                try
+                {
+                    if (args.Length >= 1)
+                    {
+                        CommandInterpreter(args);
+                    }
+                    else
+                    {
+                        Application.SetCompatibleTextRenderingDefault(false);
+                        Application.EnableVisualStyles();
+
+                        // TODO: DLL-Check — nach Test entfernen!
+                        try
+                        {
+                            object discovery = new BMDSwitcherAPI.CBMDSwitcherDiscovery();
+                            Debug.WriteLine("DLL Check: COM-Aktivierung OK - BMDSwitcherAPI64.dll korrekt registriert.");
+                            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(discovery);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"DLL Check: COM-Aktivierung FEHLGESCHLAGEN - {ex.Message} (HRESULT: 0x{ex.HResult:X8})");
+                        }
+
+                        JA = new Form1();
+                        Application.Run(JA);
+                    }
+                }
+                finally
+                {
+                    if (mutexAcquired)
+                    {
+                        singleInstanceMutex.ReleaseMutex();
+                    }
                 }
             }
             catch (Exception ex)
             {
-                // Im Kommandozeilen-Modus: Logge in Datei
                 if (args.Length >= 1)
                 {
                     string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RasPiAutomationLog.txt");
@@ -42,106 +84,13 @@ namespace JokiAutomation
                 }
                 else
                 {
-                    // Im GUI-Modus: Zeige MessageBox
                     MessageBox.Show($"Kritischer Fehler in Main(): {ex.Message}\n\n{ex.StackTrace}", 
                                    "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
-        }
-
-        private static void RunCommandLineMode(string[] args)
-        {
-            LogData logData = null;
-            
-            try
+            finally
             {
-                // Erstelle minimale Komponenten ohne Form
-                logData = new LogData();
-                logData.initLogData(null); // Kein Form → Logging geht in Datei
-                
-                logData.sendInfoMessage("=================================================");
-                logData.sendInfoMessage("=== JokiAutomation Kommandozeilen-Modus START ===");
-                logData.sendInfoMessage($"Argumente: {string.Join(" ", args)}");
-                logData.sendInfoMessage($"Anzahl Argumente: {args.Length}");
-                
-                // DEBUG: Alle Argumente einzeln ausgeben
-                for (int i = 0; i < args.Length; i++)
-                {
-                    logData.sendInfoMessage($"  args[{i}] = '{args[i]}'");
-                }
-                
-                logData.sendInfoMessage($"Arbeitsverzeichnis: {AppDomain.CurrentDomain.BaseDirectory}");
-                
-                // Lade Netzwerk-Konfiguration
-                var networkConfig = LoadNetworkConfig(logData);
-                logData.sendInfoMessage($"Netzwerk-Config: {networkConfig.Count} Geräte geladen");
-                
-                if (args.Length < 1)
-                {
-                    logData.sendInfoMessage("FEHLER: Kein Kommando angegeben");
-                    logData.sendInfoMessage("Verwendung: JokiAutomation.exe <Kommando> [Parameter]");
-                    logData.sendInfoMessage("Verfügbare Kommandos: Altar, Predigt, GoPro, Band, Text, ATEM_Init");
-                    return;
-                }
-                
-                string command = args[0];
-                logData.sendInfoMessage($">>> Kommando: {command}");
-                
-                // Initialisiere nur benötigte Komponenten basierend auf Kommando
-                if (RequiresATEM(command))
-                {
-                    logData.sendInfoMessage(">>> Benötigt: ATEM Mini Pro");
-                    var atem = InitializeATEM(networkConfig, logData);
-                    
-                    if (atem != null)
-                    {
-                        ExecuteATEMCommand(atem, command, args, logData);
-                        
-                        // WICHTIG: Warte bis Befehl vollständig ausgeführt wurde
-                        Thread.Sleep(1000);
-                        
-                        atem.Dispose();
-                        logData.sendInfoMessage(">>> ATEM Verbindung geschlossen");
-                    }
-                    else
-                    {
-                        logData.sendInfoMessage("FEHLER: ATEM konnte nicht initialisiert werden");
-                    }
-                }
-                else if (RequiresRaspberryPi(command))
-                {
-                    logData.sendInfoMessage(">>> Benötigt: Raspberry Pi");
-                    var raspi = InitializeRaspberryPi(networkConfig, logData);
-                    ExecuteRaspberryPiCommand(raspi, command, args, logData);
-                }
-                else if (RequiresRoku(command))
-                {
-                    logData.sendInfoMessage(">>> Benötigt: Roku TV");
-                    var roku = InitializeRoku(networkConfig, logData);
-                    ExecuteRokuCommand(roku, command, args, logData);
-                }
-                else
-                {
-                    logData.sendInfoMessage($"FEHLER: Unbekanntes Kommando: {command}");
-                    logData.sendInfoMessage("Verfügbare Kommandos: Altar, Predigt, GoPro, Band, Text, ATEM_Init");
-                }
-                
-                logData.sendInfoMessage("=== Kommando abgeschlossen ===");
-                logData.sendInfoMessage("=================================================");
-            }
-            catch (Exception ex)
-            {
-                if (logData != null)
-                {
-                    logData.sendInfoMessage($"KRITISCHER FEHLER: {ex.Message}");
-                    logData.sendInfoMessage($"StackTrace: {ex.StackTrace}");
-                }
-                else
-                {
-                    // Fallback: Direkt in Datei schreiben
-                    string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RasPiAutomationLog.txt");
-                    File.AppendAllText(logPath, $"\n{DateTime.Now}: FEHLER - {ex.Message}\n{ex.StackTrace}\n");
-                }
+                singleInstanceMutex?.Dispose();
             }
         }
 
@@ -151,16 +100,14 @@ namespace JokiAutomation
             
             try
             {
-                // Erstelle minimale Komponenten ohne Form
                 logData = new LogData();
-                logData.initLogData(null); // Kein Form → Logging geht in Datei
+                logData.initLogData(null);
         
                 logData.sendInfoMessage("=================================================");
                 logData.sendInfoMessage("=== JokiAutomation Kommandozeilen-Modus START ===");
                 logData.sendInfoMessage($"Argumente: {string.Join(" ", args)}");
                 logData.sendInfoMessage($"Anzahl Argumente: {args.Length}");
         
-                // DEBUG: Alle Argumente einzeln ausgeben
                 for (int i = 0; i < args.Length; i++)
                 {
                     logData.sendInfoMessage($"  args[{i}] = '{args[i]}'");
@@ -169,83 +116,117 @@ namespace JokiAutomation
                 logData.sendInfoMessage($"Arbeitsverzeichnis: {AppDomain.CurrentDomain.BaseDirectory}");
                 logData.sendInfoMessage($"Build-Konfiguration: {GetBuildConfiguration()}");
         
-                // Da die Form1.CommandInterpreter Zugriff auf Form-Komponenten benötigt,
-                // müssen wir eine minimale Form-Instanz erstellen
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
 
                 Form1 form = new Form1();
 
-                logData.sendInfoMessage(">>> Form1 erstellt, warte auf Initialisierung...");
-        
-                // ✅ WICHTIG: Warte bis PTZ-Kamera initialisiert ist (max 15 Sekunden)
-                int maxWaitMs = 15000;
-                int waitedMs = 0;
-                int checkIntervalMs = 200; // Längeres Intervall für Release-Build
-        
-                while (waitedMs < maxWaitMs)
+                logData.sendInfoMessage(">>> Form1 erstellt");
+                logData.sendInfoMessage(">>> Starte Message Loop und warte auf Shown-Event...");
+
+                // ── Befehl wird im Form.Shown-Event ausgeführt ──────────────
+                // Das stellt sicher, dass:
+                // 1. Fensterhandle vorhanden ist
+                // 2. Message Loop läuft
+                // 3. SynchronizationContext auf UI-Thread etabliert ist
+                
+                bool commandExecuted = false;
+                bool commandFailed = false;
+                string commandError = "";
+
+                form.Shown += async (sender, e) =>
                 {
-                    // Prüfe Status
-                    bool isInitialized = form.IsPtzInitialized();
-                    
-                    if (isInitialized)
+                    if (commandExecuted) return;
+                    commandExecuted = true;
+
+                    logData.sendInfoMessage(">>> Form.Shown-Event empfangen, Message Loop aktiv");
+
+                    try
                     {
-                        logData.sendInfoMessage($">>> PTZ-Kamera erfolgreich initialisiert nach {waitedMs}ms");
-                        break;
+                        logData.sendInfoMessage(">>> Warte auf PTZ-Initialisierung (max. 15s)...");
+
+                        int maxWaitMs = 15000;
+                        int waitedMs = 0;
+                        int checkIntervalMs = 200;
+
+                        while (waitedMs < maxWaitMs)
+                        {
+                            bool isInitialized = form.IsPtzInitialized();
+                            
+                            if (isInitialized)
+                            {
+                                logData.sendInfoMessage($">>> PTZ-Kamera erfolgreich initialisiert nach {waitedMs}ms");
+                                break;
+                            }
+                            
+                            await Task.Delay(checkIntervalMs);
+                            waitedMs += checkIntervalMs;
+                            
+                            if (waitedMs % 1000 == 0)
+                            {
+                                logData.sendInfoMessage($">>> Warte auf PTZ-Initialisierung... ({waitedMs}ms)");
+                            }
+                        }
+
+                        if (!form.IsPtzInitialized())
+                        {
+                            logData.sendInfoMessage($">>> WARNUNG: PTZ-Kamera nicht initialisiert nach {maxWaitMs}ms");
+                        }
+
+                        string[] formArgs = new string[args.Length + 1];
+                        formArgs[0] = "JokiAutomation.exe";
+                        Array.Copy(args, 0, formArgs, 1, args.Length);
+
+                        logData.sendInfoMessage(">>> Führe Kommando aus...");
+                        await form.CommandInterpreterAsync(formArgs);
+
+                        // Give the WinForms message loop a short grace period so UI-driven
+                        // audio/profile updates can finish processing before shutdown.
+                        await Task.Delay(250);
+
+                        logData.sendInfoMessage(">>> Kommando abgeschlossen");
                     }
-                    
-                    // Warte und verarbeite UI-Events
-                    Thread.Sleep(checkIntervalMs);
-                    waitedMs += checkIntervalMs;
-                    
-                    // Wichtig für Release-Build: Explizit UI-Thread bedienen
-                    Application.DoEvents();
-                    
-                    if (waitedMs % 1000 == 0) // Alle 1 Sekunde Status ausgeben
+                    catch (Exception ex)
                     {
-                        logData.sendInfoMessage($">>> Warte auf PTZ-Initialisierung... ({waitedMs}ms)");
+                        logData.sendInfoMessage($"FEHLER beim Ausführen des Kommandos: {ex.Message}");
+                        logData.sendInfoMessage($"StackTrace:\n{ex.StackTrace}");
+                        commandFailed = true;
+                        commandError = ex.Message;
                     }
-                }
-        
-                if (!form.IsPtzInitialized())
-                {
-                    logData.sendInfoMessage($">>> WARNUNG: PTZ-Kamera nicht initialisiert nach {maxWaitMs}ms");
-                    logData.sendInfoMessage(">>> Prüfen Sie:");
-                    logData.sendInfoMessage(">>>   - Network.cfg vorhanden und korrekt");
-                    logData.sendInfoMessage(">>>   - Canon PTZ Kamera eingeschaltet");
-                    logData.sendInfoMessage(">>>   - Netzwerkverbindung zur Kamera");
-                }
+                    finally
+                    {
+                        // Schließe Form nach Befehlsausführung
+                        form.BeginInvoke(new Action(() =>
+                        {
+                            logData.sendInfoMessage(">>> Schließe Anwendung...");
+                            Application.Exit();
+                        }));
+                    }
+                };
 
-                // Prepare args array: CommandInterpreter in Form1 erwartet args[0] = Programmname, args[1] = Kommando
-                string[] formArgs = new string[args.Length + 1];
-                formArgs[0] = "JokiAutomation.exe"; // Programmname als erstes Argument
-                Array.Copy(args, 0, formArgs, 1, args.Length);
+                // ── Verstecke Form im Kommandozeilenmodus ──────────────────
+                form.Hide();
+                form.ShowInTaskbar = false;
+                form.Opacity = 0;
 
-                // Rufe CommandInterpreterAsync aus Form1 auf
-                logData.sendInfoMessage(">>> Führe Kommando aus...");
+                logData.sendInfoMessage(">>> Starte Application.Run() - Message Loop aktiv");
 
-                try
-                {
-                    // ✅ Verwende GetAwaiter().GetResult() statt Wait() für bessere Exception-Behandlung
-                    var commandTask = form.CommandInterpreterAsync(formArgs);
-                    commandTask.GetAwaiter().GetResult(); // Wirft Original-Exception ohne AggregateException
+                // Starte Message Loop - Form.Shown wird ausgelöst
+                Application.Run(form);
 
-                    logData.sendInfoMessage(">>> Kommando abgeschlossen");
-                }
-                catch (Exception ex)
-                {
-                    logData.sendInfoMessage($"FEHLER beim Ausführen des Kommandos: {ex.Message}");
-                    logData.sendInfoMessage($"StackTrace:\n{ex.StackTrace}");
-                    // Programm läuft weiter und beendet sich sauber
-                }
-
-                // ✅ Zusätzliche Wartezeit für Release-Build, um sicherzustellen dass alles fertig ist
                 Thread.Sleep(500);
 
-                logData.sendInfoMessage("=== Kommando abgeschlossen ===");
+                if (commandFailed)
+                {
+                    logData.sendInfoMessage($"=== Kommando FEHLGESCHLAGEN: {commandError} ===");
+                }
+                else
+                {
+                    logData.sendInfoMessage("=== Kommando erfolgreich abgeschlossen ===");
+                }
+
                 logData.sendInfoMessage("=================================================");
 
-                // Dispose Form
                 form.Dispose();
             }
             catch (Exception ex)
@@ -257,11 +238,16 @@ namespace JokiAutomation
                 }
                 else
                 {
-                    // Fallback: Direkt in Datei schreiben
                     string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RasPiAutomationLog.txt");
                     File.AppendAllText(logPath, $"\n{DateTime.Now}: FEHLER - {ex.Message}\n{ex.StackTrace}\n");
                 }
             }
+        }
+
+        private static void LogStartupMessage(string message)
+        {
+            string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RasPiAutomationLog.txt");
+            File.AppendAllText(logPath, $"{DateTime.Now}: {message}\n");
         }
 
         private static string GetBuildConfiguration()
@@ -302,13 +288,12 @@ namespace JokiAutomation
                         string name = parts[0].Trim();
                         string ip = parts[1].Trim();
                         
-                        // Entferne Kommentare nach der IP (z.B. "192.168.0.40 //192.168.178.50")
                         if (ip.Contains("//"))
                         {
                             ip = ip.Substring(0, ip.IndexOf("//")).Trim();
                         }
                         
-                        int port = 9910; // ATEM Standard-Port
+                        int port = 9910;
                         if (parts.Length >= 3 && int.TryParse(parts[2].Trim(), out int p))
                         {
                             port = p;
@@ -467,15 +452,22 @@ namespace JokiAutomation
                         atem.SetAudioMixerInput(1, false);
                         logData.sendInfoMessage(">>> ERFOLG: MIC 1 deaktiviert");
                         break;
+                    case "atem_mic2_on":
+                        logData.sendInfoMessage(">>> Aktiviere MIC 2...");
+                        atem.SetAudioMixerInput(2, true);
+                        logData.sendInfoMessage(">>> ERFOLG: MIC 2 aktiviert");
+                        break;
+                    case "atem_mic2_off":
+                        logData.sendInfoMessage(">>> Deaktiviere MIC 2...");
+                        atem.SetAudioMixerInput(2, false);
+                        logData.sendInfoMessage(">>> ERFOLG: MIC 2 deaktiviert");
+                        break;
                         
                     default:
                         logData.sendInfoMessage($">>> WARNUNG: ATEM-Kommando '{command}' nicht implementiert");
                         break;
                 }
                 
-                // Warte auf Ausführung
-                logData.sendInfoMessage(">>> Warte 500ms auf Ausführung...");
-                Thread.Sleep(500);
             }
             catch (Exception ex)
             {

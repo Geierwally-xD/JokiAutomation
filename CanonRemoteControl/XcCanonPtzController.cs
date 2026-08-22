@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CanonRemoteControl
@@ -23,6 +24,15 @@ namespace CanonRemoteControl
         private const int SessionKeepAliveIntervalMs = 30000; // 30 Sekunden (Session timeout ist meist 60s)
         private bool _isRefreshingSession = false;
         private readonly System.Threading.SemaphoreSlim _sessionSemaphore = new System.Threading.SemaphoreSlim(1, 1);
+
+        // Shutdown state machine:
+        // 0 = verbunden / noch nicht getrennt
+        // 1 = Disconnect läuft
+        // 2 = Disconnect abgeschlossen
+        private int _disconnectState;
+        private int _disposeState;
+        private int _disposeRequested;
+        private int _resourcesDisposed;
 
         private static readonly string _debugLogPath = Path.Combine(
             Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "",
@@ -48,6 +58,52 @@ namespace CanonRemoteControl
                 // Ignore file logging errors to prevent disrupting the application
             }
 #endif
+        }
+
+        private static string SanitizeForLog(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return value;
+            }
+
+            return Regex.Replace(value, @"([?&]s=)[^&]+", "$1***", RegexOptions.IgnoreCase);
+        }
+
+        private void StopKeepAliveTimerIfRunning()
+        {
+            var timer = Interlocked.Exchange(ref _sessionKeepAliveTimer, null);
+            if (timer != null)
+            {
+                timer.Dispose();
+                DebugLog("Keep-alive timer stopped");
+            }
+        }
+
+        private void DisposeResourcesOnce()
+        {
+            if (Interlocked.CompareExchange(ref _resourcesDisposed, 1, 0) != 0)
+            {
+                return;
+            }
+
+            StopKeepAliveTimerIfRunning();
+
+            // Give in-flight refresh callback a short window to leave its critical section
+            bool refreshCompleted = SpinWait.SpinUntil(() => !_isRefreshingSession, 500);
+            if (!refreshCompleted)
+            {
+                DebugLog("Dispose continuing although refresh is still marked active");
+            }
+
+            if (_autoTrackingService is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+
+            _httpClient?.Dispose();
+            _sessionSemaphore?.Dispose();
+            DebugLog("Controller disposed");
         }
 
         public XcCanonPtzController(CameraConfig config)
@@ -97,7 +153,7 @@ namespace CanonRemoteControl
                 string existingSessionId = SharedSessionState.GetSessionId();
                 if (!string.IsNullOrEmpty(existingSessionId))
                 {
-                    DebugLog($"Found existing shared session: {existingSessionId}");
+                    DebugLog("Found existing shared session");
                     
                     // Try to claim the existing session
                     var claimResult = await SendCgiRequestAsync($"claim.cgi?s={existingSessionId}", "SessionClaimExisting");
@@ -106,6 +162,7 @@ namespace CanonRemoteControl
                         _sessionId = existingSessionId;
                         IsConnected = true;
                         _reconnectAttempts = 0;
+                        Volatile.Write(ref _disconnectState, 0);
                         
                         // Start session keep-alive timer
                         StartSessionKeepAlive();
@@ -131,7 +188,7 @@ namespace CanonRemoteControl
                 }
 
                 _sessionId = ExtractSessionId(openResult.ResponseBody);
-                DebugLog($"SessionId extracted: {_sessionId}");
+                DebugLog("SessionId extracted");
 
                 // Share the session ID with other instances
                 SharedSessionState.SetSessionId(_sessionId);
@@ -139,6 +196,7 @@ namespace CanonRemoteControl
 
                 IsConnected = true;
                 _reconnectAttempts = 0;
+                Volatile.Write(ref _disconnectState, 0);
                 
                 // Start session keep-alive timer
                 StartSessionKeepAlive();
@@ -157,16 +215,15 @@ namespace CanonRemoteControl
 
         private void StartSessionKeepAlive()
         {
-            // Stop existing timer if any
-            _sessionKeepAliveTimer?.Dispose();
+            StopKeepAliveTimerIfRunning();
             
-            // Create new timer that fires every 30 seconds
-            _sessionKeepAliveTimer = new System.Threading.Timer(
+            var timer = new System.Threading.Timer(
                 async _ => await RefreshSessionAsync(),
                 null,
                 SessionKeepAliveIntervalMs,
                 SessionKeepAliveIntervalMs);
-            
+
+            Interlocked.Exchange(ref _sessionKeepAliveTimer, timer);
             DebugLog("Session keep-alive timer started (30s interval)");
         }
 
@@ -185,34 +242,46 @@ namespace CanonRemoteControl
                 return;
             }
 
-            // Try to acquire lock, but don't wait - if busy, skip this refresh
-            if (!await _sessionSemaphore.WaitAsync(0))
-            {
-                DebugLog("Session refresh skipped: session is busy");
-                return;
-            }
-
-            _isRefreshingSession = true;
-
+            bool semaphoreAcquired = false;
             try
             {
+                // Try to acquire lock, but don't wait - if busy, skip this refresh
+                semaphoreAcquired = await _sessionSemaphore.WaitAsync(0);
+                if (!semaphoreAcquired)
+                {
+                    DebugLog("Session refresh skipped: session is busy");
+                    return;
+                }
+
+                _isRefreshingSession = true;
+
                 DebugLog("Checking session validity with info.cgi...");
-                
+
                 // Use info.cgi as keep-alive ping - lightweight and doesn't interfere
                 var pingResult = await SendCgiRequestAsync($"info.cgi?s={_sessionId}&item=c.1.zoom", "SessionKeepAlive");
-                
-                // Check if session is invalid (Unknown Connection ID)
-                if (!pingResult.Success || 
-                    (pingResult.ResponseBody != null && pingResult.ResponseBody.Contains("Unknown Connection ID")))
+
+                // Avoid double recovery: request layer may already handle reconnect on transport failures.
+                if (!pingResult.Success)
+                {
+                    DebugLog("Session keep-alive request failed; reconnect handled by request layer");
+                    return;
+                }
+
+                // Recover only on explicit invalid-session response.
+                if (pingResult.ResponseBody != null && pingResult.ResponseBody.Contains("Unknown Connection ID"))
                 {
                     DebugLog("Session is invalid (Unknown Connection ID), attempting to recover...");
-                    
+
                     // Session expired or taken over by RA-AT001, rebuild it
                     await HandleSessionLostAsync();
                     return;
                 }
-                
+
                 DebugLog("Session is valid and active");
+            }
+            catch (ObjectDisposedException)
+            {
+                DebugLog("Session refresh skipped: semaphore already disposed during shutdown");
             }
             catch (Exception ex)
             {
@@ -221,7 +290,18 @@ namespace CanonRemoteControl
             finally
             {
                 _isRefreshingSession = false;
-                _sessionSemaphore.Release();
+
+                if (semaphoreAcquired)
+                {
+                    try
+                    {
+                        _sessionSemaphore.Release();
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        DebugLog("Session refresh release skipped: semaphore already disposed");
+                    }
+                }
             }
         }
 
@@ -230,8 +310,7 @@ namespace CanonRemoteControl
             DebugLog("Session lost, attempting to rebuild...");
             
             // Stop keep-alive timer temporarily
-            _sessionKeepAliveTimer?.Dispose();
-            _sessionKeepAliveTimer = null;
+            StopKeepAliveTimerIfRunning();
             
             // Mark as disconnected
             IsConnected = false;
@@ -276,40 +355,50 @@ namespace CanonRemoteControl
 
         public async Task<CommandResult> DisconnectAsync()
         {
+            DebugLog("Disconnect requested");
+
+            int previousState = Interlocked.CompareExchange(ref _disconnectState, 1, 0);
+            if (previousState != 0)
+            {
+                DebugLog(previousState == 1
+                    ? "Disconnect already running"
+                    : "Disconnect already completed");
+
+                return CommandResult.Ok("Disconnect", "Canon PTZ wurde bereits getrennt oder wird gerade getrennt.");
+            }
+
             try
             {
-                // Stop keep-alive timer
-                _sessionKeepAliveTimer?.Dispose();
-                _sessionKeepAliveTimer = null;
-                DebugLog("Session keep-alive timer stopped");
-                
-                if (!string.IsNullOrEmpty(_sessionId))
+                // Keep-alive idempotent stoppen
+                StopKeepAliveTimerIfRunning();
+
+                // Session-ID atomar entnehmen und sofort lokal invalidieren
+                string sessionIdForYield = Interlocked.Exchange(ref _sessionId, null);
+
+                if (!string.IsNullOrEmpty(sessionIdForYield))
                 {
-                    // Only close session if we are the last instance
-                    // Check if session is still shared
-                    string sharedSessionId = SharedSessionState.GetSessionId();
-                    if (sharedSessionId == _sessionId)
-                    {
-                        // We are the owner, yield for others
-                        await SendCgiRequestAsync($"yield.cgi?s={_sessionId}", "SessionYield");
-                        DebugLog("Session yielded for other instances");
-                        // Don't close - let others use it
-                    }
-                    else
-                    {
-                        // Not the owner, just yield
-                        await SendCgiRequestAsync($"yield.cgi?s={_sessionId}", "SessionYield");
-                    }
+                    DebugLog("SessionYield started");
+                    await SendCgiRequestAsync($"yield.cgi?s={sessionIdForYield}", "SessionYield");
+                    DebugLog("SessionYield completed");
                 }
 
                 IsConnected = false;
-                _sessionId = null;
+                DebugLog("Session state cleared");
                 return CommandResult.Ok("Disconnect", "Verbindung getrennt");
             }
             catch (Exception ex)
             {
                 IsConnected = false;
                 return CommandResult.Fail("Disconnect", "Fehler beim Trennen", exception: ex);
+            }
+            finally
+            {
+                Volatile.Write(ref _disconnectState, 2);
+
+                if (Volatile.Read(ref _disposeRequested) == 1)
+                {
+                    DisposeResourcesOnce();
+                }
             }
         }
 
@@ -592,8 +681,7 @@ namespace CanonRemoteControl
                 _sessionId = null;
                 
                 // Stop keep-alive timer
-                _sessionKeepAliveTimer?.Dispose();
-                _sessionKeepAliveTimer = null;
+                StopKeepAliveTimerIfRunning();
                 
                 // 3. Kurz warten
                 await Task.Delay(1000);
@@ -709,7 +797,7 @@ namespace CanonRemoteControl
                     DebugLog($"Recovery control warning: {recoveryResult.Message}");
                 }
 
-                // 7. Session zurückholen für manuelle PTZ-Steuerung
+                // 7. Session zurückholt für manuelle PTZ-Steuerung
                 if (!string.IsNullOrEmpty(_sessionId))
                 {
                     DebugLog("Reclaiming session after Auto-Tracking enable...");
@@ -947,11 +1035,14 @@ namespace CanonRemoteControl
             try
             {
                 string url = $"{_baseUrl}/-wvhttp-01-/{path}";
-                DebugLog($"{commandName}: GET {url}");
+                DebugLog($"{commandName}: GET {SanitizeForLog(url)}");
                 
                 if (_httpClient.DefaultRequestHeaders.Authorization != null)
                 {
-                    DebugLog($"Authorization: {_httpClient.DefaultRequestHeaders.Authorization.Scheme} {_httpClient.DefaultRequestHeaders.Authorization.Parameter}");
+                    // Maskiere Authorization-Header für Sicherheit
+                    string authScheme = _httpClient.DefaultRequestHeaders.Authorization.Scheme;
+                    string maskedAuth = new string('*', Math.Min(8, _httpClient.DefaultRequestHeaders.Authorization.Parameter?.Length ?? 0));
+                    DebugLog($"Authorization: {authScheme} {maskedAuth}");
                 }
 
                 var response = await _httpClient.GetAsync(url);
@@ -1138,13 +1229,30 @@ namespace CanonRemoteControl
 
         public void Dispose()
         {
-            _sessionKeepAliveTimer?.Dispose();
-            DisconnectAsync().Wait();
-            if (_autoTrackingService is IDisposable disposable)
+            if (Interlocked.CompareExchange(ref _disposeState, 1, 0) != 0)
             {
-                disposable.Dispose();
+                return;
             }
-            _httpClient?.Dispose();
+
+            Volatile.Write(ref _disposeRequested, 1);
+            DebugLog("Controller dispose requested");
+
+            int disconnectState = Volatile.Read(ref _disconnectState);
+            if (disconnectState == 0)
+            {
+                // Kein blockierendes Warten auf dem UI-Thread
+                _ = DisconnectAsync();
+                return;
+            }
+
+            if (disconnectState == 1)
+            {
+                DebugLog("Disconnect already running");
+                return;
+            }
+
+            DebugLog("Disconnect already completed");
+            DisposeResourcesOnce();
         }
     }
 }

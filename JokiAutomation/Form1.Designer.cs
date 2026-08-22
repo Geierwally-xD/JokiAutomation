@@ -1381,15 +1381,3 @@ namespace JokiAutomation
     }
 }
 
-internal class PositionControl : IDisposable
-{
-    // ... existing code ...
-    
-    public void Dispose()
-    {
-        // Hier Ressourcen freigeben, z.B.:
-        // timer?.Dispose();
-        // stream?.Dispose();
-    }
-}
-

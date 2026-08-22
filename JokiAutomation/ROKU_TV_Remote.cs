@@ -39,9 +39,12 @@ namespace JokiAutomation
         /// </summary>
         public ROKU_TV_Remote()
         {
-            string jokiPath = Environment.GetEnvironmentVariable("JokiAutomation");
-            _configPath = string.IsNullOrEmpty(jokiPath) 
-                ? CONFIG_FILENAME 
+            string jokiPath =
+                Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.Process) ??
+                Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.User) ??
+                Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.Machine);
+            _configPath = string.IsNullOrEmpty(jokiPath)
+                ? CONFIG_FILENAME
                 : Path.Combine(jokiPath, CONFIG_FILENAME);
 
             // Load configuration
@@ -68,12 +71,15 @@ namespace JokiAutomation
 
             _ipAddress = ipAddress;
             _port = port;
-            
-            string jokiPath = Environment.GetEnvironmentVariable("JokiAutomation");
-            _configPath = string.IsNullOrEmpty(jokiPath) 
-                ? CONFIG_FILENAME 
+
+            string jokiPath =
+                Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.Process) ??
+                Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.User) ??
+                Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.Machine);
+            _configPath = string.IsNullOrEmpty(jokiPath)
+                ? CONFIG_FILENAME
                 : Path.Combine(jokiPath, CONFIG_FILENAME);
-            
+
             _httpClient = new HttpClient
             {
                 Timeout = TimeSpan.FromSeconds(5)

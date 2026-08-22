@@ -13,7 +13,7 @@ using System.Diagnostics;
 
 namespace JokiAutomation
 {
-    class RasPi
+    partial class RasPi
     {
 
         public void initRasPi(Form1 winForm)
@@ -95,8 +95,8 @@ namespace JokiAutomation
         // raspberry pi request over Renci ssh.Net
         public void rasPiExecute(int command, int ID)
         {
-            _commandString = command.ToString();
-            _idString = ID.ToString();
+            string commandString = command.ToString();
+            string idString = ID.ToString();
             int commandLineInstances = 0;
             for (UInt16 i = 0; i < 5; i++)
             {
@@ -106,21 +106,19 @@ namespace JokiAutomation
             {
                 // count running command line instances of JoKiAutomation
                 Process[] localByName = Process.GetProcessesByName("JoKiAutomation");
-                for(int i = 0;i< localByName.Length; i++) 
+                for (int i = 0; i < localByName.Length; i++)
                 {
-                   if(localByName[i].MainWindowTitle == "")
+                    if (localByName[i].MainWindowTitle == "")
                     {
                         commandLineInstances++;
                     }
                 }
-                if (commandLineInstances < 2) // maximum one instance of JoKiAutomation from command line allowed 
+                if (commandLineInstances < 2) // maximum one instance of JoKiAutomation from command line allowed
                 {
                     if (_threadResultString[0] != "") // Lesen ohne Lock
                     {
                         _rasPiForm._logDat.sendInfoMessage(_threadResultString[0]);
                     }
-                    
-
 
                     // Load IP address from Network.cfg
                     string ipAddress = GetRaspberryPiIpFromNetwork();
@@ -135,10 +133,9 @@ namespace JokiAutomation
                     PasswordAuthenticationMethod pauth = new PasswordAuthenticationMethod(_rasPiConfig[1], _rasPiConfig[2]);
                     keybAuth.AuthenticationPrompt += new EventHandler<Renci.SshNet.Common.AuthenticationPromptEventArgs>(HandleKeyEvent);
 
-
-                    _RasPiThread = new Thread(new ThreadStart(rasPiThreadStart));
+                    _RasPiThread = new Thread(() => rasPiThreadStart(commandString, idString));
                     _RasPiThread.SetApartmentState(ApartmentState.STA);
-                    _rasPiForm._logDat.sendInfoMessage("start Raspberry Pi RasPi-Automation-application " + _commandString + " " + _idString);
+                    _rasPiForm._logDat.sendInfoMessage("start Raspberry Pi RasPi-Automation-application " + commandString + " " + idString);
                     _RasPiThread.Start();
                     if (_threadResultString[0] != "") // Erneutes Lesen ohne Lock
                     {
@@ -175,7 +172,10 @@ namespace JokiAutomation
             string[] searchPaths = new string[3];
 
             // 1. Umgebungsvariable
-            string envPath = Environment.GetEnvironmentVariable("JokiAutomation");
+            string envPath =
+                Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.Process) ??
+                Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.User) ??
+                Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.Machine);
             if (!string.IsNullOrEmpty(envPath) && !envPath.EndsWith(Path.DirectorySeparatorChar.ToString()))
             {
                 envPath += Path.DirectorySeparatorChar;
@@ -260,7 +260,7 @@ namespace JokiAutomation
         }
 
         // raspberry pi request over putty command line
-        public static void rasPiThreadStart()
+        public static void rasPiThreadStart(string commandValue, string idValue)
         {
             try
             {
@@ -323,9 +323,10 @@ namespace JokiAutomation
                     }
 
                     string commandString = string.Format(
-                        "sudo -n /home/pi/JokiAutomation/scripts/RasPiAutomation.sh {0} {1}",
-                        _commandString,
-                        _idString);
+                        "echo {2} | sudo -S /home/pi/JokiAutomation/RasPiAutomation {0} {1}",
+                        commandValue,
+                        idValue,
+                        _rasPiConfig[2]);
 
                     SshCommand cmd = sshClient.CreateCommand(commandString);
                     cmd.CommandTimeout = TimeSpan.FromSeconds(75);
@@ -454,12 +455,12 @@ namespace JokiAutomation
             if (command > 0)
             {
                 _rasPiForm._logDat.sendInfoMessage("start Raspberry Pi RasPi-Automation-application over Putty " + _commandString + " " + _idString);
-                strw.WriteLine("nice --15 /home/pi/JokiAutomation/RasPiAutomation " + _commandString + " " + _idString);
+                strw.WriteLine("echo " + _rasPiConfig[2] + " | sudo -S /home/pi/JokiAutomation/RasPiAutomation " + _commandString + " " + _idString);
             }
             else
             {
                 _rasPiForm._logDat.sendInfoMessage("reset Raspberry Pi RasPi-Automation-application over Putty ");
-                strw.WriteLine("killall -SIGKILL RasPiAutomation");    // stopp all RasPiAutomation 
+                strw.WriteLine("echo " + _rasPiConfig[2] + " | sudo -S killall -SIGKILL RasPiAutomation");    // stopp all RasPiAutomation 
                 strw.WriteLine("gpio export 5 out");
                 strw.WriteLine("gpio -g write 5 0");
                 strw.WriteLine("gpio export 6 out");
@@ -578,12 +579,15 @@ namespace JokiAutomation
         }
 
         public Thread _RasPiThread = null;
-        private static string _commandString = null;
-        private static string _idString = null;
+        private string _commandString = null;
+        private string _idString = null;
         private Form1 _rasPiForm;       
         private static Form1 _staticRasPiForm;      
         private static String[] _threadResultString = new String[5];
-        private static string _JokiAutomationPath = Environment.GetEnvironmentVariable("JokiAutomation");
+        private static string _JokiAutomationPath =
+            Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.Process) ??
+            Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.User) ??
+            Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.Machine);
         private String m_szFeedback; // hold feedback data
         private Object m_objLock;    // lock object
         private Boolean m_blnDoRead; // boolean value keeping up the read (may be used to interrupt the reading process)

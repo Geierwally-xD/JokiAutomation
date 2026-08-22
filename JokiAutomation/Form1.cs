@@ -47,7 +47,7 @@ namespace JokiAutomation
         private const int NULL_POSITION_INDEX = 21;
         private const int TEMP_ZOOM_INDEX = 20;
 
-        // Requested Function IDs
+        // Requested Function ID's
         private const uint FUNCTION_CALIBRATE_MAGNETOMETER = 1;
         private const uint FUNCTION_TEACH_AUDIO = 2;
         private const uint FUNCTION_TEACH_INFRARED = 3;
@@ -71,9 +71,10 @@ namespace JokiAutomation
         private string _ptzPresetRecallPath;
         private List<string> _ptzPresetRecallFallbackPaths = new List<string>();
 
-        private readonly object _operationLock = new object();
-        //private volatile bool _isOperationInProgress = false;
-        //private Keys _lastPtzKeyPressed = Keys.None; // <-- NEU: Für PTZ Tastatur-Steuerung
+        // Replaced thread-affine Monitor lock with SemaphoreSlim which is await-compatible.
+        // Monitor.TryEnter/Exit must be called from the same thread — after an await
+        // the continuation may run on a different thread, causing SynchronizationLockException.
+        private readonly SemaphoreSlim _operationSemaphore = new SemaphoreSlim(1, 1);
 
         // Network Device Information
         private class NetworkDevice
@@ -97,6 +98,11 @@ namespace JokiAutomation
 
         public Form1()
         {
+            // ── Erfasse UI-Thread und SynchronizationContext am Konstruktor ────
+            _uiThreadId = Thread.CurrentThread.ManagedThreadId;
+            _uiContext = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
+            Debug.WriteLine($"📋 Form1 UI-Thread: ThreadId={_uiThreadId}, SyncContext={_uiContext?.GetType().Name}");
+
             InitializeComponent();
             _logDat.initLogData(this);
             _infraredControl.InitIR(this);
@@ -301,22 +307,21 @@ namespace JokiAutomation
 
         private bool TryBeginOperation(string operationName)
         {
-            if (!Monitor.TryEnter(_operationLock, TimeSpan.Zero))
+            // WaitAsync with timeout=0 is a non-blocking try-acquire
+            bool acquired = _operationSemaphore.Wait(0);
+            if (!acquired)
             {
                 Debug.WriteLine($"⚠ Operation '{operationName}' is locked because other process is running");
                 return false;
             }
-
-           // _isOperationInProgress = true;
             Debug.WriteLine($"→ Operation '{operationName}' started");
             return true;
         }
 
         private void EndOperation(string operationName)
         {
-           // _isOperationInProgress = false;
             Debug.WriteLine($"← Operation '{operationName}' finished");
-            Monitor.Exit(_operationLock);
+            _operationSemaphore.Release();
         }
 
         /// <summary>
@@ -360,9 +365,10 @@ namespace JokiAutomation
                 switch (cmd)
                 {
                     case "Pause":
-                        DisablePictureInPicture();
-                        SwitchATEMInput(ATEMInput.Laptop);
-                        ExecutePauseCommand(commands[2], commands[3]);
+                        await DisablePictureInPictureAsync();
+                        await SwitchATEMInputAsync(ATEMInput.Laptop);
+                        await DisablePictureInPictureAsync();
+                        await ExecutePauseCommandAsync(commands[2], commands[3]);
                         break;
 
                     case "Timer":
@@ -371,92 +377,162 @@ namespace JokiAutomation
                             _logDat?.sendInfoMessage("JokiAutomation\nKommando 'Timer' benötigt einen Zeit-Parameter.");
                             return;
                         }
-                        DisablePictureInPicture();
-                        SwitchATEMInput(ATEMInput.Laptop);
-                        ExecuteTimerCommand(commands[2]);
+
+                        await DisablePictureInPictureAsync();
+                        await SwitchATEMInputAsync(ATEMInput.Laptop);
+                        await DisablePictureInPictureAsync();
+                        await ExecuteTimerCommandAsync(commands[2]);
                         break;
 
                     case "Band":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PPP_VIEW);
-                        DisablePictureInPicture();
-                        SwitchATEMInput(ATEMInput.Laptop);
+                       // _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PPP_VIEW);
+                        await DisablePictureInPictureAsync();
+
+                        if (!await ApplyAudioProfileAsync("Band"))
+                        {
+                            _logDat?.sendInfoMessage(
+                                "JokiAutomation\nKommando 'Band' abgebrochen: Tonprofil konnte nicht gesetzt werden.");
+
+                            break;
+                        }
+
+                        await SwitchATEMInputAsync(ATEMInput.Laptop);
+                        await DisablePictureInPictureAsync();
                         break;
 
                     case "Text":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_TEXT_VIEW);
-                        DisablePictureInPicture();
-                        SwitchATEMInput(ATEMInput.Laptop);
+                        //_audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_TEXT_VIEW);
+                        await DisablePictureInPictureAsync();
+
+                        if (!await ApplyAudioProfileAsync("Text"))
+                        {
+                            _logDat?.sendInfoMessage(
+                                "JokiAutomation\nKommando 'Text' abgebrochen: Tonprofil konnte nicht gesetzt werden.");
+
+                            break;
+                        }
+
+                        await SwitchATEMInputAsync(ATEMInput.Laptop);
+                        await DisablePictureInPictureAsync();
                         break;
 
                     case "GoPro":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_GOPRO_VIEW);
-                        DisablePictureInPicture();
-                        SwitchATEMInput(ATEMInput.GoPro);
+                        //_audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_GOPRO_VIEW);
+                        await DisablePictureInPictureAsync();
+
+                        if (!await ApplyAudioProfileAsync("Gottesdienst"))
+                        {
+                            _logDat?.sendInfoMessage(
+                                "JokiAutomation\nKommando 'GoPro' abgebrochen: Tonprofil konnte nicht gesetzt werden.");
+
+                            break;
+                        }
+
+                        await SwitchATEMInputAsync(ATEMInput.GoPro);
+                        await DisablePictureInPictureAsync();
                         break;
 
                     case "Altar":
                         _logDat?.sendInfoMessage("JokiAutomation\nFühre 'Altar' Kommando aus...");
+                        await DisablePictureInPictureAsync();
+
+                        if (!await ApplyAudioProfileAsync("Gottesdienst"))
+                        {
+                            _logDat?.sendInfoMessage(
+                                "JokiAutomation\nKommando 'Altar' abgebrochen: Tonprofil konnte nicht gesetzt werden.");
+
+                            break;
+                        }
+
+                        await SwitchATEMInputAsync(ATEMInput.CanonPtzMain);
+                        await DisablePictureInPictureAsync();
                         // Kamera-Positionierung abhängig vom Modus:
                         // PTZ_CAM=true: Canon PTZ bewegt Kamera | PTZ_CAM=false: RasPi Motor bewegt Kamera
                         // IR-Sequenz wird IMMER über RasPi ausgeführt (Beamer, andere Geräte)
                         if (_isPtzCameraMode && _canonPtzController != null)
                         {
                             _logDat?.sendInfoMessage("JokiAutomation\nPTZ-Modus: Rufe ExecuteCanonSceneAsync auf...");
-                            await ExecuteCanonSceneAsync("Altar", 2, ATEMInput.CanonPtzMain);
+                            await ExecuteCanonSceneAsync("Altar", 1, ATEMInput.CanonPtzMain);
                             _logDat?.sendInfoMessage("JokiAutomation\nExecuteCanonSceneAsync abgeschlossen");
-                        }
-                        else
-                        {
-                            _logDat?.sendInfoMessage("JokiAutomation\nLegacy-Modus: RasPi IR-Sequenz");
-                            // RasPi IR-Sequenz (Beamer-Umschaltung + ggf. Motor-Steuerung im Non-PTZ Modus)
-                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_POSCAM_VIEW);
-                            DisablePictureInPicture();
-                            SwitchATEMInput(ATEMInput.CanonPtzMain);
                         }
                         break;
 
                     case "Predigt":
                         _logDat?.sendInfoMessage("JokiAutomation\nFühre 'Predigt' Kommando aus...");
-                        if (_isPtzCameraMode && _canonPtzController != null)
+                        await DisablePictureInPictureAsync();
+
+                        if (!await ApplyAudioProfileAsync("Predigt"))
+                        {
+                            _logDat?.sendInfoMessage(
+                                "JokiAutomation\nKommando 'Predigt' abgebrochen: Tonprofil konnte nicht gesetzt werden.");
+
+                            break;
+                        }
+
+                        await SwitchATEMInputAsync(ATEMInput.CanonPtzPreacher);
+                        // Ensure final state stays PiP-off after source switch.
+                        await DisablePictureInPictureAsync();
+                       /* if (_isPtzCameraMode && _canonPtzController != null)
                         {
                             _logDat?.sendInfoMessage("JokiAutomation\nPTZ-Modus: Rufe ExecuteCanonSceneAsync auf...");
                             await ExecuteCanonSceneAsync("Predigt", 3, ATEMInput.CanonPtzPreacher);
                             _logDat?.sendInfoMessage("JokiAutomation\nExecuteCanonSceneAsync abgeschlossen");
-                        }
-                        else
-                        {
-                            _logDat?.sendInfoMessage("JokiAutomation\nLegacy-Modus: RasPi IR-Sequenz");
-                            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PREACHER_VIEW);
-                            DisablePictureInPicture();
-                            SwitchATEMInput(ATEMInput.CanonPtzPreacher);
-                        }
+                        }*/
                         break;
 
                     case "Gebet":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PRAYER_VIEW);
-                        SwitchATEMInput(ATEMInput.Laptop);
-                        Thread.Sleep(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
+                        DisablePictureInPicture();
+
+                        if (!await ApplyAudioProfileAsync("Gottesdienst"))
+                        {
+                            _logDat?.sendInfoMessage(
+                                "JokiAutomation\nKommando 'Gebet' abgebrochen: Tonprofil konnte nicht gesetzt werden.");
+
+                            break;
+                        }
+
+                        await SwitchATEMInputAsync(ATEMInput.Laptop);
+                        await Task.Delay(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
                         EnablePictureInPicture();
                         break;
 
                     case "LesungMulti":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_READER_VIEW);
-                        SwitchATEMInput(ATEMInput.Laptop);
-                        Thread.Sleep(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
+                        DisablePictureInPicture();
+
+                        if (!await ApplyAudioProfileAsync("Predigt"))
+                        {
+                            _logDat?.sendInfoMessage(
+                                "JokiAutomation\nKommando 'LesungMulti' abgebrochen: Tonprofil konnte nicht gesetzt werden.");
+
+                            break;
+                        }
+
+                        await SwitchATEMInputAsync(ATEMInput.Laptop);
+                        await Task.Delay(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
                         EnablePictureInPicture();
                         break;
 
                     case "BandMulti":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SONG_VIEW);
-                        SwitchATEMInput(ATEMInput.Laptop);
-                        Thread.Sleep(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
+                        DisablePictureInPicture();
+
+                        if (!await ApplyAudioProfileAsync("Band"))
+                        {
+                            _logDat?.sendInfoMessage(
+                                "JokiAutomation\nKommando 'BandMulti' abgebrochen: Tonprofil konnte nicht gesetzt werden.");
+
+                            break;
+                        }
+
+                        await SwitchATEMInputAsync(ATEMInput.Laptop);
+                        await Task.Delay(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
                         EnablePictureInPicture();
                         break;
 
                     case "BEAMER_LiveVideo":
                         _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_LIVE_VIDEO);
-                        DisablePictureInPicture();
-                        SwitchATEMInput(ATEMInput.Laptop);
+                        await DisablePictureInPictureAsync();
+                        await SwitchATEMInputAsync(ATEMInput.Laptop);
+                        await DisablePictureInPictureAsync();
                         break;
 
                     case "BEAMER_LiveStream":
@@ -465,8 +541,9 @@ namespace JokiAutomation
 
                     case "BEAMER_VideoClip":
                         _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_ANALOG);
-                        SwitchATEMInput(ATEMInput.Laptop);
-                        ExecutePauseCommand(commands[2], commands[3]);
+                        await SwitchATEMInputAsync(ATEMInput.Laptop);
+                        await DisablePictureInPictureAsync();
+                        await ExecutePauseCommandAsync(commands[2], commands[3]);
                         break;
 
                     case "BEAMER_Mute":
@@ -495,7 +572,7 @@ namespace JokiAutomation
                         _logDat?.sendInfoMessage("JokiAutomation\n║     AUSSCHALTSEQUENZ GESTARTET                   ║");
                         _logDat?.sendInfoMessage("JokiAutomation\n╚═══════════════════════════════════════════════════╝");
                         _logDat?.sendInfoMessage("JokiAutomation\n");
-                        
+                            
                         // Step 1: PTZ Camera shutdown (if in PTZ mode)
                         if (_isPtzCameraMode)
                         {
@@ -524,36 +601,88 @@ namespace JokiAutomation
                         break;
 
                     case "PositionControl":
-                        // Auswerten des ersten Buchstabens von commands[3] für ATEM-Steuerung
                         if (commands.Length >= 4 && !string.IsNullOrEmpty(commands[3]))
                         {
                             char firstChar = char.ToUpper(commands[3][0]);
-                            DisablePictureInPicture();
+                            await DisablePictureInPictureAsync();
 
-                            _logDat?.sendInfoMessage($"JokiAutomation\nPositionControl: Position={commands[2]}, Profil={commands[3]}, Modus={firstChar}");
+                            _logDat?.sendInfoMessage(
+                                $"JokiAutomation\nPositionControl: Position={commands[2]}, Profil={commands[3]}, Modus={firstChar}");
 
+                            // The first profile character selects the cover image during PTZ movement.
+                            // After a successful PTZ move, the sequence always returns to Input 3.
+                            ATEMInput movementInput;
+                            ATEMInput finalInput = ATEMInput.CanonPtzMain;
                             switch (firstChar)
                             {
-                                case 'A':  // Altar = Canon PTZ Main
-                                    SwitchATEMInput(ATEMInput.CanonPtzMain);
-                                    break;
+                                case 'G': movementInput = ATEMInput.GoPro;            break;
+                                case 'K': movementInput = ATEMInput.CanonPtzPreacher; break;
+                                case 'L': movementInput = ATEMInput.Laptop;           break;
+                                case 'A':
+                                default:  movementInput = ATEMInput.CanonPtzMain;     break;
+                            }
 
-                                case 'G':  // GoPro = GoPro Actionkamera
-                                    SwitchATEMInput(ATEMInput.GoPro);
+                            // Resolve ListBox position index
+                            int seqPositionId = -1;
+                            for (int i = 0; i < listBoxCamPosControl.Items.Count; i++)
+                            {
+                                if (commands[2] == listBoxCamPosControl.Items[i].ToString())
+                                {
+                                    seqPositionId = i;
                                     break;
+                                }
+                            }
 
-                                case 'K':  // Kanzel = Canon PTZ Preacher
-                                    SwitchATEMInput(ATEMInput.CanonPtzPreacher);
-                                    break;
+                            if (seqPositionId < 0)
+                            {
+                                _logDat?.sendInfoMessage(
+                                    $"JokiAutomation\nPositionControl: Position '{commands[2]}' nicht in ListBox gefunden");
+                                break;
+                            }
 
-                                case 'L':  // Laptop = Laptop/Computer
-                                    SwitchATEMInput(ATEMInput.Laptop);
-                                    break;
+                            if (_isPtzCameraMode && _canonPtzController != null)
+                            {
+                                // AudioMix controls the audio profile through Raspberry Pi.
+                                int audioProfileId = GetAudioProfileId(commands[3]);
+                                int audioCommandId = AudioMix.AM_PROFILE + audioProfileId;
+                                await _audioMix.ExecuteAudioAsync(audioCommandId);
 
-                                default:
-                                    _logDat?.sendInfoMessage($"JokiAutomation\nUnbekannter Profil-Typ: {firstChar}, PiP wird deaktiviert");
-                                    DisablePictureInPicture();
-                                    break;
+                                _logDat?.sendInfoMessage(
+                                    $"JokiAutomation\nAudio-Profil an Raspberry Pi gesendet - " +
+                                    $"Profil={commands[3][1]}, ID={audioProfileId}, CommandID={audioCommandId}");
+
+                                // Cover the PTZ movement, wait for the centralized settling time,
+                                // then return to the positioned PTZ main camera on Input 3.
+                                await ExecuteCameraSwitchSequenceAsync(
+                                    seqPositionId,
+                                    movementInput,
+                                    finalInput);
+                            }
+                            else
+                            {
+                                // ── Legacy RasPi path ──────────────────────────
+                                // Switch ATEM before movement (legacy behaviour preserved)
+                                await SwitchATEMInputAsync(movementInput);
+                                DisablePictureInPicture();
+
+                                int maxWaitMs    = 80000;
+                                int waitInterval = 100;
+                                int elapsedMs    = 0;
+                                _positionControl?.sequence(commands[2], commands[3]);
+                                while (_positionControl != null && _positionControl.IsMoving() && elapsedMs < maxWaitMs)
+                                {
+                                    Thread.Sleep(waitInterval);
+                                    elapsedMs += waitInterval;
+                                    Application.DoEvents();
+                                }
+
+                                if (elapsedMs >= maxWaitMs)
+                                    _logDat?.sendInfoMessage("JokiAutomation\nWARNUNG: Position Control Timeout nach 80s");
+                                else
+                                    _logDat?.sendInfoMessage($"JokiAutomation\nPosition Control abgeschlossen nach {elapsedMs}ms");
+
+                                await SwitchATEMInputAsync(movementInput);
+                                DisablePictureInPicture();
                             }
                         }
                         else
@@ -561,30 +690,6 @@ namespace JokiAutomation
                             _logDat?.sendInfoMessage("JokiAutomation\nKeine Profil-Information vorhanden");
                             DisablePictureInPicture();
                         }
-
-                        // Warte bis Position Control fertig ist (max. 80 Sekunden)
-                        int maxWaitMs = 80000;
-                        int waitIntervalMs = 100;
-                        int elapsedMs = 0;
-
-                        _positionControl?.sequence(commands[2], commands[3]);
-                        while (_positionControl != null && _positionControl.IsMoving() && elapsedMs < maxWaitMs)
-                        {
-                            Thread.Sleep(waitIntervalMs);
-                            elapsedMs += waitIntervalMs;
-                            Application.DoEvents(); // UI responsive halten
-                        }
-
-                        if (elapsedMs >= maxWaitMs)
-                        {
-                            _logDat?.sendInfoMessage("JokiAutomation\nWARNUNG: Position Control Timeout nach 15s");
-                        }
-                        else
-                        {
-                            _logDat?.sendInfoMessage($"JokiAutomation\nPosition Control abgeschlossen nach {elapsedMs}ms");
-                        }
-
-                        SwitchATEMInput(ATEMInput.CanonPtzMain);
                         break;
 
                     case "AutoZoom":
@@ -709,7 +814,7 @@ namespace JokiAutomation
         /// <summary>
         /// Executes the Pause command with two text parameters.
         /// </summary>
-        private void ExecutePauseCommand(string text1, string text2)
+        private async Task ExecutePauseCommandAsync(string text1, string text2)
         {
             if (string.IsNullOrWhiteSpace(text1) || string.IsNullOrWhiteSpace(text2))
             {
@@ -717,14 +822,31 @@ namespace JokiAutomation
                 return;
             }
 
-            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PAUSE);
+            if (_audioMix?._rasPi == null)
+            {
+                _logDat?.sendInfoMessage("JokiAutomation\nRasPi nicht verfügbar.");
+                return;
+            }
+
+            await _audioMix._rasPi.RasPiExecuteAsync(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PAUSE, TimeSpan.FromSeconds(15));
             _eventTimer?.sendPause(text1, text2);
+        }
+
+        private async Task WaitForPendingRasPiCommandAsync(int timeoutMs)
+        {
+            var runningThread = _audioMix?._rasPi?._RasPiThread;
+            if (runningThread == null || !runningThread.IsAlive)
+            {
+                return;
+            }
+
+            await Task.Run(() => runningThread.Join(timeoutMs));
         }
 
         /// <summary>
         /// Executes the Timer command with event time parameter.
         /// </summary>
-        private void ExecuteTimerCommand(string eventTime)
+        private async Task ExecuteTimerCommandAsync(string eventTime)
         {
             if (string.IsNullOrWhiteSpace(eventTime))
             {
@@ -732,8 +854,22 @@ namespace JokiAutomation
                 return;
             }
 
-            _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_TIMER);
+            if (_audioMix?._rasPi == null)
+            {
+                _logDat?.sendInfoMessage("JokiAutomation\nRasPi nicht verfügbar.");
+                return;
+            }
+
+            Task raspiTask = _audioMix._rasPi.RasPiExecuteAsync(InfraredControl.IR_SEQUENCE, InfraredControl.IR_TIMER, TimeSpan.FromSeconds(15));
             _eventTimer?.sendEventTime(eventTime);
+            try
+            {
+                await raspiTask;
+            }
+            catch (Exception ex)
+            {
+                _logDat?.sendInfoMessage($"JokiAutomation\nWarnung: RasPi Befehl konnte nicht abgeschlossen werden ({ex.Message})");
+            }
         }
 
         public void displayZoomConfig()
@@ -759,21 +895,54 @@ namespace JokiAutomation
         }
 
         // eventhandler Start button, start timer or pause slide show depending on selected listbox item
-        private void button1_Click(object sender, EventArgs e)
+        private async void button1_Click(object sender, EventArgs e)
         {
-            int commandID = AudioMix.AM_ACTIVE + AUDIO_CHANNELS_1_AND_2;
-            _audioMix?.executeAudio(commandID); // activate audio channels 1 and 2 
+            bool eventTimerStarted = false;
 
-            if (this.listBox1.Text == "Pause")
+            try
             {
-                _eventTimer?.sendPause($"\"{textBox1.Text}\"", $"\"{textBox2.Text}\"");
-                _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PAUSE);
+                await SwitchATEMInputAsync(ATEMInput.Laptop);
+                if (this.listBox1.Text == "Pause")
+                {
+                    if (_audioMix?._rasPi != null)
+                    {
+                        try
+                        {
+                            await _audioMix._rasPi.RasPiExecuteAsync(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PAUSE, TimeSpan.FromSeconds(15));
+                        }
+                        catch (Exception ex)
+                        {
+                            _logDat?.sendInfoMessage($"JokiAutomation\nWarnung: RasPi Pause-Audio konnte nicht gesetzt werden ({ex.Message})");
+                        }
+                    }
+                    eventTimerStarted = _eventTimer?.sendPause($"\"{textBox1.Text}\"", $"\"{textBox2.Text}\"") ?? false;
+                }
+                else
+                {
+                    string eventTime = $"{dateTimePicker1.Value.TimeOfDay.Hours:00}:{dateTimePicker1.Value.TimeOfDay.Minutes:00}";
+                    if (_audioMix?._rasPi != null)
+                    {
+                        try
+                        {
+                            await _audioMix._rasPi.RasPiExecuteAsync(InfraredControl.IR_SEQUENCE, InfraredControl.IR_TIMER, TimeSpan.FromSeconds(15));
+                        }
+                        catch (Exception ex)
+                        {
+                            _logDat?.sendInfoMessage($"JokiAutomation\nWarnung: RasPi Timer-Audio konnte nicht gesetzt werden ({ex.Message})");
+                        }
+                    }
+
+                    eventTimerStarted = _eventTimer?.sendEventTime(eventTime) ?? false;
+                }
+
+                if (eventTimerStarted)
+                {
+                    Close();
+                }
             }
-            else
+            catch (Exception ex)
             {
-                string eventTime = $"{dateTimePicker1.Value.TimeOfDay.Hours:00}:{dateTimePicker1.Value.TimeOfDay.Minutes:00}";
-                _eventTimer?.sendEventTime(eventTime);
-                _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_TIMER);
+                _logDat?.sendInfoMessage($"JokiAutomation\nFehler beim Starten von Pause/Timer: {ex.Message}");
             }
         }
 
@@ -798,7 +967,7 @@ namespace JokiAutomation
         }
 
         // buttonhandler fade down <<< AudioControl
-        private void button7_Click(object sender, EventArgs e)
+        private async void button7_Click(object sender, EventArgs e)
         {
             int selectedIndex = listBox3.SelectedIndex;
 
@@ -808,11 +977,14 @@ namespace JokiAutomation
             if (_audioMix.channelActive_[selectedIndex]) // ✅ Kein == true
             {
                 int commandID = AudioMix.AM_FADEDOWN + (1 << selectedIndex);
-                _audioMix?.executeAudio(commandID);
+                if (_audioMix != null)
+                {
+                    await _audioMix.ExecuteAudioAsync(commandID);
+                }
             }
         }
         // buttonhandler fade up >>>  AudioControl
-        private void button8_Click(object sender, EventArgs e)
+        private async void button8_Click(object sender, EventArgs e)
         {
             int selectedIndex = listBox3.SelectedIndex;
 
@@ -822,7 +994,10 @@ namespace JokiAutomation
             if (_audioMix.channelActive_[selectedIndex]) // ✅ Kein == true
             {
                 int commandID = AudioMix.AM_FADEUP + (1 << selectedIndex);
-                _audioMix?.executeAudio(commandID);
+                if (_audioMix != null)
+                {
+                    await _audioMix.ExecuteAudioAsync(commandID);
+                }
             }
         }
         // buttonhandler activate Audiochannel Audiocontrol  
@@ -849,10 +1024,13 @@ namespace JokiAutomation
         }
 
         // execute Audio - profile
-        private void button9_Click(object sender, EventArgs e)
+        private async void button9_Click(object sender, EventArgs e)
         {
             int commandID = AudioMix.AM_PROFILE + listBox4.SelectedIndex;
-            _audioMix.executeAudio(commandID);
+            if (_audioMix != null)
+            {
+                await _audioMix.ExecuteAudioAsync(commandID);
+            }
         }
 
         // tab control index changed initialize Audiomix for channel 1 and 2 if page opens
@@ -1477,6 +1655,10 @@ namespace JokiAutomation
         public LogData _logDat = new LogData();
         private bool CI_test_active_ = false;
 
+        // ── UI-Thread und SynchronizationContext ──────────────────────────────
+        private readonly SynchronizationContext _uiContext;
+        private readonly int _uiThreadId;
+
         /// <summary>
         /// Safely retrieves zoom value at specified index with bounds checking.
         /// </summary>
@@ -1668,7 +1850,7 @@ private void ConfigureUIForPtzMode()
 }
 
 // buttonhandler init Audiocontrol  enables activated audiochannels and sets volume to maximum  
-private void button5_Click(object sender, EventArgs e)
+private async void button5_Click(object sender, EventArgs e)
 {
     int commandID = AudioMix.AM_ACTIVE;
     for (int i = 0; i < 4; i++) // add active channels to ID
@@ -1678,13 +1860,20 @@ private void button5_Click(object sender, EventArgs e)
             commandID += 1 << i;
         }
     }
-    _audioMix.executeAudio(commandID);
+
+    if (_audioMix != null)
+    {
+        await _audioMix.ExecuteAudioAsync(commandID);
+    }
 }
 
 // buttonhandler reset Audiocontrol resets volume, fader and mutes all audio channels
-private void button6_Click(object sender, EventArgs e)
+private async void button6_Click(object sender, EventArgs e)
 {
-    _audioMix.executeAudio(AudioMix.AM_AUDIO_RESET);
+    if (_audioMix != null)
+    {
+        await _audioMix.ExecuteAudioAsync(AudioMix.AM_AUDIO_RESET);
+    }
 }
 
 private void moveCamPos_Click(object sender, EventArgs e)
@@ -1726,6 +1915,149 @@ private void moveCamPos_Click(object sender, EventArgs e)
 }
 
 /// <summary>
+/// Maps the second PositionControl profile character to the AudioMix profile index.
+/// D=Diashow(0), G=Gottesdienst(1), P=Predigt(2), T=Text(3), B=Band(4).
+/// </summary>
+private static int GetAudioProfileId(string profile)
+{
+    if (string.IsNullOrWhiteSpace(profile) || profile.Length != 2)
+        throw new ArgumentException("PositionControl-Profil muss genau zwei Zeichen enthalten.", nameof(profile));
+
+    switch (char.ToUpperInvariant(profile[1]))
+    {
+        case 'D': return 0;
+        case 'G': return 1;
+        case 'P': return 2;
+        case 'T': return 3;
+        case 'B': return 4;
+        default:
+            throw new ArgumentException($"Unbekanntes Audio-Profil: {profile[1]}", nameof(profile));
+    }
+}
+
+/// <summary>
+/// Executes the covered PTZ camera sequence:
+/// 1. Confirm the movement/cover input on Program.
+/// 2. Move the PTZ camera and await its centralized settling time.
+/// 3. Return to the positioned PTZ main camera and confirm it on Program.
+///
+/// If PTZ movement fails or is cancelled, the cover input remains on Program.
+/// Both ATEM transitions run on the UI thread / COM owner thread via InvokeAsync.
+/// </summary>
+private async Task ExecuteCameraSwitchSequenceAsync(
+    int positionId,
+    ATEMInput movementInput,
+    ATEMInput finalInput,
+    System.Threading.CancellationToken cancellationToken = default)
+{
+    if (_positionControl == null)
+    {
+        throw new InvalidOperationException("PositionControl ist nicht initialisiert.");
+    }
+
+    if (_atemControl == null || !_atemControl.IsConnected)
+    {
+        throw new InvalidOperationException(
+            "ATEM ist nicht verbunden. PTZ-Sequenz wird nicht gestartet.");
+    }
+
+    cancellationToken.ThrowIfCancellationRequested();
+
+    _logDat?.sendInfoMessage(
+        $"JokiAutomation\n[CamSwitch] Sequenz gestartet - Position={positionId}, " +
+        $"Movement={movementInput}, Final={finalInput}");
+
+    // Step 1: Put the cover image on Program before the PTZ starts moving.
+    ATEMControl.VideoSource movementSource =
+        (ATEMControl.VideoSource)(int)movementInput;
+
+    await InvokeAsync(() =>
+        _atemControl.TransitionToProgramInputAsync(
+            movementSource,
+            cancellationToken));
+
+    await DisablePictureInPictureAsync(timeout: TimeSpan.FromSeconds(2), cancellationToken: cancellationToken);
+
+    _logDat?.sendInfoMessage(
+        $"JokiAutomation\n[CamSwitch] Ausweichkamera bestaetigt - Program={movementInput}");
+
+    // Step 2: MoveToPosAsync includes the single configured PTZ settling time.
+    PositionMoveResult moveResult =
+        await _positionControl.MoveToPosAsync(
+            positionId,
+            cancellationToken);
+
+    if (!moveResult.Success)
+    {
+        _logDat?.sendInfoMessage(
+            $"JokiAutomation\n[CamSwitch] PTZ-Positionierung fehlgeschlagen - " +
+            $"Ausweichkamera bleibt aktiv: {moveResult.Message}");
+
+        throw new InvalidOperationException(
+            $"Kameraposition konnte nicht angefahren werden: " +
+            moveResult.Message);
+    }
+
+    _logDat?.sendInfoMessage(
+        $"JokiAutomation\n[CamSwitch] PTZ-Settling abgeschlossen - " +
+        $"Preset={moveResult.CanonPreset}, Rueckschaltung={finalInput}");
+
+    // Step 3: Return to the positioned PTZ main camera.
+    ATEMControl.VideoSource finalSource =
+        (ATEMControl.VideoSource)(int)finalInput;
+
+    await InvokeAsync(() =>
+        _atemControl.TransitionToProgramInputAsync(
+            finalSource,
+            cancellationToken));
+
+    await DisablePictureInPictureAsync(timeout: TimeSpan.FromSeconds(2), cancellationToken: cancellationToken);
+
+    _logDat?.sendInfoMessage(
+        $"JokiAutomation\n[CamSwitch] Sequenz abgeschlossen - Program={finalInput}");
+}
+/// <summary>
+/// Helper extension to invoke async operations on UI thread using SynchronizationContext
+/// (no Control.Invoke needed - works without window handle)
+/// </summary>
+private async Task InvokeAsync(Func<Task> action)
+{
+    int currentThreadId = Thread.CurrentThread.ManagedThreadId;
+
+    // Wenn wir bereits auf dem UI-Thread sind → direkt ausführen
+    if (currentThreadId == _uiThreadId)
+    {
+        await action();
+        return;
+    }
+
+    // Sonst: Dispatch zu UI-Thread via SynchronizationContext
+    var completionSource = new TaskCompletionSource<bool>();
+
+    _uiContext.Post(async _ =>
+    {
+        try
+        {
+            int dispatchedThreadId = Thread.CurrentThread.ManagedThreadId;
+            Debug.WriteLine($"📌 InvokeAsync dispatched to ThreadId={dispatchedThreadId} (expected={_uiThreadId})");
+            
+            await action();
+            completionSource.SetResult(true);
+        }
+        catch (OperationCanceledException ex)
+        {
+            completionSource.SetException(ex);
+        }
+        catch (Exception ex)
+        {
+            completionSource.SetException(ex);
+        }
+    }, null);
+
+    await completionSource.Task;
+}
+
+/// <summary>
 /// Initializes Canon CR-N100 PTZ camera if PTZ_CAM mode is enabled
 /// </summary>
 private async Task InitializeCanonPtzControlAsync()
@@ -1764,6 +2096,7 @@ private async Task InitializeCanonPtzControlAsync()
 
         if (connectResult.Success)
         {
+            _positionControl?.UpdatePtzController(_canonPtzController);
             _logDat?.sendInfoMessage($"JokiAutomation\n✓ Canon CR-N100 verbunden ({config.Protocol ?? "XC"} Protocol)");
         }
         else
@@ -1873,9 +2206,23 @@ private void InitializeATEMToDefault()
 }
 
 /// <summary>
-/// Switch ATEM to specified HDMI input
+/// Switch ATEM to specified HDMI input without blocking the caller.
 /// </summary>
-private void SwitchATEMInput(ATEMInput input)
+private Task SwitchATEMInput(ATEMInput input)
+{
+    if (_atemControl == null || !_atemControl.IsConnected)
+    {
+        _logDat?.sendInfoMessage("JokiAutomation\nATEM nicht verbunden");
+        return Task.CompletedTask;
+    }
+
+    return SwitchATEMInputAsync(input);
+}
+
+/// <summary>
+/// Switch ATEM to specified HDMI input asynchronously.
+/// </summary>
+private async Task SwitchATEMInputAsync(ATEMInput input)
 {
     if (_atemControl == null || !_atemControl.IsConnected)
     {
@@ -1886,7 +2233,7 @@ private void SwitchATEMInput(ATEMInput input)
     try
     {
         ATEMControl.VideoSource source = (ATEMControl.VideoSource)((int)input);
-        _atemControl.TransitionToProgramInput(source);
+        await _atemControl.TransitionToProgramInputAsync(source);
 
         string sourceName = GetATEMInputName(input);
         _logDat?.sendInfoMessage($"JokiAutomation\nATEM umgeschaltet auf {sourceName} (HDMI {(int)input})");
@@ -1897,7 +2244,103 @@ private void SwitchATEMInput(ATEMInput input)
     }
 }
 
-private string GetATEMInputName(ATEMInput input)
+        /// <summary>
+        /// Selects the given audio tone profile in the UI.
+        /// </summary>
+        /// <summary>
+        /// Wählt das angegebene Audioprofil aus, sendet es an den Raspberry Pi
+        /// und wartet kurz auf die Verarbeitung.
+        /// </summary>
+        /// <param name="profileName">Name des Audioprofils, z. B. Band.</param>
+        /// <returns>
+        /// True, wenn das Profil gefunden und an den Raspberry Pi gesendet wurde,
+        /// andernfalls false.
+        /// </returns>
+        private async Task<bool> SetAudioProfileAsync(string profileName)
+        {
+            if (string.IsNullOrWhiteSpace(profileName) ||
+                listBox4 == null ||
+                listBox4.Items.Count == 0)
+            {
+                _logDat?.sendInfoMessage(
+                    "JokiAutomation\nKein gültiges Tonprofil oder keine Profilliste vorhanden.");
+
+                return false;
+            }
+
+            int profileIndex = -1;
+
+            for (int i = 0; i < listBox4.Items.Count; i++)
+            {
+                string itemText = listBox4.Items[i]?.ToString();
+
+                if (string.Equals(
+                    itemText,
+                    profileName,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    profileIndex = i;
+                    break;
+                }
+            }
+
+            if (profileIndex < 0)
+            {
+                _logDat?.sendInfoMessage(
+                    $"JokiAutomation\nTonprofil '{profileName}' nicht gefunden.");
+
+                return false;
+            }
+
+            try
+            {
+                // Profil in der Benutzeroberfläche auswählen.
+                listBox4.SelectedIndex = profileIndex;
+
+                // Zugehörige Profilwerte in der Benutzeroberfläche anzeigen.
+                if (_audioMix?.audioProfile != null)
+                {
+                    trackBar1.Value = _audioMix.audioProfile[profileIndex, 0];
+                    trackBar2.Value = _audioMix.audioProfile[profileIndex, 1];
+                    trackBar3.Value = _audioMix.audioProfile[profileIndex, 2];
+                    trackBar4.Value = _audioMix.audioProfile[profileIndex, 3];
+                }
+
+                if (_audioMix == null)
+                {
+                    _logDat?.sendInfoMessage(
+                        $"JokiAutomation\nTonprofil '{profileName}' konnte nicht gesendet werden: AudioMix ist nicht initialisiert.");
+
+                    return false;
+                }
+
+                // Profilbefehl an den Raspberry Pi senden.
+                int commandID = AudioMix.AM_PROFILE + profileIndex;
+
+                _logDat?.sendInfoMessage(
+                    $"JokiAutomation\nSende Tonprofil '{profileName}': " +
+                    $"Index={profileIndex}, CommandID={commandID}");
+
+                await _audioMix.ExecuteAudioAsync(commandID);
+
+                // Dem Raspberry Pi Zeit zur Verarbeitung des Profilbefehls geben.
+                await Task.Delay(200);
+
+                _logDat?.sendInfoMessage(
+                    $"JokiAutomation\nTonprofil auf '{profileName}' gesetzt.");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logDat?.sendInfoMessage(
+                    $"JokiAutomation\nFehler beim Setzen des Tonprofils '{profileName}':\n" +
+                    ex.Message);
+
+                return false;
+            }
+        }
+        private string GetATEMInputName(ATEMInput input)
 {
     switch (input)
     {
@@ -1927,18 +2370,8 @@ private void EnablePictureInPicture()
 
     try
     {
-        _atemControl.EnablePictureInPicture(
-            ATEMControl.VideoSource.Input1,
-            ATEMControl.PiPPosition.BottomRight,
-            ATEMControl.PiPSize.Small
-        );
-
-        if (_atemControl.IsPiPActive())
-        {
-            _logDat?.sendInfoMessage("JokiAutomation\nBild-in-Bild aktiviert");
-        }
-        
-        Thread.Sleep(500);
+        _atemControl.EnablePictureInPicture();
+        _logDat?.sendInfoMessage("JokiAutomation\nBild-in-Bild aktiviert");
     }
     catch (Exception ex)
     {
@@ -1969,6 +2402,29 @@ private void DisablePictureInPicture()
 }
 
 /// <summary>
+/// Disable Picture-in-Picture mode asynchronously and verify final off-air state.
+/// </summary>
+private async Task DisablePictureInPictureAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+{
+    if (_atemControl == null || !_atemControl.IsConnected)
+    {
+        _logDat?.sendInfoMessage("JokiAutomation\nATEM nicht verbunden");
+        return;
+    }
+
+    try
+    {
+        await _atemControl.DisablePictureInPictureAsync(cancellationToken, timeout);
+        _logDat?.sendInfoMessage("JokiAutomation\nBild-in-Bild deaktiviert");
+    }
+    catch (Exception ex)
+    {
+        _logDat?.sendInfoMessage($"JokiAutomation\nBild-in-Bild Fehler: {ex.Message}");
+        _logDat?.sendInfoMessage("JokiAutomation\nPiP-Deaktivierung nicht bestätigt - Ablauf wird fortgesetzt.");
+    }
+}
+
+/// <summary>
 /// Set ATEM microphone on/off
 /// </summary>
 private void SetATEMMicrophone(int micNumber, bool enable)
@@ -1982,7 +2438,7 @@ private void SetATEMMicrophone(int micNumber, bool enable)
     try
     {
         ATEMControl.VideoSource audioSource;
-        if (micNumber == 1)
+        if (micNumber ==  1)
         {
             audioSource = ATEMControl.VideoSource.Input1;
         }
@@ -2080,7 +2536,7 @@ private async Task ExecuteCanonSceneAsync(string sceneName, int presetNumber, AT
 
         await Task.Delay(2000);
 
-        SwitchATEMInput(atemInput);
+        await SwitchATEMInputAsync(atemInput);
 
         if (enablePiP)
         {
@@ -2401,7 +2857,6 @@ private async Task ShutdownPtzCameraAsync()
         }
     }
 }
-
     }
 }
 

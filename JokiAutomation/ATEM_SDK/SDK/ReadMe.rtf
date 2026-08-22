@@ -1,40 +1,233 @@
-{\rtf1\ansi\ansicpg1252\cocoartf2709
+{\rtf1\ansi\ansicpg1252\cocoartf2822
 \cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 HelveticaNeue-Bold;\f1\fnil\fcharset0 HelveticaNeue;}
 {\colortbl;\red255\green255\blue255;}
 {\*\expandedcolortbl;;}
-\paperw11900\paperh16840\margl1440\margr1440\vieww12100\viewh16380\viewkind0
+\paperw11900\paperh16840\margl1440\margr1440\vieww20120\viewh19480\viewkind0
 \deftab720
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\li2162\fi-2163\partightenfactor0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\li2158\fi-2159\partightenfactor0
 
-\f0\b\fs40 \cf0 Blackmagic Design Switchers SDK 10.2.1\
-
+\f0\b\fs40 \cf0 Blackmagic Design Switchers SDK 10.3
 \fs28 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\partightenfactor0
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\fi-1\partightenfactor0
 
 \f1\b0\fs22 \cf0 Please refer to the Blackmagic Design Switchers SDK documentation for a detailed explanation of the available functionality.\
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\li2162\fi-2163\partightenfactor0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\li2158\fi-2159\partightenfactor0
 
 \fs28 \cf0 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\li2162\fi-2163\partightenfactor0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\li2158\fi-2159\partightenfactor0
 
-\f0\b \cf0 Changes in Blackmagic Switchers SDK 10.2.1\
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\li2162\fi-2163\partightenfactor0
+\f0\b \cf0 Changes in Blackmagic Switchers SDK 10.3\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\li2158\fi-2159\partightenfactor0
 
 \fs22 \cf0 \
+	- New Interfaces\
+\
+		- IBMDSwitcherUSBPort\
 
-\f1\b0 	No changes\
+\f1\b0 			The 
+\f0\b IBMDSwitcherUSBPort
+\f1\b0  interface contains functionality to manage USB port function configuration (webcam or USB audio).\
+
+\f0\b \
+		- IBMDSwitcherUSBPortCallback\
+
+\f1\b0 			Used for notifications regarding any changes to 
+\f0\b IBMDSwitcherUSBPort
+\f1\b0 .\
+
+\f0\b \
+		- IBMDSwitcherUSBPortIterator\
+
+\f1\b0 			Used to iterate through 
+\f0\b IBMDSwitcherUSBPort
+\f1\b0  objects.\
+
+\f0\b \
+		- IBMDSwitcherCloudStreamDestination\
+
+\f1\b0 			The 
+\f0\b IBMDSwitcherCloudStreamDestination
+\f1\b0  interface describes a Blackmagic Cloud Stream Router destination which can be configured as a streaming destination.\
+
+\f0\b \
+		- IBMDSwitcherCloudStreamDestinationCallback\
+
+\f1\b0 			Used for notifications regarding any changes to 
+\f0\b IBMDSwitcherCloudStreamDestination
+\f1\b0 .\
+
+\f0\b \
+		- IBMDSwitcherCloudStreamDestinationIterator\
+
+\f1\b0 			Used to iterate through 
+\f0\b IBMDSwitcherCloudStreamDestination
+\f1\b0  objects.\
+
+\f0\b \
+		- IBMDSwitcherRemoteSourceCloud\
+
+\f1\b0 			The 
+\f0\b IBMDSwitcherRemoteSourceCloud
+\f1\b0  interface provides functionality to manage Blackmagic Cloud remote sources.\
+
+\f0\b \
+		- IBMDSwitcherRemoteSourceCloudCallback\
+
+\f1\b0 			Used for notifications regarding any changes to 
+\f0\b IBMDSwitcherRemoteSourceCloud
+\f1\b0 .\
+
+\f0\b \
+	- Updated Interfaces\
+\
+		- IBMDSwitcher\
+
+\f1\b0 			Added 
+\f0\b DoesSupportExternalAudioControl()
+\f1\b0 , 
+\f0\b GetExternalAudioControlActive()
+\f1\b0 , and 
+\f0\b SetExternalAudioControlActive()
+\f1\b0 .\
+
+\f0\b \
+		- IBMDSwitcherMixEffectBlock\
+
+\f1\b0 			Added 
+\f0\b GetArmState()
+\f1\b0 , 
+\f0\b SetArmState()
+\f1\b0 , and 
+\f0\b DoesSupportMEArm()
+\f1\b0 .\
+
+\f0\b \
+		- IBMDSwitcherStreamRTMP\
+
+\f1\b0 			Added 
+\f0\b SetBMDCloudDestination()
+\f1\b0 , 
+\f0\b ClearBMDCloudDestination()
+\f1\b0 , and 
+\f0\b CreateIterator()
+\f1\b0 .\
+
+\f0\b \
+		- IBMDSwitcherStreamRTMPCallback\
+
+\f1\b0 			Added 
+\f0\b NotifyCloudStreamingDestination()
+\f1\b0 .\
+
+\f0\b \
+		- IBMDSwitcherAudioRoutingOutput\
+
+\f1\b0 			Added 
+\f0\b SetDefaultSource()
+\f1\b0 .\
+
+\f0\b \
+	- New Types\
+\
+		- BMDSwitcherArmState
+\f1\b0 \
+			Used in 
+\f0\b IBMDSwitcherMixEffectBlock
+\f1\b0  to represent the armed state of a transition.\
+\
+		-
+\f0\b BMDSwitcherCloudStreamDestinationConfigurationEventType
+\f1\b0 \
+			Used in 
+\f0\b IBMDSwitcherStreamRTMPCallback
+\f1\b0  to specify the context of the callback notification.\
+\
+		-
+\f0\b BMDSwitcherCloudStreamDestinationEventType
+\f1\b0 \
+			Used in 
+\f0\b IBMDSwitcherCloudStreamDestinationCallback
+\f1\b0  to specify the context of the callback notification.\
+\
+		-
+\f0\b BMDSwitcherCloudStreamRouterSlotClaimStatus
+\f1\b0 \
+			Used in 
+\f0\b IBMDSwitcherCloudStreamDestination
+\f1\b0  and 
+\f0\b IBMDSwitcherRemoteSourceCloud
+\f1\b0  to describe the claim state of a cloud stream router slot.\
+\
+		-
+\f0\b BMDSwitcherRemoteSourceCloudEventType
+\f1\b0 \
+			Used in 
+\f0\b IBMDSwitcherRemoteSourceCloudCallback
+\f1\b0  to specify the context of the callback notification.\
+\
+		-
+\f0\b BMDSwitcherUSBPortEventType
+\f1\b0 \
+			Used in 
+\f0\b IBMDSwitcherUSBPortCallback
+\f1\b0  to specify the context of the callback notification.\
+\
+		-
+\f0\b BMDSwitcherUSBPortFunction
+\f1\b0 \
+			Used in 
+\f0\b IBMDSwitcherUSBPort
+\f1\b0  to describe the function of the USB port (webcam or USB audio).\
+
+\f0\b \
+	- Updated Types\
+
+\f1\b0 \
+		- 
+\f0\b BMDSwitcherEventType
+\f1\b0 \
+			Added 
+\f0\b bmdSwitcherEventTypeExternalAudioControlActiveChanged
+\f1\b0 .\
+\
+
+\f0\b 		- BMDSwitcherExternalPortType\
+
+\f1\b0 			Added 
+\f0\b bmdSwitcherExternalPortTypeStreaming
+\f1\b0 , 
+\f0\b bmdSwitcherExternalPortTypeDeckLink
+\f1\b0 , and 
+\f0\b bmdSwitcherExternalPortTypeUSB
+\f1\b0 .\
+
+\f0\b \
+		- BMDSwitcherMixEffectBlockEventType\
+
+\f1\b0 			Added 
+\f0\b bmdSwitcherMixEffectBlockEventTypeArmStateChanged
+\f1\b0 .\
+
+\f0\b \
+		- BMDSwitcherAudioInternalPortType\
+
+\f1\b0 			Added 
+\f0\b bmdSwitcherAudioInternalPortTypeUSB
+\f1\b0 .\
 \
 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\li2162\fi-2163\partightenfactor0
 
-\f0\b\fs28 \expnd0\expndtw0\kerning0
+\f0\b\fs28 \cf0 \expnd0\expndtw0\kerning0
 Additional Information
 \f1\b0\fs18 \
-\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\li2158\fi-2159\pardirnatural\partightenfactor0
+\cf0 \
 
 \fs22 Some applications may use third party code under license. For details, please refer to the included "Third Party Licenses.rtf" document.\
 
 \fs18 \
 Copyright 2026 Blackmagic Design. All rights reserved. 'Blackmagic Design', 'Blackmagic', 'Blackmagic Cloud', 'DaVinci Resolve', 'Fusion', 'Fairlight', 'Ultimatte', 'URSA', 'PYXIS', 'HyperDeck', 'DeckLink', 'HDLink', 'Videohub', 'Intensity' and 'Leading the creative video revolution' are registered trademarks in the US and other countries. All other company and product names may be trademarks of their respective companies with which they are associated.\
 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\li2162\fi-2163\sl276\slmult1\sa200\partightenfactor0
-\cf0 Updated January 14, 2026.}
+Updated June 24, 2026.}

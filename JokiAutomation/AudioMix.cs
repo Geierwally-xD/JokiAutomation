@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace JokiAutomation
 {
@@ -9,7 +11,7 @@ namespace JokiAutomation
     /// </summary>
     internal class AudioMix : IDisposable
     {
-        private const int MaxProfiles = 10;
+        private const int MaxProfiles = 0x8f;
         private const int ChannelsPerProfile = 4;
         private const int AM_EXECUTE = 30;  // Audio Mix command
         private const int AM_TEACH = 31;    // Audio Mix teach profile
@@ -27,36 +29,42 @@ namespace JokiAutomation
         public RasPi _rasPi = new RasPi();  // Raspberry Pi functionality
 
         internal byte[,] audioProfile = new byte[MaxProfiles, ChannelsPerProfile];
-        private string JokiAutomationPath = Environment.GetEnvironmentVariable("JokiAutomation");
+        private readonly string _jokiAutomationPath =
+            Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.Process) ??
+            Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.User) ??
+            Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.Machine);
+        private string _audioConfigPath;
+        private readonly SemaphoreSlim _audioDispatchSemaphore = new SemaphoreSlim(1, 1);
 
         /// <summary>
         /// Initialize audio control system
         /// Reads audio profiles from configuration file and initializes Raspberry Pi
         /// </summary>
         /// <param name="winForm">Parent form for logging and UI updates</param>
-        public void initAudio(Form1 winForm)
+        public void initAudio(Form1 winForm)    
         {
             try
             {
                 _rasPi.initRasPi(winForm);
 
                 // Read in audio profiles
-                string configPath = JokiAutomationPath + "Audio.cfg";
+                string existingConfigPath = FindExistingAudioConfigPath();
+                _audioConfigPath = existingConfigPath ?? GetPreferredAudioConfigPath();
 
-                if (File.Exists(configPath))
+                if (!string.IsNullOrEmpty(existingConfigPath) && File.Exists(existingConfigPath))
                 {
                     // Try to load with new format first
-                    if (!TryLoadAudioProfileNew(configPath))
+                    if (!TryLoadAudioProfileNew(existingConfigPath))
                     {
                         // Fall back to old format and migrate
-                        if (TryLoadAudioProfileLegacy(configPath))
+                        if (TryLoadAudioProfileLegacy(existingConfigPath))
                         {
                             // Backup old file
-                            string backupPath = configPath + ".old";
-                            File.Copy(configPath, backupPath, true);
+                            string backupPath = existingConfigPath + ".old";
+                            File.Copy(existingConfigPath, backupPath, true);
 
                             // Save in new format
-                            SaveAudioProfile(configPath);
+                            SaveAudioProfile(existingConfigPath);
 
                             System.Diagnostics.Debug.WriteLine($"Migrated Audio.cfg to new format. Backup saved as Audio.cfg.old");
                         }
@@ -70,6 +78,7 @@ namespace JokiAutomation
                 else
                 {
                     InitializeDefaultProfile();
+                    System.Diagnostics.Debug.WriteLine($"Audio.cfg not found at startup. Expected path: {_audioConfigPath}. JokiAutomation={_jokiAutomationPath}");
                 }
             }
             catch (Exception ex)
@@ -142,14 +151,25 @@ namespace JokiAutomation
                     byte[,] loadedProfile = (byte[,])binaryFormatter.Deserialize(stream);
 #pragma warning restore SYSLIB0011
 
-                    // Validate dimensions
-                    if (loadedProfile.GetLength(0) != MaxProfiles || loadedProfile.GetLength(1) != ChannelsPerProfile)
+                    // Validate minimum dimensions
+                    int loadedRows = loadedProfile.GetLength(0);
+                    int loadedCols = loadedProfile.GetLength(1);
+                    if (loadedCols != ChannelsPerProfile || loadedRows == 0)
                     {
                         return false;
                     }
 
-                    // Copy to audioProfile
-                    Array.Copy(loadedProfile, audioProfile, loadedProfile.Length);
+                    // Copy available rows (legacy files may have fewer profiles than current MaxProfiles)
+                    int rowsToCopy = Math.Min(loadedRows, MaxProfiles);
+                    for (int i = 0; i < rowsToCopy; i++)
+                    {
+                        for (int j = 0; j < ChannelsPerProfile; j++)
+                        {
+                            audioProfile[i, j] = loadedProfile[i, j];
+                        }
+                    }
+
+                    System.Diagnostics.Debug.WriteLine($"Legacy Audio.cfg loaded: {loadedRows} profiles migrated (MaxProfiles={MaxProfiles}).");
                 }
                 return true;
             }
@@ -188,6 +208,19 @@ namespace JokiAutomation
             _rasPi.rasPiExecute(AM_EXECUTE, ID);
         }
 
+        public async Task ExecuteAudioAsync(int ID)
+        {
+            await _audioDispatchSemaphore.WaitAsync();
+            try
+            {
+                await Task.Run(() => executeAudio(ID));
+            }
+            finally
+            {
+                _audioDispatchSemaphore.Release();
+            }
+        }
+
         /// <summary>
         /// Teach audio mix profile to Raspberry Pi
         /// Saves profile to file and transmits to hardware
@@ -204,7 +237,7 @@ namespace JokiAutomation
 
             try
             {
-                string configPath = JokiAutomationPath + "Audio.cfg";
+                string configPath = _audioConfigPath ?? GetPreferredAudioConfigPath();
                 SaveAudioProfile(configPath);
 
                 int teachSequence = BuildTeachSequence(ID);
@@ -217,11 +250,78 @@ namespace JokiAutomation
         }
 
         /// <summary>
+        /// Resolve Audio.cfg path from JokiAutomation environment variable
+        /// Environment value can be either a directory or direct file path
+        /// </summary>
+        /// <returns>Resolved environment-based path or null</returns>
+        private string GetAudioConfigPathFromEnvironment()
+        {
+            if (string.IsNullOrWhiteSpace(_jokiAutomationPath))
+            {
+                return null;
+            }
+
+            string envPath = _jokiAutomationPath.Trim();
+
+            if (envPath.EndsWith(".cfg", StringComparison.OrdinalIgnoreCase))
+            {
+                return envPath;
+            }
+
+            return Path.Combine(envPath, "Audio.cfg");
+        }
+
+        /// <summary>
+        /// Find Audio.cfg in known runtime locations
+        /// </summary>
+        /// <returns>Existing config path or null if not found</returns>
+        private string FindExistingAudioConfigPath()
+        {
+            string[] candidatePaths = new[]
+            {
+                GetAudioConfigPathFromEnvironment(),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Audio.cfg"),
+                Path.Combine(Directory.GetCurrentDirectory(), "Audio.cfg")
+            };
+
+            foreach (string path in candidatePaths)
+            {
+                if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                {
+                    return path;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Determine preferred Audio.cfg save location
+        /// </summary>
+        /// <returns>Preferred config file path</returns>
+        private string GetPreferredAudioConfigPath()
+        {
+            string envConfigPath = GetAudioConfigPathFromEnvironment();
+            if (!string.IsNullOrWhiteSpace(envConfigPath))
+            {
+                return envConfigPath;
+            }
+
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Audio.cfg");
+        }
+
+        /// <summary>
         /// Save audio profile using BinaryWriter (secure alternative to BinaryFormatter)
         /// </summary>
         /// <param name="filePath">Path where to save audio configuration</param>
         private void SaveAudioProfile(string filePath)
         {
+            string directoryPath = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrWhiteSpace(directoryPath) && !Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+
             using (FileStream stream = File.Open(filePath, FileMode.Create, FileAccess.Write))
             using (BinaryWriter writer = new BinaryWriter(stream))
             {
