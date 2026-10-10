@@ -34,6 +34,7 @@ namespace CanonRemoteControl
         private const int HOTKEY_ID_G = 12;
         private const int HOTKEY_ID_N = 13;
         private const int HOTKEY_ID_H = 14;
+        private const int HOTKEY_ID_R = 15;
 
         private IntPtr _handle;
 
@@ -64,6 +65,7 @@ namespace CanonRemoteControl
             if (!RegisterHotKey(_handle, HOTKEY_ID_G, ctrlShift, 0x47)) failedHotkeys.Add("Ctrl+Shift+G (Track Gruppe)");
             if (!RegisterHotKey(_handle, HOTKEY_ID_N, ctrlShift, 0x4E)) failedHotkeys.Add("Ctrl+Shift+N (Track Aus)");
             if (!RegisterHotKey(_handle, HOTKEY_ID_H, ctrlShift, 0x48)) failedHotkeys.Add("Ctrl+Shift+H (Hilfe)");
+            if (!RegisterHotKey(_handle, HOTKEY_ID_R, ctrlShift, 0x52)) failedHotkeys.Add("Ctrl+Shift+R (Raspberry Pi Restart)");
 
             if (failedHotkeys.Count > 0)
             {
@@ -133,6 +135,7 @@ namespace CanonRemoteControl
                 UnregisterHotKey(_handle, HOTKEY_ID_G);
                 UnregisterHotKey(_handle, HOTKEY_ID_N);
                 UnregisterHotKey(_handle, HOTKEY_ID_H);
+                UnregisterHotKey(_handle, HOTKEY_ID_R);
             }
         }
     }

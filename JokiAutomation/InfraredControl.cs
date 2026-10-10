@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-//using System.Threading.Tasks;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace JokiAutomation
@@ -40,6 +40,32 @@ namespace JokiAutomation
                 throw new InvalidOperationException("Infrared control not initialized. Call InitIR() first.");
             }
             _rasPi.rasPiExecute(IR_EXECUTE, ID);
+        }
+
+        /// <summary>
+        /// Synchronize Raspberry Pi date/time with current Windows date/time via SSH.
+        /// </summary>
+        public async Task<bool> SyncRaspberryPiDateTimeWithWindowsAsync()
+        {
+            if (_rasPi == null)
+            {
+                throw new InvalidOperationException("Infrared control not initialized. Call InitIR() first.");
+            }
+
+            return await _rasPi.SyncDateTimeWithWindowsAsync();
+        }
+
+        /// <summary>
+        /// Downloads Raspberry Pi log files to a local directory.
+        /// </summary>
+        public async Task<int> DownloadRaspberryPiLogsAsync(string localDirectory)
+        {
+            if (_rasPi == null)
+            {
+                throw new InvalidOperationException("Infrared control not initialized. Call InitIR() first.");
+            }
+
+            return await _rasPi.DownloadRaspberryPiLogsAsync(localDirectory);
         }
 
         /// <summary>

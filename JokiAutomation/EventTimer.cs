@@ -6,6 +6,15 @@ using System.Windows.Forms;
 
 namespace JokiAutomation
 {
+    internal sealed class EventTimerStartResult
+    {
+        public bool Started { get; set; }
+        public bool AlreadyRunning { get; set; }
+        public int? ProcessId { get; set; }
+        public int? ExitCode { get; set; }
+        public string ErrorMessage { get; set; }
+    }
+
     /// <summary>
     /// Controls the external EventTimer application for pause and event time management
     /// Handles starting the EventTimer.exe with appropriate command line arguments
@@ -14,6 +23,7 @@ namespace JokiAutomation
     {
         private const string ENV_VAR_NAME = "JokiAutomation";
         private const string EXECUTABLE_NAME = "EventTimer.exe";
+        private const int EventTimerAlreadyRunningExitCode = 8;
 
         /// <summary>
         /// Start the EventTimer application in pause mode
@@ -23,15 +33,16 @@ namespace JokiAutomation
         /// <param name="text2">Second pause text to display</param>
         /// <returns>True if start was successful, false otherwise</returns>
         /// <exception cref="ArgumentException">Thrown when text1 or text2 are empty</exception>
-        public bool sendPause(string text1, string text2)
+        public EventTimerStartResult sendPause(string text1, string text2, string requestId = null, string source = "UNKNOWN")
         {
             if (string.IsNullOrWhiteSpace(text1))
                 throw new ArgumentException("Text1 must not be empty", nameof(text1));
             if (string.IsNullOrWhiteSpace(text2))
                 throw new ArgumentException("Text2 must not be empty", nameof(text2));
 
+            string effectiveRequestId = string.IsNullOrWhiteSpace(requestId) ? Guid.NewGuid().ToString("N") : requestId;
             string arguments = $"Pause {EscapeArgument(text1)} {EscapeArgument(text2)}";
-            return StartEventTimer(arguments, "Pause");
+            return StartEventTimer(arguments, "Pause", "Pause", effectiveRequestId, source);
         }
 
         /// <summary>
@@ -41,7 +52,7 @@ namespace JokiAutomation
         /// <param name="eventTime">Event time in format HH:mm or "HH:mm"</param>
         /// <returns>True if start was successful, false otherwise</returns>
         /// <exception cref="ArgumentException">Thrown when eventTime is empty or invalid format</exception>
-        public bool sendEventTime(string eventTime)
+        public EventTimerStartResult sendEventTime(string eventTime, string requestId = null, string source = "UNKNOWN")
         {
             if (string.IsNullOrWhiteSpace(eventTime))
                 throw new ArgumentException("EventTime must not be empty", nameof(eventTime));
@@ -53,8 +64,9 @@ namespace JokiAutomation
             if (!Regex.IsMatch(eventTime, @"^\d{2}:\d{2}$"))
                 throw new ArgumentException($"EventTime must be in format HH:mm. Received: {eventTime}", nameof(eventTime));
 
+            string effectiveRequestId = string.IsNullOrWhiteSpace(requestId) ? Guid.NewGuid().ToString("N") : requestId;
             string arguments = $"Timer \"{eventTime}\"";
-            return StartEventTimer(arguments, "Timer");
+            return StartEventTimer(arguments, "Timer", "Timer", effectiveRequestId, source);
         }
 
         /// <summary>
@@ -64,10 +76,18 @@ namespace JokiAutomation
         /// <param name="arguments">Command line arguments to pass to EventTimer.exe</param>
         /// <param name="errorContext">Context for error messages (e.g., "Pause", "Timer")</param>
         /// <returns>True if start was successful, false otherwise</returns>
-        private bool StartEventTimer(string arguments, string errorContext)
+        private EventTimerStartResult StartEventTimer(string arguments, string errorContext, string command, string requestId, string source)
         {
+            var result = new EventTimerStartResult();
+
             try
             {
+                string normalizedSource = string.IsNullOrWhiteSpace(source) ? "UNKNOWN" : source;
+                LogData.LogLifecycle(
+                    normalizedSource,
+                    "EVENTTIMER_REQUEST_BEGIN",
+                    $"RequestId={requestId} Source={normalizedSource} Command={command} PID={Process.GetCurrentProcess().Id} Args=\"{arguments}\"");
+
                 // Check environment variable
                 string basePath = Environment.GetEnvironmentVariable(ENV_VAR_NAME);
                 if (string.IsNullOrWhiteSpace(basePath))
@@ -78,7 +98,9 @@ namespace JokiAutomation
                         "Configuration Error",
                         MessageBoxIcon.Warning
                     );
-                    return false;
+                    result.ErrorMessage = $"Environment variable '{ENV_VAR_NAME}' is not set.";
+                    LogData.LogLifecycle(normalizedSource, "EVENTTIMER_REQUEST_END", $"RequestId={requestId} Started=False AlreadyRunning=False ExitCode=3 Error=EnvVarMissing");
+                    return result;
                 }
 
                 // Check if directory exists
@@ -90,7 +112,9 @@ namespace JokiAutomation
                         "Directory Not Found",
                         MessageBoxIcon.Error
                     );
-                    return false;
+                    result.ErrorMessage = $"Base directory not found: {basePath}";
+                    LogData.LogLifecycle(normalizedSource, "EVENTTIMER_REQUEST_END", $"RequestId={requestId} Started=False AlreadyRunning=False ExitCode=3 Error=BasePathMissing");
+                    return result;
                 }
 
                 // Check if executable exists
@@ -103,7 +127,9 @@ namespace JokiAutomation
                         "File Not Found",
                         MessageBoxIcon.Error
                     );
-                    return false;
+                    result.ErrorMessage = $"Executable not found: {exePath}";
+                    LogData.LogLifecycle(normalizedSource, "EVENTTIMER_REQUEST_END", $"RequestId={requestId} Started=False AlreadyRunning=False ExitCode=3 Error=ExeMissing");
+                    return result;
                 }
 
                 // Start process
@@ -116,6 +142,11 @@ namespace JokiAutomation
                     WorkingDirectory = basePath
                 };
 
+                LogData.LogLifecycle(
+                    normalizedSource,
+                    "EVENTTIMER_START_BEGIN",
+                    $"RequestId={requestId} Exe=\"{exePath}\" Args=\"{arguments}\" ParentPid={Process.GetCurrentProcess().Id}");
+
                 using (Process process = Process.Start(startInfo))
                 {
                     if (process == null)
@@ -126,11 +157,31 @@ namespace JokiAutomation
                             "Start Error",
                             MessageBoxIcon.Error
                         );
-                        return false;
+
+                        result.ErrorMessage = "Process.Start returned null.";
+                        LogData.LogLifecycle(normalizedSource, "EVENTTIMER_START_FAILED", $"RequestId={requestId} Reason=ProcessStartReturnedNull");
+                        LogData.LogLifecycle(normalizedSource, "EVENTTIMER_REQUEST_END", $"RequestId={requestId} Started=False AlreadyRunning=False ExitCode=1");
+                        return result;
                     }
+
+                    result.ProcessId = process.Id;
+                    result.Started = true;
+
+                    if (process.WaitForExit(200))
+                    {
+                        result.ExitCode = process.ExitCode;
+                        if (process.ExitCode == EventTimerAlreadyRunningExitCode)
+                        {
+                            result.Started = false;
+                            result.AlreadyRunning = true;
+                        }
+                    }
+
+                    LogData.LogLifecycle(normalizedSource, "EVENTTIMER_PROCESS_CREATED", $"RequestId={requestId} ChildPid={process.Id}");
+                    LogData.LogLifecycle(normalizedSource, "EVENTTIMER_REQUEST_END", $"RequestId={requestId} Started={result.Started} AlreadyRunning={result.AlreadyRunning} ChildPid={result.ProcessId} ExitCode={(result.ExitCode.HasValue ? result.ExitCode.Value.ToString() : "null")}");
                 }
 
-                return true;
+                return result;
             }
             catch (System.ComponentModel.Win32Exception ex)
             {
@@ -141,7 +192,10 @@ namespace JokiAutomation
                     "Start Error",
                     MessageBoxIcon.Error
                 );
-                return false;
+                result.ErrorMessage = ex.Message;
+                LogData.LogLifecycle(string.IsNullOrWhiteSpace(source) ? "UNKNOWN" : source, "EVENTTIMER_START_FAILED", $"RequestId={requestId} Exception={ex.GetType().Name} Message=\"{ex.Message}\"");
+                LogData.LogLifecycle(string.IsNullOrWhiteSpace(source) ? "UNKNOWN" : source, "EVENTTIMER_REQUEST_END", $"RequestId={requestId} Started=False AlreadyRunning=False ExitCode=1");
+                return result;
             }
             catch (Exception ex)
             {
@@ -151,7 +205,10 @@ namespace JokiAutomation
                     "Error",
                     MessageBoxIcon.Error
                 );
-                return false;
+                result.ErrorMessage = ex.Message;
+                LogData.LogLifecycle(string.IsNullOrWhiteSpace(source) ? "UNKNOWN" : source, "EVENTTIMER_START_FAILED", $"RequestId={requestId} Exception={ex.GetType().Name} Message=\"{ex.Message}\"");
+                LogData.LogLifecycle(string.IsNullOrWhiteSpace(source) ? "UNKNOWN" : source, "EVENTTIMER_REQUEST_END", $"RequestId={requestId} Started=False AlreadyRunning=False ExitCode=1");
+                return result;
             }
         }
 

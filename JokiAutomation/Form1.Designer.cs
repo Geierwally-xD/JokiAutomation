@@ -16,6 +16,8 @@ namespace JokiAutomation
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
+            LogData.LogLifecycle("UNKNOWN", "FORM_DISPOSE_BEGIN", $"Disposing={disposing}");
+
             if (disposing)
             {
                 try
@@ -81,7 +83,9 @@ namespace JokiAutomation
                     System.Diagnostics.Debug.WriteLine($"Dispose error: {ex.Message}");
                 }
             }
+
             base.Dispose(disposing);
+            LogData.LogLifecycle("UNKNOWN", "FORM_DISPOSE_END", $"Disposing={disposing}");
         }  
 
         #region Windows Form Designer generated code

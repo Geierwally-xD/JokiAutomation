@@ -1,6 +1,8 @@
 ﻿using CanonPtzCommon;
+using Renci.SshNet;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -30,6 +32,7 @@ namespace CanonRemoteControl
         private const int VK_SHIFT_RIGHT = 0xA1;
         private const int VK_CONTROL_LEFT = 0xA2;
         private const int VK_CONTROL_RIGHT = 0xA3;
+        private const int VK_R = 0x52;
 
         protected override async void OnStartup(StartupEventArgs e)
         {
@@ -242,17 +245,165 @@ namespace CanonRemoteControl
             Console.WriteLine("  track_single       - Tracking Einzelperson aktivieren");
             Console.WriteLine("  track_group        - Tracking Gruppe aktivieren");
             Console.WriteLine("  track_off          - Tracking deaktivieren");
+            Console.WriteLine("  rpi_restart        - Raspberry Pi Reset per sudo killall");
             Console.WriteLine("  exit/quit/shutdown - Beendet laufende Instanz");
             Console.WriteLine("  help               - Diese Hilfe anzeigen");
         }
 
+        private async Task<CommandResult> RestartRaspberryPiAsync()
+        {
+            try
+            {
+                if (!TryLoadRaspberryPiSshConfig(out string ipAddress, out string username, out string password))
+                {
+                    return CommandResult.Fail("RaspberryPi", "RaspberryPi.cfg nicht gefunden oder unvollständig.");
+                }
+
+                var auth = new PasswordAuthenticationMethod(username, password);
+                var connectionInfo = new ConnectionInfo(ipAddress, 22, username, auth)
+                {
+                    Timeout = TimeSpan.FromSeconds(20)
+                };
+
+                string commandText = "sudo -S killall -SIGKILL RasPiAutomation";
+
+                using (var sshClient = new SshClient(connectionInfo))
+                {
+                    sshClient.KeepAliveInterval = TimeSpan.FromSeconds(30);
+                    sshClient.Connect();
+
+                    using (var cmd = sshClient.CreateCommand(commandText))
+                    {
+                        cmd.CommandTimeout = TimeSpan.FromSeconds(30);
+                        cmd.Execute();
+
+                        int exitCode = cmd.ExitStatus.HasValue ? cmd.ExitStatus.Value : -1;
+                        string stderr = cmd.Error;
+
+                        sshClient.Disconnect();
+
+                        if (exitCode != 0)
+                        {
+                            return CommandResult.Fail("RaspberryPi", $"Reset per sudo killall fehlgeschlagen (exit={exitCode}): {stderr}");
+                        }
+                    }
+                }
+
+                return CommandResult.Ok("RaspberryPi", $"Raspberry Pi Prozess per sudo killall zurückgesetzt: {ipAddress}");
+            }
+            catch (Exception ex)
+            {
+                return CommandResult.Fail("RaspberryPi", $"Fehler beim Raspberry Pi Restart: {ex.Message}");
+            }
+        }
+
+        private void ExecuteJokiEmergencyTaskKill()
+        {
+            try
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "taskkill",
+                    Arguments = "/F /IM JokiAutomation.exe",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+                };
+
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                _statusOverlay?.ShowStatus($"NOTNAGEL taskkill fehlgeschlagen:\n{ex.Message}", persistent: false);
+            }
+        }
+
+        private bool TryLoadRaspberryPiSshConfig(out string ipAddress, out string username, out string password)
+        {
+            ipAddress = null;
+            username = null;
+            password = null;
+
+            // Prefer the JokiAutomation environment variable path (same as RasPi.cs)
+            string jokiAutomationEnvPath =
+                Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.Process) ??
+                Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.User) ??
+                Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.Machine);
+
+            string[] candidatePaths = new[]
+            {
+                // 1. Production: %JokiAutomation%\RaspberryPi.cfg  (e.g. C:\JokiAutomation\)
+                string.IsNullOrEmpty(jokiAutomationEnvPath) ? null
+                    : Path.Combine(jokiAutomationEnvPath, "RaspberryPi.cfg"),
+                // 2. Same directory as CanonRemoteControl.exe
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RaspberryPi.cfg"),
+                // 3. Development: config\WinForms\ relative to solution root (3 levels up from bin\x64\Debug)
+                Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "config", "WinForms", "RaspberryPi.cfg")),
+                // 4. Development: JokiAutomation project folder
+                Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "JokiAutomation", "RaspberryPi.cfg")),
+                Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "JokiAutomation", "RaspberryPi.cfg"))
+            }.Where(p => p != null).ToArray();
+
+            string configPath = null;
+            foreach (string path in candidatePaths)
+            {
+                if (File.Exists(path))
+                {
+                    configPath = path;
+                    break;
+                }
+            }
+
+            if (configPath == null)
+            {
+                return false;
+            }
+
+            string[] lines = File.ReadAllLines(configPath);
+            string[] values = lines
+                .Select(line => line.Trim())
+                .Where(line => !string.IsNullOrWhiteSpace(line) && !line.StartsWith("#"))
+                .ToArray();
+
+            if (values.Length < 3)
+            {
+                return false;
+            }
+
+            ipAddress = values[0];
+            username = values[1];
+            password = values[2];
+            return !string.IsNullOrWhiteSpace(ipAddress)
+                && !string.IsNullOrWhiteSpace(username)
+                && !string.IsNullOrWhiteSpace(password);
+        }
+
         public void NotifyHotkeysRegistered()
         {
-            _statusOverlay?.ShowStatus("BEREIT!\n14 Tastaturkuerzel aktiv\nCtrl+Shift+H = Hilfe", persistent: false);
+            _statusOverlay?.ShowStatus("BEREIT!\n15 Tastaturkuerzel aktiv\nCtrl+Shift+H = Hilfe\nCtrl+Shift+R = Raspberry Pi Restart", persistent: false);
         }
 
         public async Task HandleHotkey(int id)
         {
+            if (id == 15)
+            {
+                CommandResult rpiResult = null;
+                try
+                {
+                    rpiResult = await ExecuteHotkeyAsync(id);
+                    if (rpiResult != null)
+                    {
+                        _statusOverlay?.ShowStatus(rpiResult.Success ? rpiResult.Message : $"FEHLER:\n{rpiResult.Message}", persistent: false);
+                    }
+                }
+                finally
+                {
+                    ExecuteJokiEmergencyTaskKill();
+                }
+
+                return;
+            }
+
             if (_controller == null)
             {
                 _statusOverlay?.ShowStatus("FEHLER: Kamera-Controller nicht initialisiert", persistent: false);
@@ -319,6 +470,8 @@ namespace CanonRemoteControl
                         helpDialog.ShowDialog();
                     });
                     return Task.FromResult<CommandResult>(null);
+                case 15:
+                    return RestartRaspberryPiAsync();
                 default:
                     return Task.FromResult(CommandResult.Fail("Hotkey", $"Unbekannte Hotkey-ID: {id}"));
             }

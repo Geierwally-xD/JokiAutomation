@@ -18,10 +18,9 @@
     <StartArguments>"Ausschaltsequenz"</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <StartArguments>"Altar"</StartArguments>
+    <StartArguments>"Ausschaltsequenz"</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <StartArguments>
-    </StartArguments>
+    <StartArguments>"Initialisierung"</StartArguments>
   </PropertyGroup>
 </Project>

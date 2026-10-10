@@ -25,6 +25,7 @@ namespace JokiAutomation
         private IBMDSwitcherMixEffectBlock _mixEffectBlock;
         private bool _isConnected;
         private string _ipAddress;
+        private readonly Action<string> _persistentLog;
         private IBMDSwitcherDownstreamKey _pipKeyer;
 
         // ── COM threading diagnostics ─────────────────────────────────────────
@@ -85,9 +86,10 @@ namespace JokiAutomation
         public bool IsConnected => _isConnected;
         public bool SupportsAudioAPI { get; private set; }
 
-        public ATEMControl(string ipAddress = "192.168.178.48")
+        public ATEMControl(string ipAddress = "192.168.178.48", Action<string> persistentLog = null)
         {
             _ipAddress = ipAddress;
+            _persistentLog = persistentLog;
             _isConnected = false;
             SupportsAudioAPI = false;
         }
@@ -181,7 +183,105 @@ namespace JokiAutomation
         public void SetProgramInput(VideoSource source)
         {
             ValidateConnection();
-            _mixEffectBlock.SetProgramInput((long)source);
+            string switchId = Guid.NewGuid().ToString("N").Substring(0, 8);
+            long targetInput = (long)source;
+            long programBefore = 0;
+            long previewBefore = 0;
+            _mixEffectBlock.GetProgramInput(out programBefore);
+            _mixEffectBlock.GetPreviewInput(out previewBefore);
+            PersistentLog($"[ATEM_PROGRAM_SET_BEGIN] SwitchId={switchId} Source=ATEMControl.SetProgramInput TargetInput={targetInput} ProgramBefore={programBefore} PreviewBefore={previewBefore} ProgramAfter=NA PreviewAfter=NA PID={Process.GetCurrentProcess().Id} TID={Thread.CurrentThread.ManagedThreadId} RequestId= SceneId=");
+            PersistentLog($"[ATEM_PROGRAM_SET_COM_CALL] SwitchId={switchId} Source=ATEMControl.SetProgramInput TargetInput={targetInput} ProgramBefore={programBefore} PreviewBefore={previewBefore} PID={Process.GetCurrentProcess().Id} TID={Thread.CurrentThread.ManagedThreadId} RequestId= SceneId=");
+            _mixEffectBlock.SetProgramInput(targetInput);
+
+            long programAfter = 0;
+            long previewAfter = 0;
+            _mixEffectBlock.GetProgramInput(out programAfter);
+            _mixEffectBlock.GetPreviewInput(out previewAfter);
+            PersistentLog($"[ATEM_PROGRAM_SET_CONFIRMED] SwitchId={switchId} Source=ATEMControl.SetProgramInput TargetInput={targetInput} ProgramBefore={programBefore} PreviewBefore={previewBefore} ProgramAfter={programAfter} PreviewAfter={previewAfter} PID={Process.GetCurrentProcess().Id} TID={Thread.CurrentThread.ManagedThreadId} RequestId= SceneId=");
+        }
+
+        public async Task SetProgramInputAsync(
+            VideoSource source,
+            CancellationToken cancellationToken = default,
+            TimeSpan? timeout = null,
+            string sourceTag = null,
+            string sceneId = null,
+            string requestId = null,
+            string switchId = null)
+        {
+            ValidateConnection();
+
+            TimeSpan effectiveTimeout = timeout ?? DefaultTransitionTimeout;
+            string correlationId = string.IsNullOrWhiteSpace(switchId)
+                ? Guid.NewGuid().ToString("N").Substring(0, 8)
+                : switchId;
+            long targetInput = (long)source;
+            int pid = Process.GetCurrentProcess().Id;
+            string normalizedSourceTag = string.IsNullOrWhiteSpace(sourceTag) ? "ATEMControl.SetProgramInputAsync" : sourceTag;
+            string normalizedSceneId = sceneId ?? string.Empty;
+            string normalizedRequestId = requestId ?? string.Empty;
+
+            string camSwitchBegin = $"[CAMSWITCH_BEGIN] Id={correlationId} Source={normalizedSourceTag} Input={source} SceneId={normalizedSceneId} RequestId={normalizedRequestId} PID={pid}";
+            Debug.WriteLine(camSwitchBegin);
+            PersistentLog(camSwitchBegin);
+
+            await _transitionSemaphore.WaitAsync(cancellationToken);
+            try
+            {
+                LogTransition(correlationId, $"Direct-Cut gestartet — target={source}({targetInput})");
+                EnsureComOwnerThread("SetProgramInputAsync-Entry");
+
+                long currentProgram = 0;
+                long currentPreview = 0;
+                _mixEffectBlock.GetProgramInput(out currentProgram);
+                _mixEffectBlock.GetPreviewInput(out currentPreview);
+                PersistentLog($"[ATEM_PROGRAM_SET_BEGIN] SwitchId={correlationId} Source={normalizedSourceTag} TargetInput={targetInput} ProgramBefore={currentProgram} PreviewBefore={currentPreview} ProgramAfter=NA PreviewAfter=NA PID={pid} TID={Thread.CurrentThread.ManagedThreadId} RequestId={normalizedRequestId} SceneId={normalizedSceneId}");
+
+                if (currentProgram == targetInput)
+                {
+                    PersistentLog($"[ATEM_PROGRAM_SET_CONFIRMED] SwitchId={correlationId} Source={normalizedSourceTag} TargetInput={targetInput} ProgramBefore={currentProgram} PreviewBefore={currentPreview} ProgramAfter={currentProgram} PreviewAfter={currentPreview} PID={pid} TID={Thread.CurrentThread.ManagedThreadId} RequestId={normalizedRequestId} SceneId={normalizedSceneId}");
+                    LogTransition(correlationId, $"Target {source} bereits auf Program — kein Direct-Cut nötig");
+                    return;
+                }
+
+                PersistentLog($"[ATEM_PROGRAM_SET_COM_CALL] SwitchId={correlationId} Source={normalizedSourceTag} TargetInput={targetInput} ProgramBefore={currentProgram} PreviewBefore={currentPreview} PID={pid} TID={Thread.CurrentThread.ManagedThreadId} RequestId={normalizedRequestId} SceneId={normalizedSceneId}");
+                _mixEffectBlock.SetProgramInput(targetInput);
+                LogTransition(correlationId, $"SetProgramInput({targetInput}) aufgerufen");
+
+                var stopwatch = Stopwatch.StartNew();
+                while (stopwatch.Elapsed < effectiveTimeout)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    long confirmedProgram = 0;
+                    _mixEffectBlock.GetProgramInput(out confirmedProgram);
+                    if (confirmedProgram == targetInput)
+                    {
+                        long previewAfter = 0;
+                        _mixEffectBlock.GetPreviewInput(out previewAfter);
+                        PersistentLog($"[ATEM_PROGRAM_SET_CONFIRMED] SwitchId={correlationId} Source={normalizedSourceTag} TargetInput={targetInput} ProgramBefore={currentProgram} PreviewBefore={currentPreview} ProgramAfter={confirmedProgram} PreviewAfter={previewAfter} PID={pid} TID={Thread.CurrentThread.ManagedThreadId} RequestId={normalizedRequestId} SceneId={normalizedSceneId}");
+                        LogTransition(correlationId, $"Direct-Cut bestätigt: {targetInput}");
+                        return;
+                    }
+
+                    await Task.Delay(PollingIntervalMs, cancellationToken);
+                }
+
+                long finalProgram = 0;
+                long finalPreview = 0;
+                _mixEffectBlock.GetProgramInput(out finalProgram);
+                _mixEffectBlock.GetPreviewInput(out finalPreview);
+                PersistentLog($"[ATEM_PROGRAM_SET_FAILED] SwitchId={correlationId} Source={normalizedSourceTag} TargetInput={targetInput} ProgramBefore={currentProgram} PreviewBefore={currentPreview} ProgramAfter={finalProgram} PreviewAfter={finalPreview} PID={pid} TID={Thread.CurrentThread.ManagedThreadId} RequestId={normalizedRequestId} SceneId={normalizedSceneId}");
+                throw new TimeoutException(
+                    $"[DirectCut {correlationId}] Program-Input nicht bestätigt. Erwartet={targetInput}, Ist={finalProgram}");
+            }
+            finally
+            {
+                _transitionSemaphore.Release();
+                string camSwitchEnd = $"[CAMSWITCH_END] Id={correlationId} Source={normalizedSourceTag} Input={source}";
+                Debug.WriteLine(camSwitchEnd);
+                PersistentLog(camSwitchEnd);
+            }
         }
 
         // ── Legacy synchronous wrapper (kept for backwards compatibility) ─────
@@ -190,7 +290,7 @@ namespace JokiAutomation
         /// </summary>
         public Task TransitionToProgramInput(VideoSource source)
         {
-            return TransitionToProgramInputAsync(source);
+            return TransitionToProgramInputAsync(source, default, null, "ATEMControl.TransitionToProgramInput");
         }
 
         // ── New asynchronous, serialised, verified transition ─────────────────
@@ -205,13 +305,27 @@ namespace JokiAutomation
         public async Task TransitionToProgramInputAsync(
             VideoSource source,
             CancellationToken cancellationToken = default,
-            TimeSpan? timeout = null)
+            TimeSpan? timeout = null,
+            string sourceTag = null,
+            string sceneId = null,
+            string requestId = null,
+            string switchId = null)
         {
             ValidateConnection();
 
             TimeSpan effectiveTimeout = timeout ?? DefaultTransitionTimeout;
-            string correlationId = Guid.NewGuid().ToString("N").Substring(0, 8);
+            string correlationId = string.IsNullOrWhiteSpace(switchId)
+                ? Guid.NewGuid().ToString("N").Substring(0, 8)
+                : switchId;
             long targetInput = (long)source;
+            int pid = Process.GetCurrentProcess().Id;
+            string normalizedSourceTag = string.IsNullOrWhiteSpace(sourceTag) ? "ATEMControl.TransitionToProgramInputAsync" : sourceTag;
+            string normalizedSceneId = sceneId ?? string.Empty;
+            string normalizedRequestId = requestId ?? string.Empty;
+
+            string camSwitchBegin = $"[CAMSWITCH_BEGIN] Id={correlationId} Source={normalizedSourceTag} Input={source} SceneId={normalizedSceneId} RequestId={normalizedRequestId} PID={pid}";
+            Debug.WriteLine(camSwitchBegin);
+            PersistentLog(camSwitchBegin);
 
             await _transitionSemaphore.WaitAsync(cancellationToken);
             try
@@ -224,6 +338,7 @@ namespace JokiAutomation
                 long currentPreview = 0;
                 _mixEffectBlock.GetProgramInput(out currentProgram);
                 _mixEffectBlock.GetPreviewInput(out currentPreview);
+                PersistentLog($"[ATEM_PROGRAM_PREVIEW_STATE] SwitchId={correlationId} Source={normalizedSourceTag} TargetInput={targetInput} ProgramBefore={currentProgram} PreviewBefore={currentPreview} ProgramAfter=NA PreviewAfter=NA PID={pid} TID={Thread.CurrentThread.ManagedThreadId} RequestId={normalizedRequestId} SceneId={normalizedSceneId}");
                 LogTransition(correlationId,
                     $"Aktuelle Zustände — Program={currentProgram}, Preview={currentPreview}");
 
@@ -235,6 +350,7 @@ namespace JokiAutomation
                 }
 
                 // ── Step 3: Set Preview to target ──────────────────────────
+                PersistentLog($"[ATEM_SET_PREVIEW_COM_CALL] SwitchId={correlationId} Source={normalizedSourceTag} TargetInput={targetInput} ProgramBefore={currentProgram} PreviewBefore={currentPreview} PID={pid} TID={Thread.CurrentThread.ManagedThreadId} RequestId={normalizedRequestId} SceneId={normalizedSceneId}");
                 _mixEffectBlock.SetPreviewInput(targetInput);
                 LogTransition(correlationId, $"SetPreviewInput({targetInput}) aufgerufen");
 
@@ -259,6 +375,7 @@ namespace JokiAutomation
 
                 // ── Step 5: Perform Auto-Transition exactly once ───────────
                 cancellationToken.ThrowIfCancellationRequested();
+                PersistentLog($"[ATEM_AUTO_TRANSITION_COM_CALL] SwitchId={correlationId} Source={normalizedSourceTag} TargetInput={targetInput} ProgramBefore={currentProgram} PreviewBefore={currentPreview} PID={pid} TID={Thread.CurrentThread.ManagedThreadId} RequestId={normalizedRequestId} SceneId={normalizedSceneId}");
                 _mixEffectBlock.PerformAutoTransition();
                 LogTransition(correlationId, "Auto-Transition gestartet");
 
@@ -276,6 +393,7 @@ namespace JokiAutomation
                 long finalPreview = 0;
                 _mixEffectBlock.GetProgramInput(out finalProgram);
                 _mixEffectBlock.GetPreviewInput(out finalPreview);
+                PersistentLog($"[ATEM_PROGRAM_PREVIEW_FINAL] SwitchId={correlationId} Source={normalizedSourceTag} TargetInput={targetInput} ProgramBefore={currentProgram} PreviewBefore={currentPreview} ProgramAfter={finalProgram} PreviewAfter={finalPreview} PID={pid} TID={Thread.CurrentThread.ManagedThreadId} RequestId={normalizedRequestId} SceneId={normalizedSceneId}");
                 LogTransition(correlationId,
                     $"Sequenz abgeschlossen — Program={finalProgram}, Preview={finalPreview}");
             }
@@ -297,15 +415,40 @@ namespace JokiAutomation
             finally
             {
                 _transitionSemaphore.Release();
+                string camSwitchEnd = $"[CAMSWITCH_END] Id={correlationId} Source={normalizedSourceTag} Input={source}";
+                Debug.WriteLine(camSwitchEnd);
+                PersistentLog(camSwitchEnd);
             }
         }
 
         // ── Private helpers ───────────────────────────────────────────────────
 
-        private static void LogTransition(string correlationId, string message)
+        private void LogTransition(string correlationId, string message)
         {
-            string text = $"[Sequence {correlationId}] {message}";
+            string text =
+                $"[ATEM_TRANSITION] Id={correlationId} " +
+                $"PID={Process.GetCurrentProcess().Id} " +
+                $"TID={Thread.CurrentThread.ManagedThreadId} " +
+                message;
+
             Debug.WriteLine(text);
+            PersistentLog(text);
+        }
+
+        private void PersistentLog(string message)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(message))
+                {
+                    return;
+                }
+
+                _persistentLog?.Invoke(message);
+            }
+            catch
+            {
+            }
         }
 
         /// <summary>
@@ -579,16 +722,21 @@ namespace JokiAutomation
 
         public void EnablePictureInPicture()
         {
+            EnablePictureInPicture((VideoSource)PiP_Source);
+        }
+
+        public void EnablePictureInPicture(VideoSource source)
+        {
             ValidateConnection();
             try
             {
                 IBMDSwitcherKey key = GetUpstreamKey(0);
                 if (key == null) throw new Exception("Upstream Key 0 nicht verfügbar");
                 key.SetType(_BMDSwitcherKeyType.bmdSwitcherKeyTypeDVE);
-                key.SetInputFill(PiP_Source);
+                key.SetInputFill((long)source);
                 ConfigureDVEForPiP(key);
                 key.SetOnAir(1);
-                Debug.WriteLine("✓ PiP aktiviert (Upstream Key 0 mit DVE)");
+                Debug.WriteLine($"✓ PiP aktiviert (Upstream Key 0 mit DVE, Source={source})");
             }
             catch (Exception ex)
             {

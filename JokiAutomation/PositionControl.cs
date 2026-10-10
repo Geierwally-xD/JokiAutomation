@@ -247,7 +247,7 @@ namespace JokiAutomation
                 _PCForm._logDat.sendInfoMessage("JokiAutomation\nKalibrierung nicht verfügbar im PTZ-Modus");
                 return;
             }
-            _rasPi.PuttyRequestRasPi(PC_CALIBRATE, ID);
+            _rasPi.rasPiExecute(PC_CALIBRATE, ID);
         }
 
         // ── PTZ movement tracking ─────────────────────────────────────────────
@@ -356,10 +356,23 @@ namespace JokiAutomation
             }
             else
             {
-                // Legacy RasPi mode — fire and keep existing behaviour
+                // Legacy RasPi mode — await command completion for deterministic sequencing
                 _PCForm._logDat.sendInfoMessage($"PositionControl\nRasPi-Modus: Sende Position {id} an RaspberryPi");
-                _rasPi.rasPiExecute(PC_MOVE, id);
-                return PositionMoveResult.Ok(id, id, "RasPi move started");
+                try
+                {
+                    await _rasPi.RasPiExecuteAsync(PC_MOVE, id, cancellationToken: cancellationToken);
+                    return PositionMoveResult.Ok(id, id, $"RasPi completed position {id}");
+                }
+                catch (OperationCanceledException)
+                {
+                    _PCForm._logDat.sendInfoMessage($"PositionControl\nRasPi-Modus: Bewegung abgebrochen für Position {id}");
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _PCForm._logDat.sendInfoMessage($"PositionControl\nRasPi-Modus: Bewegung fehlgeschlagen für Position {id}: {ex.Message}");
+                    return PositionMoveResult.Fail(id, ex.Message);
+                }
             }
         }
 

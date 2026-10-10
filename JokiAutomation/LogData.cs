@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Reflection;
+using System.Diagnostics;
+using System.Threading;
 
 namespace JokiAutomation
 {
@@ -14,6 +16,8 @@ namespace JokiAutomation
     /// </summary>
     public class LogData
     {
+        private static LogData activeInstance;
+
         /// <summary>
         /// Initialize log data system with parent form reference
         /// </summary>
@@ -21,6 +25,42 @@ namespace JokiAutomation
         public void initLogData(Form1 winForm)
         {
             logDatForm = winForm; // Kann null sein im Kommandozeilen-Modus
+            activeInstance = this;
+        }
+
+        public static void LogLifecycle(string mode, string eventName, string details = null)
+        {
+            try
+            {
+                int pid = Process.GetCurrentProcess().Id;
+                int tid = Thread.CurrentThread.ManagedThreadId;
+                string timestamp = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss.fff");
+                string normalizedMode = string.IsNullOrWhiteSpace(mode) ? "UNKNOWN" : mode;
+                string normalizedEvent = string.IsNullOrWhiteSpace(eventName) ? "UNKNOWN" : eventName;
+
+                string message =
+                    $"{timestamp} [LIFECYCLE] PID={pid} TID={tid} Mode={normalizedMode} Event={normalizedEvent}";
+
+                if (!string.IsNullOrWhiteSpace(details))
+                {
+                    message += $" {details}";
+                }
+
+                LogData current = activeInstance;
+                if (current != null)
+                {
+                    current.sendInfoMessage(message);
+                    return;
+                }
+
+                string appPath = Assembly.GetExecutingAssembly().Location;
+                WinFormsExtensions.writeLog(appPath, message);
+                Console.WriteLine(message);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[LIFECYCLE-LOGGING-ERROR] {ex.GetType().Name}: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -94,6 +134,8 @@ namespace JokiAutomation
     /// </summary>
     public static class WinFormsExtensions
     {
+        private static readonly object LogSync = new object();
+
         /// <summary>
         /// Append a line to RichTextBox content with automatic newline handling
         /// If textbox is empty, sets text directly; otherwise appends with newline
@@ -117,16 +159,45 @@ namespace JokiAutomation
         /// <param name="str">Log message to write</param>
         public static void writeLog(String path, String str)
         {
-            String filename = Path.GetDirectoryName(path).ToString() + "\\RasPiAutomationLog.txt";
-            if (!File.Exists(filename))
+            try
             {
-                File.WriteAllText(filename, str + "\n");
+                string filename = Path.Combine(Path.GetDirectoryName(path) ?? string.Empty, "RasPiAutomationLog.txt");
+
+                lock (LogSync)
+                {
+                    const int maxAttempts = 3;
+                    for (int attempt = 1; attempt <= maxAttempts; attempt++)
+                    {
+                        try
+                        {
+                            if (!File.Exists(filename))
+                            {
+                                File.WriteAllText(filename, str + "\n");
+                            }
+                            else
+                            {
+                                File.AppendAllText(filename, str + "\n");
+                            }
+
+                            return;
+                        }
+                        catch (IOException ioEx)
+                        {
+                            if (attempt == maxAttempts)
+                            {
+                                Debug.WriteLine($"writeLog failed after retries: {ioEx.Message}");
+                                return;
+                            }
+
+                            Thread.Sleep(30);
+                        }
+                    }
+                }
             }
-            else
+            catch (Exception ex)
             {
-                File.AppendAllText(filename, str + "\n");
+                Debug.WriteLine($"writeLog unexpected error: {ex.Message}");
             }
-            return;
         }
     }
 }

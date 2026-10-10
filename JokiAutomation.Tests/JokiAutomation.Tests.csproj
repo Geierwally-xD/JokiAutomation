@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+	<TargetFramework>net48</TargetFramework>
+	<IsPackable>false</IsPackable>
+	<LangVersion>latest</LangVersion>
+	<Nullable>disable</Nullable>
+	<RootNamespace>JokiAutomation.Tests</RootNamespace>
+	<AssemblyName>JokiAutomation.Tests</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+	<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
+	<PackageReference Include="NUnit" Version="3.14.0" />
+	<PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<ProjectReference Include="..\JokiAutomation\JokiAutomation.csproj"
+					  ReferenceOutputAssembly="false"
+					  PrivateAssets="all" />
+  </ItemGroup>
+</Project>

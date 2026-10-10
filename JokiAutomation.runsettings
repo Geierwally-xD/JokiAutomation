@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+	<EnvironmentVariables>
+	  <!-- Set JOKI_EXE here only if the test project's automatic lookup does not find the desired build. -->
+	  <!-- <JOKI_EXE>C:\JokiAutomation\JokiAutomation.exe</JOKI_EXE> -->
+
+	  <!-- Burst: deliberately overlapping normal scene commands. -->
+	  <JOKI_BURST_COMMANDS>Altar|Predigt|Text|Gebet|Band|GoPro</JOKI_BURST_COMMANDS>
+
+	  <!-- Smoke: sequential hardware coverage. Ausschaltsequenz intentionally excluded and should be run separately last. -->
+	  <JOKI_SMOKE_COMMANDS>BEAMER_ON|BEAMER_Mute|Backup_Start|Backup_Stop|Backup_Switch|Altar|Predigt|GoPro</JOKI_SMOKE_COMMANDS>
+	</EnvironmentVariables>
+  </RunConfiguration>
+</RunSettings>

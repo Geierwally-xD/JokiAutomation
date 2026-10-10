@@ -208,12 +208,17 @@ namespace JokiAutomation
             _rasPi.rasPiExecute(AM_EXECUTE, ID);
         }
 
-        public async Task ExecuteAudioAsync(int ID)
+        public async Task ExecuteAudioAsync(int ID, CancellationToken cancellationToken = default)
         {
-            await _audioDispatchSemaphore.WaitAsync();
+            if (!ValidateProfileID(ID))
+            {
+                throw new ArgumentOutOfRangeException(nameof(ID), $"ID must be between 0 and {MaxProfiles - 1}");
+            }
+
+            await _audioDispatchSemaphore.WaitAsync(cancellationToken);
             try
             {
-                await Task.Run(() => executeAudio(ID));
+                await _rasPi.RasPiExecuteAsync(AM_EXECUTE, ID, cancellationToken: cancellationToken);
             }
             finally
             {

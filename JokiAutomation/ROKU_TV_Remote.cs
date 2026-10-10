@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace JokiAutomation
 {
@@ -28,6 +29,16 @@ namespace JokiAutomation
         private const string KEY_INPUT_HDMI3 = "InputHDMI3";
         private const string KEY_INPUT_HDMI4 = "InputHDMI4";
 
+        // Roku launch targets (often more reliable for wake/input switch)
+        private const string LAUNCH_TVINPUT_HDMI1 = "tvinput.HDMI1";
+        private const string LAUNCH_TVINPUT_HDMI2 = "tvinput.HDMI2";
+        private const string LAUNCH_TVINPUT_HDMI3 = "tvinput.HDMI3";
+        private const string LAUNCH_TVINPUT_HDMI4 = "tvinput.HDMI4";
+        private const string LAUNCH_TVINPUT_HDMI1_LOWER = "tvinput.hdmi1";
+        private const string LAUNCH_TVINPUT_HDMI2_LOWER = "tvinput.hdmi2";
+        private const string LAUNCH_TVINPUT_HDMI3_LOWER = "tvinput.hdmi3";
+        private const string LAUNCH_TVINPUT_HDMI4_LOWER = "tvinput.hdmi4";
+
         // Default configuration values
         private const string DEFAULT_IP = "192.168.178.45";
         private const int DEFAULT_PORT = 8060;
@@ -49,10 +60,10 @@ namespace JokiAutomation
 
             // Load configuration
             LoadConfiguration(out string ipAddress, out int port);
-            
+
             _ipAddress = ipAddress;
             _port = port;
-            
+
             _httpClient = new HttpClient
             {
                 Timeout = TimeSpan.FromSeconds(5)
@@ -104,12 +115,12 @@ namespace JokiAutomation
                 if (File.Exists(_configPath))
                 {
                     string[] lines = File.ReadAllLines(_configPath);
-                    
+
                     if (lines.Length > 0 && !string.IsNullOrWhiteSpace(lines[0]))
                     {
                         ipAddress = lines[0].Trim();
                     }
-                    
+
                     if (lines.Length > 1 && !string.IsNullOrWhiteSpace(lines[1]))
                     {
                         if (int.TryParse(lines[1].Trim(), out int configPort))
@@ -155,266 +166,38 @@ namespace JokiAutomation
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error creating default Roku TV configuration: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error creating Roku TV configuration: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// Save current configuration to file
+        /// Sends a key press command to the Roku TV
         /// </summary>
-        /// <returns>True if save successful, false otherwise</returns>
-        public bool SaveConfiguration()
+        /// <param name="key">The key code to send (e.g., "PowerOn", "PowerOff", "InputHDMI2")</param>
+        private async Task SendKeyAsync(string key)
         {
-            try
-            {
-                string directoryPath = Path.GetDirectoryName(_configPath);
-                if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
-                {
-                    Directory.CreateDirectory(directoryPath);
-                }
-
-                File.WriteAllLines(_configPath, new[]
-                {
-                    _ipAddress,
-                    _port.ToString(),
-                    "# Roku TV Configuration",
-                    "# Line 1: IP Address",
-                    "# Line 2: Port (default: 8060)"
-                });
-                
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            var url = $"http://{_ipAddress}:{_port}/keypress/{key}";
+            var response = await _httpClient.PostAsync(url, null);
+            response.EnsureSuccessStatusCode();
         }
 
         /// <summary>
-        /// Get current IP address
+        /// TV einschalten bzw. aus Standby holen (Async Version)
         /// </summary>
-        public string IPAddress => _ipAddress;
-
-        /// <summary>
-        /// Get current port
-        /// </summary>
-        public int Port => _port;
-
-        /// <summary>
-        /// Get configuration file path
-        /// </summary>
-        public string ConfigPath => _configPath;
-
-        /// <summary>
-        /// Power on the Roku TV
-        /// Sends PowerOn command via ECP
-        /// </summary>
-        /// <returns>True if command sent successfully, false otherwise</returns>
-        public async Task<bool> PowerOnAsync()
+        public async Task PowerOnAsync()
         {
-            return await SendKeyPressAsync(KEY_POWER_ON);
+            await SendKeyAsync("PowerOn");
         }
 
         /// <summary>
-        /// Power on the Roku TV (synchronous)
+        /// TV einschalten bzw. aus Standby holen (Synchronous - Returns bool)
         /// </summary>
-        /// <returns>True if command sent successfully, false otherwise</returns>
         public bool PowerOn()
         {
-            return PowerOnAsync().GetAwaiter().GetResult();
-        }
-
-        /// <summary>
-        /// Power off the Roku TV
-        /// Sends PowerOff command via ECP
-        /// </summary>
-        /// <returns>True if command sent successfully, false otherwise</returns>
-        public async Task<bool> PowerOffAsync()
-        {
-            return await SendKeyPressAsync(KEY_POWER_OFF);
-        }
-
-        /// <summary>
-        /// Power off the Roku TV (synchronous)
-        /// </summary>
-        /// <returns>True if command sent successfully, false otherwise</returns>
-        public bool PowerOff()
-        {
-            return PowerOffAsync().GetAwaiter().GetResult();
-        }
-
-        /// <summary>
-        /// Toggle power state (on/off)
-        /// </summary>
-        /// <returns>True if command sent successfully, false otherwise</returns>
-        public async Task<bool> TogglePowerAsync()
-        {
-            return await SendKeyPressAsync(KEY_POWER);
-        }
-
-        /// <summary>
-        /// Toggle power state (on/off) - synchronous
-        /// </summary>
-        /// <returns>True if command sent successfully, false otherwise</returns>
-        public bool TogglePower()
-        {
-            return TogglePowerAsync().GetAwaiter().GetResult();
-        }
-
-        /// <summary>
-        /// Switch TV input to HDMI 2
-        /// Sends InputHDMI2 command via ECP
-        /// </summary>
-        /// <returns>True if command sent successfully, false otherwise</returns>
-        public async Task<bool> SwitchToHDMI2Async()
-        {
-            return await SendKeyPressAsync(KEY_INPUT_HDMI2);
-        }
-
-        /// <summary>
-        /// Switch TV input to HDMI 2 (synchronous)
-        /// </summary>
-        /// <returns>True if command sent successfully, false otherwise</returns>
-        public bool SwitchToHDMI2()
-        {
-            return SwitchToHDMI2Async().GetAwaiter().GetResult();
-        }
-
-        /// <summary>
-        /// Switch TV input to HDMI 1
-        /// </summary>
-        /// <returns>True if command sent successfully, false otherwise</returns>
-        public async Task<bool> SwitchToHDMI1Async()
-        {
-            return await SendKeyPressAsync(KEY_INPUT_HDMI1);
-        }
-
-        /// <summary>
-        /// Switch TV input to HDMI 1 (synchronous)
-        /// </summary>
-        /// <returns>True if command sent successfully, false otherwise</returns>
-        public bool SwitchToHDMI1()
-        {
-            return SwitchToHDMI1Async().GetAwaiter().GetResult();
-        }
-
-        /// <summary>
-        /// Switch TV input to HDMI 3
-        /// </summary>
-        /// <returns>True if command sent successfully, false otherwise</returns>
-        public async Task<bool> SwitchToHDMI3Async()
-        {
-            return await SendKeyPressAsync(KEY_INPUT_HDMI3);
-        }
-
-        /// <summary>
-        /// Switch TV input to HDMI 3 (synchronous)
-        /// </summary>
-        /// <returns>True if command sent successfully, false otherwise</returns>
-        public bool SwitchToHDMI3()
-        {
-            return SwitchToHDMI3Async().GetAwaiter().GetResult();
-        }
-
-        /// <summary>
-        /// Switch TV input to HDMI 4
-        /// </summary>
-        /// <returns>True if command sent successfully, false otherwise</returns>
-        public async Task<bool> SwitchToHDMI4Async()
-        {
-            return await SendKeyPressAsync(KEY_INPUT_HDMI4);
-        }
-
-        /// <summary>
-        /// Switch TV input to HDMI 4 (synchronous)
-        /// </summary>
-        /// <returns>True if command sent successfully, false otherwise</returns>
-        public bool SwitchToHDMI4()
-        {
-            return SwitchToHDMI4Async().GetAwaiter().GetResult();
-        }
-
-        /// <summary>
-        /// Go to Roku home screen
-        /// </summary>
-        /// <returns>True if command sent successfully, false otherwise</returns>
-        public async Task<bool> GoHomeAsync()
-        {
-            return await SendKeyPressAsync(KEY_HOME);
-        }
-
-        /// <summary>
-        /// Go to Roku home screen (synchronous)
-        /// </summary>
-        /// <returns>True if command sent successfully, false otherwise</returns>
-        public bool GoHome()
-        {
-            return GoHomeAsync().GetAwaiter().GetResult();
-        }
-
-        /// <summary>
-        /// Get device information from Roku TV
-        /// </summary>
-        /// <returns>XML string with device info, or null if failed</returns>
-        public async Task<string> GetDeviceInfoAsync()
-        {
             try
             {
-                string url = $"http://{_ipAddress}:{_port}/query/device-info";
-                HttpResponseMessage response = await _httpClient.GetAsync(url);
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    return await response.Content.ReadAsStringAsync();
-                }
-                return null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Get device information from Roku TV (synchronous)
-        /// </summary>
-        /// <returns>XML string with device info, or null if failed</returns>
-        public string GetDeviceInfo()
-        {
-            return GetDeviceInfoAsync().GetAwaiter().GetResult();
-        }
-
-        /// <summary>
-        /// Check if Roku TV is reachable on network
-        /// </summary>
-        /// <returns>True if TV responds, false otherwise</returns>
-        public async Task<bool> IsReachableAsync()
-        {
-            string deviceInfo = await GetDeviceInfoAsync();
-            return !string.IsNullOrEmpty(deviceInfo);
-        }
-
-        /// <summary>
-        /// Check if Roku TV is reachable on network (synchronous)
-        /// </summary>
-        /// <returns>True if TV responds, false otherwise</returns>
-        public bool IsReachable()
-        {
-            return IsReachableAsync().GetAwaiter().GetResult();
-        }
-
-        /// <summary>
-        /// Send keypress command to Roku TV via ECP
-        /// </summary>
-        /// <param name="key">Key code to send (e.g., "Power", "InputHDMI2")</param>
-        /// <returns>True if command sent successfully, false otherwise</returns>
-        private async Task<bool> SendKeyPressAsync(string key)
-        {
-            try
-            {
-                string url = $"http://{_ipAddress}:{_port}/keypress/{key}";
-                HttpResponseMessage response = await _httpClient.PostAsync(url, null);
-                return response.IsSuccessStatusCode;
+                PowerOnAsync().Wait();
+                return true;
             }
             catch (HttpRequestException)
             {
@@ -422,7 +205,6 @@ namespace JokiAutomation
             }
             catch (TaskCanceledException)
             {
-                // Timeout
                 return false;
             }
             catch (Exception)
@@ -432,7 +214,103 @@ namespace JokiAutomation
         }
 
         /// <summary>
-        /// Release all resources used by the ROKU_TV_Remote
+        /// TV ausschalten (Async Version)
+        /// </summary>
+        public async Task PowerOffAsync()
+        {
+            await SendKeyAsync("PowerOff");
+        }
+
+        /// <summary>
+        /// TV ausschalten (Synchronous - Returns bool)
+        /// </summary>
+        public bool PowerOff()
+        {
+            try
+            {
+                PowerOffAsync().Wait();
+                return true;
+            }
+            catch (HttpRequestException)
+            {
+                return false;
+            }
+            catch (TaskCanceledException)
+            {
+                return false;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Auf HDMI 2 umschalten (Async Version)
+        /// </summary>
+        public async Task SwitchToHdmi2Async()
+        {
+            await SendKeyAsync("InputHDMI2");
+        }
+
+        /// <summary>
+        /// Auf HDMI 2 umschalten (Synchronous - Returns bool)
+        /// </summary>
+        public bool SwitchToHdmi2()
+        {
+            try
+            {
+                SwitchToHdmi2Async().Wait();
+                return true;
+            }
+            catch (HttpRequestException)
+            {
+                return false;
+            }
+            catch (TaskCanceledException)
+            {
+                return false;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Auf HDMI 2 umschalten - Alternative Casing (Async Version)
+        /// </summary>
+        public async Task SwitchToHDMI2Async()
+        {
+            await SendKeyAsync("InputHDMI2");
+        }
+
+        /// <summary>
+        /// Auf HDMI 2 umschalten - Alternative Casing (Synchronous - Returns bool)
+        /// </summary>
+        public bool SwitchToHDMI2()
+        {
+            try
+            {
+                SwitchToHDMI2Async().Wait();
+                return true;
+            }
+            catch (HttpRequestException)
+            {
+                return false;
+            }
+            catch (TaskCanceledException)
+            {
+                return false;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Dispose implementation for IDisposable
         /// </summary>
         public void Dispose()
         {
@@ -441,9 +319,8 @@ namespace JokiAutomation
         }
 
         /// <summary>
-        /// Release unmanaged resources and optionally release managed resources
+        /// Protected virtual dispose method
         /// </summary>
-        /// <param name="disposing">True to release both managed and unmanaged resources; false to release only unmanaged resources</param>
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)
@@ -454,14 +331,6 @@ namespace JokiAutomation
                 }
                 _disposed = true;
             }
-        }
-
-        /// <summary>
-        /// Finalizer for ROKU_TV_Remote
-        /// </summary>
-        ~ROKU_TV_Remote()
-        {
-            Dispose(false);
         }
     }
 }

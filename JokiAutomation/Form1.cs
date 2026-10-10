@@ -8,6 +8,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -57,6 +58,7 @@ namespace JokiAutomation
 
         // Configuration
         private const string NETWORK_CONFIG_FILE = "Network.cfg";
+        private const bool ShutdownRasPiWhenIrShutdownFails = false;
         private Dictionary<string, NetworkDevice> _networkDevices;
         private Dictionary<string, DelockSocketAdapter> _delockAdapters;
         private Dictionary<string, string> _userPasswords;
@@ -66,15 +68,24 @@ namespace JokiAutomation
         private const string CANON_CAMERA_CONFIG_KEY = "CANON_CRN100";
         private const string PTZ_PRESET_RECALL_PATH_CONFIG_KEY = "PTZ_PRESET_RECALL_PATH";
         private const string PTZ_PRESET_RECALL_PATHS_CONFIG_KEY = "PTZ_PRESET_RECALL_PATHS";
+        private const string DROPBOX_LOG_PATH_CONFIG_KEY = "DROPBOX_LOG_PATH";
         private bool _isPtzCameraMode;
         private ICanonPtzController _canonPtzController;
         private string _ptzPresetRecallPath;
+        private string _dropBoxLogDirectory;
         private List<string> _ptzPresetRecallFallbackPaths = new List<string>();
 
-        // Replaced thread-affine Monitor lock with SemaphoreSlim which is await-compatible.
-        // Monitor.TryEnter/Exit must be called from the same thread — after an await
-        // the continuation may run on a different thread, causing SynchronizationLockException.
-        private readonly SemaphoreSlim _operationSemaphore = new SemaphoreSlim(1, 1);
+        private volatile string _currentCommand = string.Empty;
+        internal readonly AsyncLocal<string> _activeCommandRequestId = new AsyncLocal<string>();
+        private static int _activePositionControls;
+
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
+
+        private const int SW_RESTORE = 9;
 
         // Network Device Information
         private class NetworkDevice
@@ -98,6 +109,8 @@ namespace JokiAutomation
 
         public Form1()
         {
+            LogData.LogLifecycle("UNKNOWN", "FORM_CONSTRUCTOR_ENTER");
+
             // ── Erfasse UI-Thread und SynchronizationContext am Konstruktor ────
             _uiThreadId = Thread.CurrentThread.ManagedThreadId;
             _uiContext = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
@@ -136,6 +149,7 @@ namespace JokiAutomation
             this.Text = string.Format("JoKi Automation    Version {0}.{1}.{2}.{3}",
                            version.Major, version.Minor, version.Build, version.Revision);
 
+            LogData.LogLifecycle(ResolveLifecycleMode(), "FORM_CONSTRUCTOR_EXIT");
         }
 
         private void InitializeNetworkConfig()
@@ -235,6 +249,25 @@ namespace JokiAutomation
                         continue;
                     }
 
+                    // DropBox log export path configuration
+                    if (deviceName.Equals(DROPBOX_LOG_PATH_CONFIG_KEY, StringComparison.OrdinalIgnoreCase))
+                    {
+                        int separatorIndex = line.IndexOf(';');
+                        _dropBoxLogDirectory = separatorIndex >= 0
+                            ? line.Substring(separatorIndex + 1).Trim()
+                            : parts[1].Trim();
+
+                        if (!string.IsNullOrWhiteSpace(_dropBoxLogDirectory))
+                        {
+                            _logDat?.sendInfoMessage($"JokiAutomation\nDROPBOX_LOG_PATH = {_dropBoxLogDirectory}");
+                        }
+                        else
+                        {
+                            _logDat?.sendInfoMessage("JokiAutomation\nDROPBOX_LOG_PATH ist leer - Log-Export wird übersprungen.");
+                        }
+                        continue;
+                    }
+
                     // ✅ Check if this is a user credential entry
                     if (deviceName.StartsWith("USER_"))
                     {
@@ -300,51 +333,359 @@ namespace JokiAutomation
                 return;
             }
 
-            string rokuIP = _networkDevices["Roku_TV"].IPAddress;
-            _rokuTV = new ROKU_TV_Remote(rokuIP);
-            _logDat?.sendInfoMessage($"JokiAutomation\nRoku TV konfiguriert für IP: {rokuIP}");
+            NetworkDevice rokuDevice = _networkDevices["Roku_TV"];
+            string rokuIP = rokuDevice.IPAddress;
+            int rokuPort = rokuDevice.Port > 0 ? rokuDevice.Port : 8060;
+
+            _rokuTV = new ROKU_TV_Remote(rokuIP, rokuPort);
+            _logDat?.sendInfoMessage($"JokiAutomation\nRoku TV konfiguriert für IP: {rokuIP}:{rokuPort}");
         }
 
-        private bool TryBeginOperation(string operationName)
+        private async Task EnsureStartupInitAsync()
         {
-            // WaitAsync with timeout=0 is a non-blocking try-acquire
-            bool acquired = _operationSemaphore.Wait(0);
-            if (!acquired)
+            if (_startupInitCompleted)
             {
-                Debug.WriteLine($"⚠ Operation '{operationName}' is locked because other process is running");
-                return false;
+                return;
             }
-            Debug.WriteLine($"→ Operation '{operationName}' started");
-            return true;
+
+            if (!await _startupInitSemaphore.WaitAsync(0))
+            {
+                while (!_startupInitCompleted)
+                {
+                    await Task.Delay(100);
+                }
+
+                return;
+            }
+
+            try
+            {
+                if (_startupInitCompleted)
+                {
+                    return;
+                }
+
+                _logDat?.sendInfoMessage("JokiAutomation\nStartupInit wird ausgeführt...");
+
+                TryStartRemoteControlApplication();
+                await Task.Run(() => PowerOnRakutenTv());
+
+                bool rasPiTimeSynced = await _infraredControl.SyncRaspberryPiDateTimeWithWindowsAsync();
+                _logDat?.sendInfoMessage(rasPiTimeSynced
+                    ? "JokiAutomation\nInitialisierung: Raspberry Pi Zeit erfolgreich synchronisiert."
+                    : "JokiAutomation\nInitialisierung: Raspberry Pi Zeit konnte nicht synchronisiert werden.");
+
+                await DisableCanonAutotrackAsync();
+
+                _startupInitCompleted = true;
+                _logDat?.sendInfoMessage("JokiAutomation\nStartupInit abgeschlossen.");
+            }
+            catch (Exception ex)
+            {
+                _logDat?.sendInfoMessage($"JokiAutomation\nStartupInit Fehler: {ex.Message}");
+            }
+            finally
+            {
+                _startupInitSemaphore.Release();
+            }
         }
 
-        private void EndOperation(string operationName)
+        private void TryStartRemoteControlApplication()
         {
-            Debug.WriteLine($"← Operation '{operationName}' finished");
-            _operationSemaphore.Release();
+            const string processName = "CanonRemoteControl";
+
+            try
+            {
+                if (Process.GetProcessesByName(processName).Length > 0)
+                {
+                    _logDat?.sendInfoMessage("JokiAutomation\nRemote Control läuft bereits.");
+                    return;
+                }
+
+                string[] candidatePaths =
+                {
+                    Path.Combine(Application.StartupPath, "CanonRemoteControl.exe"),
+                    Path.GetFullPath(Path.Combine(Application.StartupPath, @"..\..\..\..\CanonRemoteControl\bin\x64\Release\CanonRemoteControl.exe")),
+                    Path.GetFullPath(Path.Combine(Application.StartupPath, @"..\..\..\..\CanonRemoteControl\bin\Release\CanonRemoteControl.exe"))
+                };
+
+                string remoteControlPath = candidatePaths.FirstOrDefault(File.Exists);
+                if (string.IsNullOrWhiteSpace(remoteControlPath))
+                {
+                    _logDat?.sendInfoMessage("JokiAutomation\nRemote Control konnte nicht gestartet werden: CanonRemoteControl.exe nicht gefunden.");
+                    return;
+                }
+
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = remoteControlPath,
+                    WorkingDirectory = Path.GetDirectoryName(remoteControlPath),
+                    UseShellExecute = true,
+                    WindowStyle = ProcessWindowStyle.Minimized
+                });
+
+                _logDat?.sendInfoMessage($"JokiAutomation\nRemote Control minimiert gestartet: {remoteControlPath}");
+            }
+            catch (Exception ex)
+            {
+                _logDat?.sendInfoMessage($"JokiAutomation\nFehler beim Starten von Remote Control: {ex.Message}");
+            }
         }
+
+        private async Task DisableCanonAutotrackAsync()
+        {
+            const string processName = "CanonRemoteControl";
+
+            try
+            {
+                Process process = Process.GetProcessesByName(processName).FirstOrDefault();
+                if (process == null)
+                {
+                    _logDat?.sendInfoMessage("JokiAutomation\nInitialisierung: Canon Remote läuft nicht, Shift+Alt+N übersprungen.");
+                    return;
+                }
+
+                process.Refresh();
+                if (process.MainWindowHandle == IntPtr.Zero)
+                {
+                    await Task.Delay(500);
+                    process.Refresh();
+                }
+
+                if (process.MainWindowHandle == IntPtr.Zero)
+                {
+                    _logDat?.sendInfoMessage("JokiAutomation\nInitialisierung: Canon Remote Fenster nicht gefunden, Shift+Alt+N übersprungen.");
+                    return;
+                }
+
+                ShowWindowAsync(process.MainWindowHandle, SW_RESTORE);
+                SetForegroundWindow(process.MainWindowHandle);
+                await Task.Delay(300);
+
+                SendKeys.SendWait("+%n");
+                _logDat?.sendInfoMessage("JokiAutomation\nInitialisierung: Canon Autotrack mit Shift+Alt+N ausgeschaltet.");
+            }
+            catch (Exception ex)
+            {
+                _logDat?.sendInfoMessage($"JokiAutomation\nInitialisierung: Fehler beim Senden von Shift+Alt+N: {ex.Message}");
+            }
+        }
+
+        private void PowerOnRakutenTv()
+        {
+            DelockSocketAdapter hdmiDelockTransmitSupply = GetDelockAdapter("HDMI_Extender_Transmitter");
+            DelockSocketAdapter hdmiDelockTVReceiverSupply = GetDelockAdapter("HDMI_Extender_TV_Receiver");
+
+            if (hdmiDelockTransmitSupply != null)
+            {
+                hdmiDelockTransmitSupply.TurnOnSocket(1);
+                _logDat?.sendInfoMessage("JokiAutomation\nRakuten TV: HDMI Extender Transmitter Steckdose eingeschaltet.");
+            }
+
+            Thread.Sleep(1000);
+
+            if (hdmiDelockTVReceiverSupply != null)
+            {
+                hdmiDelockTVReceiverSupply.TurnOnSocket(1);
+                _logDat?.sendInfoMessage("JokiAutomation\nRakuten TV: HDMI Extender TV Receiver Steckdose eingeschaltet.");
+            }
+
+            Thread.Sleep(1000);
+
+            if (_rokuTV == null)
+            {
+                InitializeRokuTV();
+            }
+
+            if (_rokuTV != null)
+            {
+               bool powerOnOk = _rokuTV.PowerOn();
+                if (powerOnOk)
+                {
+                    Thread.Sleep(3000);
+                    bool hdmi2Ok = _rokuTV.SwitchToHDMI2();
+                    _logDat?.sendInfoMessage(hdmi2Ok
+                        ? "JokiAutomation\nRakuten TV eingeschaltet und auf HDMI2 geschaltet."
+                        : "JokiAutomation\nRakuten TV eingeschaltet, HDMI2 konnte nicht aktiviert werden.");
+                }
+                else
+                {
+                    _logDat?.sendInfoMessage($"JokiAutomation\nRakuten TV PowerOn fehlgeschlagen (false). Prüfe in Network.cfg den Eintrag Roku_TV;IP;Port (Standard-Port 8060).");
+                }
+            }
+            else
+            {
+                _logDat?.sendInfoMessage("JokiAutomation\nRakuten TV konnte nicht eingeschaltet werden: Roku nicht initialisiert.");
+            }
+        }
+
+        private void PowerOffRakutenTv()
+        {
+            DelockSocketAdapter hdmiDelockTransmitSupply = GetDelockAdapter("HDMI_Extender_Transmitter");
+            DelockSocketAdapter hdmiDelockTVReceiverSupply = GetDelockAdapter("HDMI_Extender_TV_Receiver");
+
+            if (_rokuTV == null)
+            {
+                InitializeRokuTV();
+            }
+
+            if (_rokuTV != null)
+            {
+                _rokuTV.PowerOff();
+                _logDat?.sendInfoMessage("JokiAutomation\nRakuten TV ausgeschaltet.");
+            }
+            else
+            {
+                _logDat?.sendInfoMessage("JokiAutomation\nRakuten TV konnte nicht ausgeschaltet werden: Roku nicht initialisiert.");
+            }
+
+            Thread.Sleep(1000);
+
+            if (hdmiDelockTVReceiverSupply != null)
+            {
+                hdmiDelockTVReceiverSupply.TurnOffSocket(1);
+                _logDat?.sendInfoMessage("JokiAutomation\nRakuten TV: HDMI Extender TV Receiver Steckdose ausgeschaltet.");
+            }
+
+            Thread.Sleep(1000);
+
+            if (hdmiDelockTransmitSupply != null)
+            {
+                hdmiDelockTransmitSupply.TurnOffSocket(1);
+                _logDat?.sendInfoMessage("JokiAutomation\nRakuten TV: HDMI Extender Transmitter Steckdose ausgeschaltet.");
+            }
+        }
+
+        private async Task ExportLogsToDropBoxAsync()
+        {
+            if (string.IsNullOrWhiteSpace(_dropBoxLogDirectory))
+            {
+                _logDat?.sendInfoMessage("JokiAutomation\nAusschaltsequenz: DROPBOX_LOG_PATH nicht konfiguriert - Log-Export übersprungen.");
+                return;
+            }
+
+            try
+            {
+                string folderName = DateTime.Now.ToString("yyyyMMdd_HHmmss") + "JoKiLog";
+                string targetDirectory = Path.Combine(_dropBoxLogDirectory, folderName);
+                Directory.CreateDirectory(targetDirectory);
+
+                string appDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                var localLogFiles = Directory.GetFiles(appDirectory, "*", SearchOption.TopDirectoryOnly)
+                    .Where(file =>
+                    {
+                        string extension = Path.GetExtension(file);
+                        string fileName = Path.GetFileName(file);
+                        bool isLogExtension = extension.Equals(".txt", StringComparison.OrdinalIgnoreCase) ||
+                                              extension.Equals(".log", StringComparison.OrdinalIgnoreCase);
+                        bool containsLogName = fileName.IndexOf("log", StringComparison.OrdinalIgnoreCase) >= 0;
+                        return isLogExtension && containsLogName;
+                    })
+                    .ToList();
+
+                int localCount = 0;
+                foreach (string file in localLogFiles)
+                {
+                    string targetFile = Path.Combine(targetDirectory, Path.GetFileName(file));
+                    File.Copy(file, targetFile, true);
+                    localCount++;
+                }
+
+                int rasPiCount = 0;
+                try
+                {
+                    rasPiCount = await _infraredControl.DownloadRaspberryPiLogsAsync(targetDirectory);
+                }
+                catch (Exception ex)
+                {
+                    _logDat?.sendInfoMessage($"JokiAutomation\nAusschaltsequenz: RasPi-Logs konnten nicht kopiert werden: {ex.Message}");
+                }
+
+                _logDat?.sendInfoMessage($"JokiAutomation\nAusschaltsequenz: Log-Export nach '{targetDirectory}' abgeschlossen (Lokal={localCount}, RasPi={rasPiCount}).");
+            }
+            catch (Exception ex)
+            {
+                _logDat?.sendInfoMessage($"JokiAutomation\nAusschaltsequenz: Fehler beim Log-Export nach DropBox: {ex.Message}");
+            }
+        }
+
+        private void StopRemoteControlApplication()
+        {
+            const string processName = "CanonRemoteControl";
+
+            try
+            {
+                Process[] processes = Process.GetProcessesByName(processName);
+                if (processes.Length == 0)
+                {
+                    _logDat?.sendInfoMessage("JokiAutomation\nRemote Control läuft nicht.");
+                    return;
+                }
+
+                foreach (Process process in processes)
+                {
+                    try
+                    {
+                        if (!process.HasExited)
+                        {
+                            process.CloseMainWindow();
+                            if (!process.WaitForExit(3000))
+                            {
+                                process.Kill();
+                                process.WaitForExit(3000);
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        process.Dispose();
+                    }
+                }
+
+                _logDat?.sendInfoMessage("JokiAutomation\nRemote Control App beendet.");
+            }
+            catch (Exception ex)
+            {
+                _logDat?.sendInfoMessage($"JokiAutomation\nFehler beim Beenden von Remote Control: {ex.Message}");
+            }
+        }
+
 
         /// <summary>
         /// Interprets command line arguments and executes corresponding automation commands.
         /// </summary>
         /// <param name="commands">Command line arguments array</param>
-        public async Task CommandInterpreterAsync(string[] commands)
+        public async Task<int> CommandInterpreterAsync(string[] commands)
         {
+            int exitCode = CommandExitCodes.CommandFailed;
+
             // Validate input BEFORE trying to acquire lock
             if (commands == null || commands.Length < 2)
             {
                 _logDat?.sendInfoMessage("JokiAutomation\nKeine gültigen Kommandozeilenargumente übergeben.");
-                return;
+                LogData.LogLifecycle(ResolveLifecycleMode(), "COMMAND_INTERPRETER_ENTER", "Command=<invalid>");
+                LogData.LogLifecycle(ResolveLifecycleMode(), "COMMAND_INTERPRETER_EXIT", $"Command=<invalid> ExitCode={CommandExitCodes.InvalidArguments}");
+                return CommandExitCodes.InvalidArguments;
             }
 
             string cmd = commands[1];
+            _currentCommand = cmd;
+            string requestId = _activeCommandRequestId.Value;
+            if (string.IsNullOrWhiteSpace(requestId))
+            {
+                requestId = Guid.NewGuid().ToString("N");
+                _activeCommandRequestId.Value = requestId;
+            }
+
+            LogData.LogLifecycle(ResolveLifecycleMode(), "COMMAND_INTERPRETER_ENTER", $"RequestId={requestId} Command={cmd}");
+            _logDat?.sendInfoMessage(
+                $"JokiAutomation\n[COMMAND_INPUT] Command='{cmd}' Mode='{ResolveLifecycleMode()}' RequestId='{requestId}' PID={Process.GetCurrentProcess().Id} TID={Thread.CurrentThread.ManagedThreadId}");
             _logDat?.sendInfoMessage($"JokiAutomation\n>>> Kommando '{cmd}' wird ausgeführt...");
 
-            if (!TryBeginOperation("CommandInterpreter"))
-            {
-                _logDat?.sendInfoMessage($"JokiAutomation\n⚠ Kommando '{cmd}' wird übersprungen - eine andere Operation läuft bereits");
-                return;
-            }
+            LogData.LogLifecycle(
+                ResolveLifecycleMode(),
+                "OPERATION_LOCK_TRY",
+                $"Operation=CommandInterpreter TID={Thread.CurrentThread.ManagedThreadId} Acquired=True CurrentCommand={_currentCommand}");
 
             try
             {
@@ -352,19 +693,25 @@ namespace JokiAutomation
                 if ((cmd == "Pause" || cmd == "BEAMER_VideoClip") && commands.Length < 4)
                 {
                     _logDat?.sendInfoMessage($"JokiAutomation\nKommando '{cmd}' benötigt 2 zusätzliche Parameter.");
-                    return;
+                    exitCode = CommandExitCodes.InvalidArguments;
+                    return exitCode;
                 }
 
                 if (cmd == "PositionControl" && commands.Length < 4)
                 {
                     _logDat?.sendInfoMessage("JokiAutomation\nKommando 'PositionControl' benötigt 2 Parameter: Position und Profil.");
-                    return;
+                    exitCode = CommandExitCodes.InvalidArguments;
+                    return exitCode;
                 }
 
                 // Execute command
                 switch (cmd)
                 {
+                    case "Initialisierung":
+                        await EnsureStartupInitAsync();
+                        break;
                     case "Pause":
+                        
                         await DisablePictureInPictureAsync();
                         await SwitchATEMInputAsync(ATEMInput.Laptop);
                         await DisablePictureInPictureAsync();
@@ -375,7 +722,8 @@ namespace JokiAutomation
                         if (commands.Length < 3)
                         {
                             _logDat?.sendInfoMessage("JokiAutomation\nKommando 'Timer' benötigt einen Zeit-Parameter.");
-                            return;
+                            exitCode = CommandExitCodes.InvalidArguments;
+                            return exitCode;
                         }
 
                         await DisablePictureInPictureAsync();
@@ -387,65 +735,83 @@ namespace JokiAutomation
                     case "Band":
                        // _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PPP_VIEW);
                         await DisablePictureInPictureAsync();
+                        _logDat?.sendInfoMessage("JokiAutomation\n[VISUAL_PIPE] Diashow/PiP sofort ausblenden (Band)");
 
-                        if (!await ApplyAudioProfileAsync("Band"))
+                        if (!await QueueAudioProfileByNameAsync("Band"))
                         {
                             _logDat?.sendInfoMessage(
                                 "JokiAutomation\nKommando 'Band' abgebrochen: Tonprofil konnte nicht gesetzt werden.");
 
-                            break;
+                            exitCode = CommandExitCodes.CommandFailed;
+                            return exitCode;
                         }
 
+                        _logDat?.sendInfoMessage("JokiAutomation\n[VISUAL_PIPE] Starte Bild/Kamera-Kommandos parallel zum Audio-Fade (Band)");
+                        _logDat?.sendInfoMessage("JokiAutomation\n[PIPE_PARALLEL] VisualStart RequestId='" + _activeCommandRequestId.Value + "' Command='Band'");
                         await SwitchATEMInputAsync(ATEMInput.Laptop);
                         await DisablePictureInPictureAsync();
+                        _logDat?.sendInfoMessage("JokiAutomation\n[PIPE_PARALLEL] VisualCompleted RequestId='" + _activeCommandRequestId.Value + "' Command='Band'");
                         break;
 
                     case "Text":
                         //_audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_TEXT_VIEW);
                         await DisablePictureInPictureAsync();
+                        _logDat?.sendInfoMessage("JokiAutomation\n[VISUAL_PIPE] Diashow/PiP sofort ausblenden (Text)");
 
-                        if (!await ApplyAudioProfileAsync("Text"))
+                        if (!await QueueAudioProfileByNameAsync("Text"))
                         {
                             _logDat?.sendInfoMessage(
                                 "JokiAutomation\nKommando 'Text' abgebrochen: Tonprofil konnte nicht gesetzt werden.");
 
-                            break;
+                            exitCode = CommandExitCodes.CommandFailed;
+                            return exitCode;
                         }
 
+                        _logDat?.sendInfoMessage("JokiAutomation\n[VISUAL_PIPE] Starte Bild/Kamera-Kommandos parallel zum Audio-Fade (Text)");
+                        _logDat?.sendInfoMessage("JokiAutomation\n[PIPE_PARALLEL] VisualStart RequestId='" + _activeCommandRequestId.Value + "' Command='Text'");
                         await SwitchATEMInputAsync(ATEMInput.Laptop);
                         await DisablePictureInPictureAsync();
+                        _logDat?.sendInfoMessage("JokiAutomation\n[PIPE_PARALLEL] VisualCompleted RequestId='" + _activeCommandRequestId.Value + "' Command='Text'");
                         break;
 
                     case "GoPro":
                         //_audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_GOPRO_VIEW);
                         await DisablePictureInPictureAsync();
+                        _logDat?.sendInfoMessage("JokiAutomation\n[VISUAL_PIPE] Diashow/PiP sofort ausblenden (GoPro)");
 
-                        if (!await ApplyAudioProfileAsync("Gottesdienst"))
+                        if (!await QueueAudioProfileByNameAsync("Gottesdienst"))
                         {
                             _logDat?.sendInfoMessage(
                                 "JokiAutomation\nKommando 'GoPro' abgebrochen: Tonprofil konnte nicht gesetzt werden.");
 
-                            break;
+                            exitCode = CommandExitCodes.CommandFailed;
+                            return exitCode;
                         }
 
+                        _logDat?.sendInfoMessage("JokiAutomation\n[PIPE_PARALLEL] VisualStart RequestId='" + _activeCommandRequestId.Value + "' Command='GoPro'");
                         await SwitchATEMInputAsync(ATEMInput.GoPro);
                         await DisablePictureInPictureAsync();
+                        _logDat?.sendInfoMessage("JokiAutomation\n[PIPE_PARALLEL] VisualCompleted RequestId='" + _activeCommandRequestId.Value + "' Command='GoPro'");
                         break;
 
                     case "Altar":
                         _logDat?.sendInfoMessage("JokiAutomation\nFühre 'Altar' Kommando aus...");
                         await DisablePictureInPictureAsync();
+                        _logDat?.sendInfoMessage("JokiAutomation\n[VISUAL_PIPE] Diashow/PiP sofort ausblenden (Altar)");
 
-                        if (!await ApplyAudioProfileAsync("Gottesdienst"))
+                        if (!await QueueAudioProfileByNameAsync("Gottesdienst"))
                         {
                             _logDat?.sendInfoMessage(
                                 "JokiAutomation\nKommando 'Altar' abgebrochen: Tonprofil konnte nicht gesetzt werden.");
 
-                            break;
+                            exitCode = CommandExitCodes.CommandFailed;
+                            return exitCode;
                         }
 
+                        _logDat?.sendInfoMessage("JokiAutomation\n[PIPE_PARALLEL] VisualStart RequestId='" + _activeCommandRequestId.Value + "' Command='Altar'");
                         await SwitchATEMInputAsync(ATEMInput.CanonPtzMain);
                         await DisablePictureInPictureAsync();
+                        _logDat?.sendInfoMessage("JokiAutomation\n[PIPE_PARALLEL] VisualCompleted RequestId='" + _activeCommandRequestId.Value + "' Command='Altar' Stage='ATEMSwitch'");
                         // Kamera-Positionierung abhängig vom Modus:
                         // PTZ_CAM=true: Canon PTZ bewegt Kamera | PTZ_CAM=false: RasPi Motor bewegt Kamera
                         // IR-Sequenz wird IMMER über RasPi ausgeführt (Beamer, andere Geräte)
@@ -460,18 +826,23 @@ namespace JokiAutomation
                     case "Predigt":
                         _logDat?.sendInfoMessage("JokiAutomation\nFühre 'Predigt' Kommando aus...");
                         await DisablePictureInPictureAsync();
+                        _logDat?.sendInfoMessage("JokiAutomation\n[VISUAL_PIPE] Diashow/PiP sofort ausblenden (Predigt)");
 
-                        if (!await ApplyAudioProfileAsync("Predigt"))
+                        if (!await QueueAudioProfileByNameAsync("Predigt"))
                         {
                             _logDat?.sendInfoMessage(
                                 "JokiAutomation\nKommando 'Predigt' abgebrochen: Tonprofil konnte nicht gesetzt werden.");
 
-                            break;
+                            exitCode = CommandExitCodes.CommandFailed;
+                            return exitCode;
                         }
 
+                        _logDat?.sendInfoMessage("JokiAutomation\n[VISUAL_PIPE] Starte Bild/Kamera-Kommandos parallel zum Audio-Fade (Predigt)");
+                        _logDat?.sendInfoMessage("JokiAutomation\n[PIPE_PARALLEL] VisualStart RequestId='" + _activeCommandRequestId.Value + "' Command='Predigt'");
                         await SwitchATEMInputAsync(ATEMInput.CanonPtzPreacher);
                         // Ensure final state stays PiP-off after source switch.
                         await DisablePictureInPictureAsync();
+                        _logDat?.sendInfoMessage("JokiAutomation\n[PIPE_PARALLEL] VisualCompleted RequestId='" + _activeCommandRequestId.Value + "' Command='Predigt'");
                        /* if (_isPtzCameraMode && _canonPtzController != null)
                         {
                             _logDat?.sendInfoMessage("JokiAutomation\nPTZ-Modus: Rufe ExecuteCanonSceneAsync auf...");
@@ -481,89 +852,131 @@ namespace JokiAutomation
                         break;
 
                     case "Gebet":
-                        DisablePictureInPicture();
+                       DisablePictureInPicture();
+                       _logDat?.sendInfoMessage("JokiAutomation\n[VISUAL_PIPE] Diashow/PiP sofort ausblenden (Gebet)");
 
-                        if (!await ApplyAudioProfileAsync("Gottesdienst"))
-                        {
-                            _logDat?.sendInfoMessage(
-                                "JokiAutomation\nKommando 'Gebet' abgebrochen: Tonprofil konnte nicht gesetzt werden.");
+                       if (!await QueueAudioProfileByNameAsync("Gottesdienst"))
+                       {
+                           _logDat?.sendInfoMessage(
+                               "JokiAutomation\nKommando 'Gebet' abgebrochen: Tonprofil konnte nicht gesetzt werden.");
 
-                            break;
-                        }
+                           exitCode = CommandExitCodes.CommandFailed;
+                           return exitCode;
+                       }
 
-                        await SwitchATEMInputAsync(ATEMInput.Laptop);
-                        await Task.Delay(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
-                        EnablePictureInPicture();
-                        break;
+                       ATEMInput gebetPiPInput = ResolveMultiViewPiPInput(commands, "Gebet");
+                       _logDat?.sendInfoMessage("JokiAutomation\n[VISUAL_PIPE] Starte Bild/Kamera-Kommandos parallel zum Audio-Fade (Gebet)");
+                       _logDat?.sendInfoMessage("JokiAutomation\n[PIPE_PARALLEL] VisualStart RequestId='" + _activeCommandRequestId.Value + "' Command='Gebet'");
+                       await SwitchATEMInputAsync(ATEMInput.Laptop);
+                       await Task.Delay(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
+                       EnablePictureInPicture(gebetPiPInput);
+                       _logDat?.sendInfoMessage("JokiAutomation\n[PIPE_PARALLEL] VisualCompleted RequestId='" + _activeCommandRequestId.Value + "' Command='Gebet'");
+                       break;
 
                     case "LesungMulti":
                         DisablePictureInPicture();
+                        _logDat?.sendInfoMessage("JokiAutomation\n[VISUAL_PIPE] Diashow/PiP sofort ausblenden (LesungMulti)");
 
-                        if (!await ApplyAudioProfileAsync("Predigt"))
+                        if (!await QueueAudioProfileByNameAsync("Predigt"))
                         {
                             _logDat?.sendInfoMessage(
                                 "JokiAutomation\nKommando 'LesungMulti' abgebrochen: Tonprofil konnte nicht gesetzt werden.");
 
-                            break;
+                            exitCode = CommandExitCodes.CommandFailed;
+                            return exitCode;
                         }
 
+                        ATEMInput lesungPiPInput = ResolveMultiViewPiPInput(commands, "LesungMulti");
+                        _logDat?.sendInfoMessage("JokiAutomation\n[VISUAL_PIPE] Starte Bild/Kamera-Kommandos parallel zum Audio-Fade (LesungMulti)");
+                        _logDat?.sendInfoMessage("JokiAutomation\n[PIPE_PARALLEL] VisualStart RequestId='" + _activeCommandRequestId.Value + "' Command='LesungMulti'");
                         await SwitchATEMInputAsync(ATEMInput.Laptop);
                         await Task.Delay(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
-                        EnablePictureInPicture();
+                        EnablePictureInPicture(lesungPiPInput);
+                        _logDat?.sendInfoMessage("JokiAutomation\n[PIPE_PARALLEL] VisualCompleted RequestId='" + _activeCommandRequestId.Value + "' Command='LesungMulti'");
                         break;
 
                     case "BandMulti":
                         DisablePictureInPicture();
+                        _logDat?.sendInfoMessage("JokiAutomation\n[VISUAL_PIPE] Diashow/PiP sofort ausblenden (BandMulti)");
 
-                        if (!await ApplyAudioProfileAsync("Band"))
+                        if (!await QueueAudioProfileByNameAsync("Band"))
                         {
                             _logDat?.sendInfoMessage(
                                 "JokiAutomation\nKommando 'BandMulti' abgebrochen: Tonprofil konnte nicht gesetzt werden.");
 
-                            break;
+                            exitCode = CommandExitCodes.CommandFailed;
+                            return exitCode;
                         }
 
+                        ATEMInput bandPiPInput = ResolveMultiViewPiPInput(commands, "BandMulti");
+                        _logDat?.sendInfoMessage("JokiAutomation\n[VISUAL_PIPE] Starte Bild/Kamera-Kommandos parallel zum Audio-Fade (BandMulti)");
+                        _logDat?.sendInfoMessage("JokiAutomation\n[PIPE_PARALLEL] VisualStart RequestId='" + _activeCommandRequestId.Value + "' Command='BandMulti'");
                         await SwitchATEMInputAsync(ATEMInput.Laptop);
                         await Task.Delay(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
-                        EnablePictureInPicture();
+                        EnablePictureInPicture(bandPiPInput);
+                        _logDat?.sendInfoMessage("JokiAutomation\n[PIPE_PARALLEL] VisualCompleted RequestId='" + _activeCommandRequestId.Value + "' Command='BandMulti'");
                         break;
 
                     case "BEAMER_LiveVideo":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_LIVE_VIDEO);
+                        await ExecuteIrSequenceAsync(
+                            InfraredControl.IR_LIVE_VIDEO,
+                            "BEAMER_LiveVideo",
+                            TimeSpan.FromSeconds(20));
                         await DisablePictureInPictureAsync();
                         await SwitchATEMInputAsync(ATEMInput.Laptop);
                         await DisablePictureInPictureAsync();
                         break;
 
                     case "BEAMER_LiveStream":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_TOGGLE);
+                        await ExecuteIrSequenceAsync(
+                            InfraredControl.IR_BEAMER_TOGGLE,
+                            "BEAMER_LiveStream",
+                            TimeSpan.FromSeconds(20));
                         break;
 
                     case "BEAMER_VideoClip":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_ANALOG);
+                        await ExecuteIrSequenceAsync(
+                            InfraredControl.IR_BEAMER_ANALOG,
+                            "BEAMER_VideoClip",
+                            TimeSpan.FromSeconds(20));
                         await SwitchATEMInputAsync(ATEMInput.Laptop);
                         await DisablePictureInPictureAsync();
                         await ExecutePauseCommandAsync(commands[2], commands[3]);
                         break;
 
                     case "BEAMER_Mute":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_MUTE);
+                        await ExecuteIrSequenceAsync(
+                            InfraredControl.IR_BEAMER_MUTE,
+                            "BEAMER_Mute",
+                            TimeSpan.FromSeconds(20));
                         break;
 
                     case "BEAMER_ON":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_BEAMER_ON);
+                        await ExecuteIrSequenceAsync(
+                            InfraredControl.IR_BEAMER_ON,
+                            "BEAMER_ON",
+                            TimeSpan.FromSeconds(20));
                         break;
 
                     case "Backup_Start":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_START_BACKUP);
+                        await ExecuteIrSequenceAsync(
+                            InfraredControl.IR_START_BACKUP,
+                            "Backup_Start",
+                            TimeSpan.FromSeconds(20));
                         break;
 
                     case "Backup_Stop":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_STOP_BACKUP);
+                        await ExecuteIrSequenceAsync(
+                            InfraredControl.IR_STOP_BACKUP,
+                            "Backup_Stop",
+                            TimeSpan.FromSeconds(20));
                         break;
 
                     case "Backup_Switch":
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SWITCH_BACKUP);
+                        await ExecuteIrSequenceAsync(
+                            InfraredControl.IR_SWITCH_BACKUP,
+                            "Backup_Switch",
+                            TimeSpan.FromSeconds(20));
                         break;
 
                     case "Ausschaltsequenz":
@@ -572,24 +985,61 @@ namespace JokiAutomation
                         _logDat?.sendInfoMessage("JokiAutomation\n║     AUSSCHALTSEQUENZ GESTARTET                   ║");
                         _logDat?.sendInfoMessage("JokiAutomation\n╚═══════════════════════════════════════════════════╝");
                         _logDat?.sendInfoMessage("JokiAutomation\n");
-                            
-                        // Step 1: PTZ Camera shutdown (if in PTZ mode)
+
+                        // Step 1: Export all logs to DropBox (local + RasPi)
+                        _logDat?.sendInfoMessage("JokiAutomation\n[1/5] Logfiles nach DropBox exportieren...");
+                        await ExportLogsToDropBoxAsync();
+
+                        // Step 2: PTZ Camera shutdown (if in PTZ mode)
                         if (_isPtzCameraMode)
                         {
-                            _logDat?.sendInfoMessage("JokiAutomation\n[1/2] Canon PTZ Kamera herunterfahren...");
+                            _logDat?.sendInfoMessage("JokiAutomation\n[2/5] Canon PTZ Kamera herunterfahren...");
                             await ShutdownPtzCameraAsync();
                         }
                         else
                         {
-                            _logDat?.sendInfoMessage("JokiAutomation\n[1/2] Kein PTZ-Modus - Kamera-Shutdown übersprungen");
+                            _logDat?.sendInfoMessage("JokiAutomation\n[2/5] Kein PTZ-Modus - Kamera-Shutdown übersprungen");
                         }
-                        
+
                         _logDat?.sendInfoMessage("JokiAutomation\n");
-                        
-                        // Step 2: RasPi IR shutdown sequence (Beamer, etc.)
-                        _logDat?.sendInfoMessage("JokiAutomation\n[2/2] RasPi IR-Shutdown-Sequenz (Beamer, etc.)...");
-                        _audioMix?._rasPi?.rasPiExecute(InfraredControl.IR_SEQUENCE, InfraredControl.IR_SHUTDOWN);
-                        
+
+                        // Step 3: Rakuten TV power off
+                        _logDat?.sendInfoMessage("JokiAutomation\n[3/5] Rakuten TV ausschalten...");
+                        await Task.Run(() => PowerOffRakutenTv());
+
+                        // Step 4: Stop Canon Remote Control app
+                        _logDat?.sendInfoMessage("JokiAutomation\n[4/5] Remote Control App beenden...");
+                        await Task.Run(() => StopRemoteControlApplication());
+
+                        _logDat?.sendInfoMessage("JokiAutomation\n");
+
+                        // Step 5: RasPi IR shutdown sequence (Beamer, etc.)
+                        _logDat?.sendInfoMessage("JokiAutomation\n[5/6] RasPi IR-Shutdown-Sequenz starten...");
+                        try
+                        {
+                            await ExecuteIrSequenceAsync(
+                                InfraredControl.IR_SHUTDOWN,
+                                "Ausschaltsequenz.IR_SHUTDOWN",
+                                TimeSpan.FromSeconds(30));
+                            _logDat?.sendInfoMessage("JokiAutomation\n[5/6] RasPi IR-Shutdown-Sequenz vollständig abgeschlossen.");
+                        }
+                        catch (Exception ex)
+                        {
+                            _logDat?.sendInfoMessage($"JokiAutomation\n[5/6] RasPi IR-Shutdown-Sequenz fehlgeschlagen: {ex.GetType().Name}: {ex.Message}");
+                            if (!ShutdownRasPiWhenIrShutdownFails)
+                            {
+                                throw;
+                            }
+                        }
+
+                        // Step 6: Shutdown Raspberry Pi operating system at the very end
+                        _logDat?.sendInfoMessage("JokiAutomation\n[6/6] Raspberry Pi Betriebssystem herunterfahren...");
+                        bool rasPiShutdownTriggered = _audioMix?._rasPi != null &&
+                            await _audioMix._rasPi.ShutdownRaspberryPiAsync(TimeSpan.FromSeconds(20));
+                        _logDat?.sendInfoMessage(rasPiShutdownTriggered
+                            ? "JokiAutomation\nRaspberry Pi Shutdown-Befehl erfolgreich gesendet."
+                            : "JokiAutomation\nRaspberry Pi Shutdown-Befehl konnte nicht bestätigt werden.");
+
                         _logDat?.sendInfoMessage("JokiAutomation\n");
                         _logDat?.sendInfoMessage("JokiAutomation\n╔═══════════════════════════════════════════════════╗");
                         _logDat?.sendInfoMessage("JokiAutomation\n║     AUSSCHALTSEQUENZ ABGESCHLOSSEN               ║");
@@ -597,7 +1047,12 @@ namespace JokiAutomation
                         break;
 
                     case "RasPi_Reset":
-                        _audioMix?._rasPi?.rasPiStop();
+                        if (_audioMix?._rasPi == null)
+                        {
+                            throw new InvalidOperationException("Raspberry Pi ist für RasPi_Reset nicht verfügbar.");
+                        }
+
+                        await _audioMix._rasPi.RasPiResetAsync(TimeSpan.FromSeconds(30));
                         break;
 
                     case "PositionControl":
@@ -668,7 +1123,10 @@ namespace JokiAutomation
                                 int maxWaitMs    = 80000;
                                 int waitInterval = 100;
                                 int elapsedMs    = 0;
-                                _positionControl?.sequence(commands[2], commands[3]);
+
+                                // Nur Position fahren. Die Bildumschaltung wird hier zentral gesteuert,
+                                // dadurch kein nachträgliches Zurückschalten auf K/G durch RasPi-Sequenz.
+                                _positionControl?.moveToPos(seqPositionId);
                                 while (_positionControl != null && _positionControl.IsMoving() && elapsedMs < maxWaitMs)
                                 {
                                     Thread.Sleep(waitInterval);
@@ -681,7 +1139,9 @@ namespace JokiAutomation
                                 else
                                     _logDat?.sendInfoMessage($"JokiAutomation\nPosition Control abgeschlossen nach {elapsedMs}ms");
 
-                                await SwitchATEMInputAsync(movementInput);
+                                // Nach der Positionierung auf die Ziel-PTZ-Kamera zurückschalten,
+                                // nicht erneut auf die Ausweichkamera.
+                                await SwitchATEMInputAsync(finalInput);
                                 DisablePictureInPicture();
                             }
                         }
@@ -754,12 +1214,26 @@ namespace JokiAutomation
 
                             Thread.Sleep(1000);
 
+                            if (_rokuTV == null)
+                            {
+                                InitializeRokuTV();
+                            }
+
                             if (_rokuTV != null)
                             {
-                                _rokuTV.PowerOn();
-                                Thread.Sleep(1000);
-                                _rokuTV.SwitchToHDMI2();
-                                _logDat?.sendInfoMessage("JokiAutomation\nRoku TV eingeschaltet.");
+                                bool powerOnOk = _rokuTV.PowerOn();
+                                if (powerOnOk)
+                                {
+                                    Thread.Sleep(3000);
+                                    bool hdmi2Ok = _rokuTV.SwitchToHDMI2();
+                                    _logDat?.sendInfoMessage(hdmi2Ok
+                                        ? "JokiAutomation\nRoku TV eingeschaltet und auf HDMI2 geschaltet."
+                                        : "JokiAutomation\nRoku TV eingeschaltet, HDMI2 konnte nicht aktiviert werden.");
+                                }
+                                else
+                                {
+                                    _logDat?.sendInfoMessage("JokiAutomation\nRoku TV PowerOn fehlgeschlagen (false). Prüfe Roku_TV in Network.cfg (IP/Port). ");
+                                }
                             }
                         }
                         break;
@@ -798,22 +1272,81 @@ namespace JokiAutomation
                 }
 
                 _logDat?.sendInfoMessage($"JokiAutomation\n✓ Kommando '{cmd}' erfolgreich abgeschlossen");
+                exitCode = CommandExitCodes.Success;
+                return exitCode;
             }
             catch (Exception ex)
             {
                 _logDat?.sendInfoMessage($"JokiAutomation\nFehler beim Ausführen des Kommandos '{cmd}':\n{ex.Message}");
                 _logDat?.sendInfoMessage($"JokiAutomation\nStackTrace:\n{ex.StackTrace}");
+                exitCode = CommandExitCodes.CommandFailed;
+                return exitCode;
             }
             finally
             {
-                EndOperation("CommandInterpreter");
+                LogData.LogLifecycle(
+                    ResolveLifecycleMode(),
+                    "OPERATION_LOCK_RELEASE",
+                    $"Operation=CommandInterpreter TID={Thread.CurrentThread.ManagedThreadId} CurrentCommand={_currentCommand}");
+                _logDat?.sendInfoMessage($"JokiAutomation\n[COMMAND_RESULT] RequestId='{_activeCommandRequestId.Value}' Command='{cmd}' ExitCode={exitCode}");
+                LogData.LogLifecycle(ResolveLifecycleMode(), "COMMAND_INTERPRETER_EXIT", $"RequestId={_activeCommandRequestId.Value} Command={cmd} ExitCode={exitCode}");
                 _logDat?.sendInfoMessage($"JokiAutomation\n<<< Kommando '{cmd}' beendet\n");
+                _currentCommand = string.Empty;
             }
         }
 
         /// <summary>
-        /// Executes the Pause command with two text parameters.
+        /// Executes a sequence-critical IR command and awaits completion.
         /// </summary>
+        private async Task ExecuteIrSequenceAsync(
+            int irSequenceId,
+            string operationName,
+            TimeSpan? timeout = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (_audioMix?._rasPi == null)
+            {
+                throw new InvalidOperationException(
+                    $"Raspberry Pi ist für IR-Aktion '{operationName}' nicht verfügbar.");
+            }
+
+            TimeSpan effectiveTimeout = timeout ?? TimeSpan.FromSeconds(20);
+            string requestId = _activeCommandRequestId.Value ?? string.Empty;
+
+            _logDat?.sendInfoMessage(
+                $"JokiAutomation\n[IR_BEGIN] Operation={operationName} Command={InfraredControl.IR_SEQUENCE} ID={irSequenceId} RequestId={requestId} PID={Process.GetCurrentProcess().Id} TID={Thread.CurrentThread.ManagedThreadId}");
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+            try
+            {
+                await _audioMix._rasPi.RasPiExecuteAsync(
+                    InfraredControl.IR_SEQUENCE,
+                    irSequenceId,
+                    effectiveTimeout,
+                    cancellationToken);
+
+                _logDat?.sendInfoMessage(
+                    $"JokiAutomation\n[IR_END] Operation={operationName} Command={InfraredControl.IR_SEQUENCE} ID={irSequenceId} Result=Success DurationMs={stopwatch.ElapsedMilliseconds} RequestId={requestId}");
+            }
+            catch (OperationCanceledException)
+            {
+                _logDat?.sendInfoMessage(
+                    $"JokiAutomation\n[IR_FAIL] Operation={operationName} Command={InfraredControl.IR_SEQUENCE} ID={irSequenceId} ErrorType=OperationCanceledException DurationMs={stopwatch.ElapsedMilliseconds} RequestId={requestId}");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logDat?.sendInfoMessage(
+                    $"JokiAutomation\n[IR_FAIL] Operation={operationName} Command={InfraredControl.IR_SEQUENCE} ID={irSequenceId} ErrorType={ex.GetType().Name} Error={ex.Message} DurationMs={stopwatch.ElapsedMilliseconds} RequestId={requestId}");
+                throw;
+            }
+            finally
+            {
+                stopwatch.Stop();
+            }
+        }
+
         private async Task ExecutePauseCommandAsync(string text1, string text2)
         {
             if (string.IsNullOrWhiteSpace(text1) || string.IsNullOrWhiteSpace(text2))
@@ -822,14 +1355,38 @@ namespace JokiAutomation
                 return;
             }
 
+            Task raspiTask = null;
             if (_audioMix?._rasPi == null)
             {
                 _logDat?.sendInfoMessage("JokiAutomation\nRasPi nicht verfügbar.");
-                return;
+            }
+            else
+            {
+                LogData.LogLifecycle(ResolveLifecycleMode(), "PAUSE_AUDIO_BEGIN", "Command=Pause IR=IR_PAUSE");
+                raspiTask = _audioMix._rasPi.RasPiExecuteAsync(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PAUSE, TimeSpan.FromSeconds(15));
             }
 
-            await _audioMix._rasPi.RasPiExecuteAsync(InfraredControl.IR_SEQUENCE, InfraredControl.IR_PAUSE, TimeSpan.FromSeconds(15));
-            _eventTimer?.sendPause(text1, text2);
+            if (raspiTask != null)
+            {
+                try
+                {
+                    await raspiTask;
+                    LogData.LogLifecycle(ResolveLifecycleMode(), "PAUSE_AUDIO_END", "Command=Pause IR=IR_PAUSE Result=Success");
+                }
+                catch (Exception ex)
+                {
+                    _logDat?.sendInfoMessage($"JokiAutomation\nWarnung: RasPi Befehl konnte nicht abgeschlossen werden ({ex.Message})");
+                    LogData.LogLifecycle(ResolveLifecycleMode(), "PAUSE_AUDIO_END", $"Command=Pause IR=IR_PAUSE Result=Failed Exception={ex.GetType().Name} Message={ex.Message}");
+                }
+            }
+
+            LogData.LogLifecycle(ResolveLifecycleMode(), "EVENTTIMER_START_AFTER_AUDIO", "Command=Pause");
+            string requestId = Guid.NewGuid().ToString("N");
+            EventTimerStartResult pauseStartResult = _eventTimer?.sendPause(text1, text2, requestId, ResolveLifecycleMode());
+            if (pauseStartResult != null && pauseStartResult.AlreadyRunning)
+            {
+                _logDat?.sendInfoMessage("JokiAutomation\nEventTimer läuft bereits - zweiter Start wurde abgelehnt.");
+            }
         }
 
         private async Task WaitForPendingRasPiCommandAsync(int timeoutMs)
@@ -860,15 +1417,25 @@ namespace JokiAutomation
                 return;
             }
 
+            LogData.LogLifecycle(ResolveLifecycleMode(), "PAUSE_AUDIO_BEGIN", "Command=Timer IR=IR_TIMER");
             Task raspiTask = _audioMix._rasPi.RasPiExecuteAsync(InfraredControl.IR_SEQUENCE, InfraredControl.IR_TIMER, TimeSpan.FromSeconds(15));
-            _eventTimer?.sendEventTime(eventTime);
             try
             {
                 await raspiTask;
+                LogData.LogLifecycle(ResolveLifecycleMode(), "PAUSE_AUDIO_END", "Command=Timer IR=IR_TIMER Result=Success");
             }
             catch (Exception ex)
             {
                 _logDat?.sendInfoMessage($"JokiAutomation\nWarnung: RasPi Befehl konnte nicht abgeschlossen werden ({ex.Message})");
+                LogData.LogLifecycle(ResolveLifecycleMode(), "PAUSE_AUDIO_END", $"Command=Timer IR=IR_TIMER Result=Failed Exception={ex.GetType().Name} Message={ex.Message}");
+            }
+
+            LogData.LogLifecycle(ResolveLifecycleMode(), "EVENTTIMER_START_AFTER_AUDIO", "Command=Timer");
+            string requestId = Guid.NewGuid().ToString("N");
+            EventTimerStartResult timerStartResult = _eventTimer?.sendEventTime(eventTime, requestId, ResolveLifecycleMode());
+            if (timerStartResult != null && timerStartResult.AlreadyRunning)
+            {
+                _logDat?.sendInfoMessage("JokiAutomation\nEventTimer läuft bereits - zweiter Start wurde abgelehnt.");
             }
         }
 
@@ -915,7 +1482,9 @@ namespace JokiAutomation
                             _logDat?.sendInfoMessage($"JokiAutomation\nWarnung: RasPi Pause-Audio konnte nicht gesetzt werden ({ex.Message})");
                         }
                     }
-                    eventTimerStarted = _eventTimer?.sendPause($"\"{textBox1.Text}\"", $"\"{textBox2.Text}\"") ?? false;
+                    string requestId = Guid.NewGuid().ToString("N");
+                    EventTimerStartResult startResult = _eventTimer?.sendPause($"\"{textBox1.Text}\"", $"\"{textBox2.Text}\"", requestId, "GUI");
+                    eventTimerStarted = startResult != null && (startResult.Started || startResult.AlreadyRunning);
                 }
                 else
                 {
@@ -932,12 +1501,18 @@ namespace JokiAutomation
                         }
                     }
 
-                    eventTimerStarted = _eventTimer?.sendEventTime(eventTime) ?? false;
+                    string requestId = Guid.NewGuid().ToString("N");
+                    EventTimerStartResult startResult = _eventTimer?.sendEventTime(eventTime, requestId, "GUI");
+                    eventTimerStarted = startResult != null && (startResult.Started || startResult.AlreadyRunning);
                 }
 
                 if (eventTimerStarted)
                 {
-                    Close();
+                    LogData.LogLifecycle(ResolveLifecycleMode(), "EVENTTIMER_START_CONFIRMED");
+                    bool shutdownStarted = Program.BeginShutdown();
+                    LogData.LogLifecycle(ResolveLifecycleMode(), "SHUTDOWN_REQUEST_AFTER_EVENTTIMER_START", $"Started={shutdownStarted}");
+                    Application.Exit();
+                    LogData.LogLifecycle(ResolveLifecycleMode(), "APPLICATION_EXIT_REQUESTED_AFTER_EVENTTIMER_START");
                 }
             }
             catch (Exception ex)
@@ -1026,10 +1601,16 @@ namespace JokiAutomation
         // execute Audio - profile
         private async void button9_Click(object sender, EventArgs e)
         {
-            int commandID = AudioMix.AM_PROFILE + listBox4.SelectedIndex;
-            if (_audioMix != null)
+            try
             {
-                await _audioMix.ExecuteAudioAsync(commandID);
+                if (!await ApplyAudioProfileByIndexAsync(listBox4?.SelectedIndex ?? -1))
+                {
+                    _logDat?.sendInfoMessage("JokiAutomation\nAudio Start abgebrochen: ungültige Profilauswahl.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logDat?.sendInfoMessage($"JokiAutomation\nAudio Start fehlgeschlagen: {ex.Message}");
             }
         }
 
@@ -1093,19 +1674,19 @@ namespace JokiAutomation
             _infraredControl.IRTest(CI_test_active_);
         }
         // button handler reset
-        private void button13_Click(object sender, EventArgs e)
+        private async void button13_Click(object sender, EventArgs e)
         {
-            _audioMix._rasPi.rasPiStop();
+            await ExecuteRasPiResetAsync();
         }
 
-        private void button14_Click(object sender, EventArgs e)
+        private async void button14_Click(object sender, EventArgs e)
         {
-            _audioMix._rasPi.rasPiStop();
+            await ExecuteRasPiResetAsync();
         }
 
-        private void button15_Click(object sender, EventArgs e)
+        private async void button15_Click(object sender, EventArgs e)
         {
-            _audioMix._rasPi.rasPiStop();
+            await ExecuteRasPiResetAsync();
         }
         //slider Laptop audio
         private void trackBar1_Scroll(object sender, EventArgs e)
@@ -1166,10 +1747,10 @@ namespace JokiAutomation
         }
 
         // eventhandler reset button position control 
-        private void resetCamPos_Click(object sender, EventArgs e)
+        private async void resetCamPos_Click(object sender, EventArgs e)
         {
             _requestedFunction = 0;
-            _audioMix._rasPi.rasPiStop();
+            await ExecuteRasPiResetAsync();
         }
 
         private bool loginUser(string userString)
@@ -1610,9 +2191,9 @@ namespace JokiAutomation
         }
 
         // eventhandler reset button autozoom config 
-        private void buttonAZReset_Click(object sender, EventArgs e)
+        private async void buttonAZReset_Click(object sender, EventArgs e)
         {
-            _audioMix._rasPi.rasPiStop();
+            await ExecuteRasPiResetAsync();
         }
 
         // eventhandler move reference
@@ -1647,6 +2228,11 @@ namespace JokiAutomation
         private AutoZoomControl _autoZoom = new AutoZoomControl();
         private ATEMControl _atemControl;  // ✅ NEU: ATEM Mini Pro Control
         private ROKU_TV_Remote _rokuTV;
+        private readonly SemaphoreSlim _startupInitSemaphore = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _visualCommandSemaphore = new SemaphoreSlim(1, 1);
+        private readonly object _audioPipelineSync = new object();
+        private Task _audioPipelineTail = Task.CompletedTask;
+        private volatile bool _startupInitCompleted;
         private string _User = "DefaultUser"; // set user
         private string _requestedUser = "DefaultUser"; // requestet user
         private static uint _requestedFunction = 0;
@@ -1724,9 +2310,9 @@ namespace JokiAutomation
         }
 
         // Vereinheitliche Reset-Buttons
-        private void ResetRaspberryPi_Click(object sender, EventArgs e)
+        private async void ResetRaspberryPi_Click(object sender, EventArgs e)
         {
-            _audioMix?._rasPi?.rasPiStop();
+            await ExecuteRasPiResetAsync();
         }
 
         // Im Designer oder Constructor:
@@ -1739,6 +2325,24 @@ namespace JokiAutomation
         private void RaspberryPiDefaultSwitch_Click(object sender, EventArgs e)
         {
             _audioMix?._rasPi?.rasPiDefaultSwitch();
+        }
+
+        private async Task ExecuteRasPiResetAsync()
+        {
+            if (_audioMix?._rasPi == null)
+            {
+                throw new InvalidOperationException("Raspberry Pi ist für den Reset nicht verfügbar.");
+            }
+
+            try
+            {
+                await _audioMix._rasPi.RasPiResetAsync(TimeSpan.FromSeconds(30));
+            }
+            catch (Exception ex)
+            {
+                _logDat?.sendInfoMessage($"JokiAutomation\nRasPi Reset fehlgeschlagen: {ex.Message}");
+                throw;
+            }
         }
 
         // button10.Click += RaspberryPiDefaultSwitch_Click;
@@ -1936,6 +2540,31 @@ private static int GetAudioProfileId(string profile)
 }
 
 /// <summary>
+/// Resolves optional PiP input parameter for multiview commands.
+/// G=GoPro, K=Kanzel/Predigtkamera, L=Laptop, A=Altar/Hauptkamera.
+/// Without parameter the backward-compatible default is GoPro.
+/// </summary>
+private ATEMInput ResolveMultiViewPiPInput(string[] commands, string commandName)
+{
+    if (commands == null || commands.Length < 3 || string.IsNullOrWhiteSpace(commands[2]))
+    {
+        return ATEMInput.GoPro;
+    }
+
+    char mode = char.ToUpperInvariant(commands[2][0]);
+    switch (mode)
+    {
+        case 'G': return ATEMInput.GoPro;
+        case 'K': return ATEMInput.CanonPtzPreacher;
+        case 'L': return ATEMInput.Laptop;
+        case 'A': return ATEMInput.CanonPtzMain;
+        default:
+            _logDat?.sendInfoMessage($"JokiAutomation\n{commandName}: Unbekannter PiP-Parameter '{commands[2]}', fallback auf GoPro");
+            return ATEMInput.GoPro;
+    }
+}
+
+/// <summary>
 /// Executes the covered PTZ camera sequence:
 /// 1. Confirm the movement/cover input on Program.
 /// 2. Move the PTZ camera and await its centralized settling time.
@@ -1950,71 +2579,102 @@ private async Task ExecuteCameraSwitchSequenceAsync(
     ATEMInput finalInput,
     System.Threading.CancellationToken cancellationToken = default)
 {
-    if (_positionControl == null)
+    string sequenceId = Guid.NewGuid().ToString("N").Substring(0, 8);
+    int active = Interlocked.Increment(ref _activePositionControls);
+    string requestId = _activeCommandRequestId.Value ?? string.Empty;
+    string sceneId = _currentCommand ?? string.Empty;
+    int pid = Process.GetCurrentProcess().Id;
+    int tid = Thread.CurrentThread.ManagedThreadId;
+    _logDat?.sendInfoMessage($"[POSITIONCONTROL_ENTER] SequenceId={sequenceId} Active={active} Position={positionId} Camera={movementInput} TargetInput={finalInput} PID={pid} TID={tid} RequestId={requestId} SceneId={sceneId}");
+    if (active > 1)
     {
-        throw new InvalidOperationException("PositionControl ist nicht initialisiert.");
+        _logDat?.sendInfoMessage($"[POSITIONCONTROL_CONCURRENCY_WARNING] SequenceId={sequenceId} Active={active} Position={positionId} PID={pid} TID={tid} RequestId={requestId} SceneId={sceneId}");
     }
 
-    if (_atemControl == null || !_atemControl.IsConnected)
+    try
     {
-        throw new InvalidOperationException(
-            "ATEM ist nicht verbunden. PTZ-Sequenz wird nicht gestartet.");
-    }
+        if (_positionControl == null)
+        {
+            throw new InvalidOperationException("PositionControl ist nicht initialisiert.");
+        }
 
-    cancellationToken.ThrowIfCancellationRequested();
+        if (_atemControl == null || !_atemControl.IsConnected)
+        {
+            throw new InvalidOperationException(
+                "ATEM ist nicht verbunden. PTZ-Sequenz wird nicht gestartet.");
+        }
 
-    _logDat?.sendInfoMessage(
-        $"JokiAutomation\n[CamSwitch] Sequenz gestartet - Position={positionId}, " +
-        $"Movement={movementInput}, Final={finalInput}");
+        cancellationToken.ThrowIfCancellationRequested();
 
-    // Step 1: Put the cover image on Program before the PTZ starts moving.
-    ATEMControl.VideoSource movementSource =
-        (ATEMControl.VideoSource)(int)movementInput;
+        _logDat?.sendInfoMessage($"[PTZ] PRESET_BEGIN Preset=\"{positionId}\"");
+        bool isAutoTrackingEnabled = false;
+        try
+        {
+            var xcController = _canonPtzController as XcCanonPtzController;
+            if (xcController != null)
+            {
+                var autoTrackingService = xcController.GetAutoTrackingService();
+                if (autoTrackingService != null)
+                {
+                    isAutoTrackingEnabled = await autoTrackingService.IsEnabledAsync();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logDat?.sendInfoMessage($"JokiAutomation\n[PTZ] AUTOTRACKING_STATE_ERROR Error=\"{ex.Message}\"");
+        }
 
-    await InvokeAsync(() =>
-        _atemControl.TransitionToProgramInputAsync(
-            movementSource,
-            cancellationToken));
+        _logDat?.sendInfoMessage($"[PTZ] AUTOTRACKING_STATE Enabled={isAutoTrackingEnabled}");
 
-    await DisablePictureInPictureAsync(timeout: TimeSpan.FromSeconds(2), cancellationToken: cancellationToken);
-
-    _logDat?.sendInfoMessage(
-        $"JokiAutomation\n[CamSwitch] Ausweichkamera bestaetigt - Program={movementInput}");
-
-    // Step 2: MoveToPosAsync includes the single configured PTZ settling time.
-    PositionMoveResult moveResult =
-        await _positionControl.MoveToPosAsync(
-            positionId,
-            cancellationToken);
-
-    if (!moveResult.Success)
-    {
         _logDat?.sendInfoMessage(
-            $"JokiAutomation\n[CamSwitch] PTZ-Positionierung fehlgeschlagen - " +
-            $"Ausweichkamera bleibt aktiv: {moveResult.Message}");
+            $"JokiAutomation\n[CamSwitch] Sequenz gestartet - Position={positionId}, " +
+            $"Movement={movementInput}, Final={finalInput}");
 
-        throw new InvalidOperationException(
-            $"Kameraposition konnte nicht angefahren werden: " +
-            moveResult.Message);
+        _logDat?.sendInfoMessage($"[POSITIONCONTROL_COVER_BEGIN] SequenceId={sequenceId} Position={positionId} Camera={movementInput} TargetInput={finalInput} PID={pid} TID={tid} RequestId={requestId} SceneId={sceneId}");
+        await SetATEMProgramInputAsync(movementInput, "PositionControl.Cover", sceneId, requestId);
+        _logDat?.sendInfoMessage($"[POSITIONCONTROL_COVER_CONFIRMED] SequenceId={sequenceId} Position={positionId} Camera={movementInput} TargetInput={finalInput} PID={pid} TID={tid} RequestId={requestId} SceneId={sceneId}");
+
+        _logDat?.sendInfoMessage(
+            $"JokiAutomation\n[CamSwitch] Ausweichkamera bestaetigt - Program={movementInput}");
+
+        _logDat?.sendInfoMessage($"[POSITIONCONTROL_MOVE_BEGIN] SequenceId={sequenceId} Position={positionId} Camera={movementInput} TargetInput={finalInput} PID={pid} TID={tid} RequestId={requestId} SceneId={sceneId}");
+        PositionMoveResult moveResult =
+            await _positionControl.MoveToPosAsync(
+                positionId,
+                cancellationToken);
+
+        if (!moveResult.Success)
+        {
+            _logDat?.sendInfoMessage(
+                $"JokiAutomation\n[CamSwitch] PTZ-Positionierung fehlgeschlagen - " +
+                $"Ausweichkamera bleibt aktiv: {moveResult.Message}");
+            _logDat?.sendInfoMessage($"[PTZ] PRESET_FAILED Preset=\"{positionId}\" Error=\"{moveResult.Message}\"");
+
+            throw new InvalidOperationException(
+                $"Kameraposition konnte nicht angefahren werden: " +
+                moveResult.Message);
+        }
+
+        _logDat?.sendInfoMessage($"[POSITIONCONTROL_MOVE_COMPLETED] SequenceId={sequenceId} Position={positionId} Camera={movementInput} TargetInput={finalInput} PID={pid} TID={tid} RequestId={requestId} SceneId={sceneId}");
+        _logDat?.sendInfoMessage(
+            $"JokiAutomation\n[CamSwitch] PTZ-Settling abgeschlossen - " +
+            $"Preset={moveResult.CanonPreset}, Rueckschaltung={finalInput}");
+
+        _logDat?.sendInfoMessage($"[POSITIONCONTROL_FINAL_BEGIN] SequenceId={sequenceId} Position={positionId} Camera={finalInput} TargetInput={finalInput} PID={pid} TID={tid} RequestId={requestId} SceneId={sceneId}");
+        await SetATEMProgramInputAsync(finalInput, "PositionControl.Final", sceneId, requestId);
+        _logDat?.sendInfoMessage($"[POSITIONCONTROL_FINAL_CONFIRMED] SequenceId={sequenceId} Position={positionId} Camera={finalInput} TargetInput={finalInput} PID={pid} TID={tid} RequestId={requestId} SceneId={sceneId}");
+
+        _logDat?.sendInfoMessage(
+            $"JokiAutomation\n[CamSwitch] Sequenz abgeschlossen - Program={finalInput}");
+        _logDat?.sendInfoMessage($"[PTZ] PRESET_SUCCESS Preset=\"{positionId}\"");
+        _logDat?.sendInfoMessage($"[POSITIONCONTROL_COMPLETED] SequenceId={sequenceId} Position={positionId} Camera={finalInput} TargetInput={finalInput} PID={pid} TID={tid} RequestId={requestId} SceneId={sceneId}");
     }
-
-    _logDat?.sendInfoMessage(
-        $"JokiAutomation\n[CamSwitch] PTZ-Settling abgeschlossen - " +
-        $"Preset={moveResult.CanonPreset}, Rueckschaltung={finalInput}");
-
-    // Step 3: Return to the positioned PTZ main camera.
-    ATEMControl.VideoSource finalSource =
-        (ATEMControl.VideoSource)(int)finalInput;
-
-    await InvokeAsync(() =>
-        _atemControl.TransitionToProgramInputAsync(
-            finalSource,
-            cancellationToken));
-
-    await DisablePictureInPictureAsync(timeout: TimeSpan.FromSeconds(2), cancellationToken: cancellationToken);
-
-    _logDat?.sendInfoMessage(
-        $"JokiAutomation\n[CamSwitch] Sequenz abgeschlossen - Program={finalInput}");
+    finally
+    {
+        int remaining = Interlocked.Decrement(ref _activePositionControls);
+        _logDat?.sendInfoMessage($"[POSITIONCONTROL_EXIT] SequenceId={sequenceId} Active={remaining} Position={positionId} Camera={finalInput} TargetInput={finalInput} PID={pid} TID={tid} RequestId={requestId} SceneId={sceneId}");
+    }
 }
 /// <summary>
 /// Helper extension to invoke async operations on UI thread using SynchronizationContext
@@ -2146,7 +2806,7 @@ private void InitializeATEMControl()
         }
 
         string atemIP = _networkDevices["ATEM_MiniPro"].IPAddress;
-        _atemControl = new ATEMControl(atemIP);
+        _atemControl = new ATEMControl(atemIP, message => _logDat?.sendInfoMessage(message));
         bool connected = _atemControl.Connect();
 
         if (connected)
@@ -2181,7 +2841,7 @@ private void InitializeATEMToDefault()
         if (_atemControl == null || !_atemControl.IsConnected)
         {
             string atemIP = _networkDevices["ATEM_MiniPro"].IPAddress;
-            _atemControl = new ATEMControl(atemIP);
+            _atemControl = new ATEMControl(atemIP, message => _logDat?.sendInfoMessage(message));
 
             if (!_atemControl.Connect())
             {
@@ -2222,26 +2882,112 @@ private Task SwitchATEMInput(ATEMInput input)
 /// <summary>
 /// Switch ATEM to specified HDMI input asynchronously.
 /// </summary>
-private async Task SwitchATEMInputAsync(ATEMInput input)
+private async Task SwitchATEMInputAsync(
+    ATEMInput input,
+    string source = "VideoPipeline",
+    string sceneId = null,
+    string requestId = null)
 {
+    string sourceName = GetATEMInputName(input);
+    string switchId = Guid.NewGuid().ToString("N").Substring(0, 8);
+    string normalizedSceneId = string.IsNullOrWhiteSpace(sceneId) ? (_currentCommand ?? string.Empty) : sceneId;
+    string normalizedRequestId = string.IsNullOrWhiteSpace(requestId) ? (_activeCommandRequestId.Value ?? string.Empty) : requestId;
+
+    _logDat?.sendInfoMessage(
+        $"[CAMSWITCH_BEGIN] Id={switchId} Source={source} Input={sourceName} SceneId={normalizedSceneId} RequestId={normalizedRequestId} PID={Process.GetCurrentProcess().Id}");
+
     if (_atemControl == null || !_atemControl.IsConnected)
     {
         _logDat?.sendInfoMessage("JokiAutomation\nATEM nicht verbunden");
+        _logDat?.sendInfoMessage($"[ATEM] INPUT_FAILED Input=\"{sourceName}\" Error=\"ATEM nicht verbunden\"");
+        _logDat?.sendInfoMessage($"[CAMSWITCH_END] Id={switchId} Source={source} Input={sourceName}");
         return;
     }
 
     try
     {
-        ATEMControl.VideoSource source = (ATEMControl.VideoSource)((int)input);
-        await _atemControl.TransitionToProgramInputAsync(source);
+        LogCameraSwitch(source, sourceName);
+        _logDat?.sendInfoMessage($"[ATEM] INPUT_BEGIN Input=\"{sourceName}\"");
+        ATEMControl.VideoSource atemSource = (ATEMControl.VideoSource)((int)input);
+        await _atemControl.TransitionToProgramInputAsync(
+            atemSource,
+            CancellationToken.None,
+            null,
+            source,
+            normalizedSceneId,
+            normalizedRequestId,
+            switchId);
 
-        string sourceName = GetATEMInputName(input);
         _logDat?.sendInfoMessage($"JokiAutomation\nATEM umgeschaltet auf {sourceName} (HDMI {(int)input})");
+        _logDat?.sendInfoMessage($"[ATEM] INPUT_SUCCESS Input=\"{sourceName}\"");
     }
     catch (Exception ex)
     {
         _logDat?.sendInfoMessage($"JokiAutomation\nATEM Fehler: {ex.Message}");
+        _logDat?.sendInfoMessage($"[ATEM] INPUT_FAILED Input=\"{sourceName}\" Error=\"{ex.Message}\"");
     }
+    finally
+    {
+        _logDat?.sendInfoMessage($"[CAMSWITCH_END] Id={switchId} Source={source} Input={sourceName}");
+    }
+}
+
+private async Task SetATEMProgramInputAsync(
+    ATEMInput input,
+    string source,
+    string sceneId = null,
+    string requestId = null)
+{
+    string sourceName = GetATEMInputName(input);
+    string switchId = Guid.NewGuid().ToString("N").Substring(0, 8);
+    string normalizedSceneId = string.IsNullOrWhiteSpace(sceneId) ? (_currentCommand ?? string.Empty) : sceneId;
+    string normalizedRequestId = string.IsNullOrWhiteSpace(requestId) ? (_activeCommandRequestId.Value ?? string.Empty) : requestId;
+
+    _logDat?.sendInfoMessage(
+        $"[CAMSWITCH_BEGIN] Id={switchId} Source={source} Input={sourceName} SceneId={normalizedSceneId} RequestId={normalizedRequestId} PID={Process.GetCurrentProcess().Id}");
+    _logDat?.sendInfoMessage("[CAMSWITCH_TRACE]\n" + Environment.StackTrace);
+
+    if (_atemControl == null || !_atemControl.IsConnected)
+    {
+        _logDat?.sendInfoMessage("JokiAutomation\nATEM nicht verbunden");
+        _logDat?.sendInfoMessage($"[ATEM] PROGRAM_SET_FAILED Input=\"{sourceName}\" Source={source} Error=\"ATEM nicht verbunden\"");
+        _logDat?.sendInfoMessage($"[CAMSWITCH_END] Id={switchId} Source={source} Input={sourceName}");
+        return;
+    }
+
+    try
+    {
+        LogCameraSwitch(source, sourceName);
+        _logDat?.sendInfoMessage($"[ATEM] PROGRAM_SET_BEGIN Input=\"{sourceName}\" Source={source}");
+        ATEMControl.VideoSource atemSource = (ATEMControl.VideoSource)((int)input);
+        await _atemControl.SetProgramInputAsync(
+            atemSource,
+            CancellationToken.None,
+            null,
+            source,
+            normalizedSceneId,
+            normalizedRequestId,
+            switchId);
+
+        _logDat?.sendInfoMessage($"JokiAutomation\nATEM direkt auf {sourceName} gesetzt (HDMI {(int)input})");
+        _logDat?.sendInfoMessage($"[ATEM] PROGRAM_SET_SUCCESS Input=\"{sourceName}\" Source={source}");
+    }
+    catch (Exception ex)
+    {
+        _logDat?.sendInfoMessage($"JokiAutomation\nATEM Fehler: {ex.Message}");
+        _logDat?.sendInfoMessage($"[ATEM] PROGRAM_SET_FAILED Input=\"{sourceName}\" Source={source} Error=\"{ex.Message}\"");
+    }
+    finally
+    {
+        _logDat?.sendInfoMessage($"[CAMSWITCH_END] Id={switchId} Source={source} Input={sourceName}");
+    }
+}
+
+private void LogCameraSwitch(string source, string camera)
+{
+    string normalizedSource = string.IsNullOrWhiteSpace(source) ? "Unknown" : source;
+    string normalizedCamera = string.IsNullOrWhiteSpace(camera) ? "Unknown" : camera;
+    _logDat?.sendInfoMessage($"CAMERA_SWITCH Source={normalizedSource} Camera={normalizedCamera}");
 }
 
         /// <summary>
@@ -2258,87 +3004,10 @@ private async Task SwitchATEMInputAsync(ATEMInput input)
         /// </returns>
         private async Task<bool> SetAudioProfileAsync(string profileName)
         {
-            if (string.IsNullOrWhiteSpace(profileName) ||
-                listBox4 == null ||
-                listBox4.Items.Count == 0)
-            {
-                _logDat?.sendInfoMessage(
-                    "JokiAutomation\nKein gültiges Tonprofil oder keine Profilliste vorhanden.");
-
-                return false;
-            }
-
-            int profileIndex = -1;
-
-            for (int i = 0; i < listBox4.Items.Count; i++)
-            {
-                string itemText = listBox4.Items[i]?.ToString();
-
-                if (string.Equals(
-                    itemText,
-                    profileName,
-                    StringComparison.OrdinalIgnoreCase))
-                {
-                    profileIndex = i;
-                    break;
-                }
-            }
-
-            if (profileIndex < 0)
-            {
-                _logDat?.sendInfoMessage(
-                    $"JokiAutomation\nTonprofil '{profileName}' nicht gefunden.");
-
-                return false;
-            }
-
-            try
-            {
-                // Profil in der Benutzeroberfläche auswählen.
-                listBox4.SelectedIndex = profileIndex;
-
-                // Zugehörige Profilwerte in der Benutzeroberfläche anzeigen.
-                if (_audioMix?.audioProfile != null)
-                {
-                    trackBar1.Value = _audioMix.audioProfile[profileIndex, 0];
-                    trackBar2.Value = _audioMix.audioProfile[profileIndex, 1];
-                    trackBar3.Value = _audioMix.audioProfile[profileIndex, 2];
-                    trackBar4.Value = _audioMix.audioProfile[profileIndex, 3];
-                }
-
-                if (_audioMix == null)
-                {
-                    _logDat?.sendInfoMessage(
-                        $"JokiAutomation\nTonprofil '{profileName}' konnte nicht gesendet werden: AudioMix ist nicht initialisiert.");
-
-                    return false;
-                }
-
-                // Profilbefehl an den Raspberry Pi senden.
-                int commandID = AudioMix.AM_PROFILE + profileIndex;
-
-                _logDat?.sendInfoMessage(
-                    $"JokiAutomation\nSende Tonprofil '{profileName}': " +
-                    $"Index={profileIndex}, CommandID={commandID}");
-
-                await _audioMix.ExecuteAudioAsync(commandID);
-
-                // Dem Raspberry Pi Zeit zur Verarbeitung des Profilbefehls geben.
-                await Task.Delay(200);
-
-                _logDat?.sendInfoMessage(
-                    $"JokiAutomation\nTonprofil auf '{profileName}' gesetzt.");
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logDat?.sendInfoMessage(
-                    $"JokiAutomation\nFehler beim Setzen des Tonprofils '{profileName}':\n" +
-                    ex.Message);
-
-                return false;
-            }
+            return await ApplyAudioProfileByNameAsync(
+                profileName,
+                TimeSpan.FromMilliseconds(200),
+                CancellationToken.None);
         }
         private string GetATEMInputName(ATEMInput input)
 {
@@ -2362,6 +3031,14 @@ private async Task SwitchATEMInputAsync(ATEMInput input)
 /// </summary>
 private void EnablePictureInPicture()
 {
+    EnablePictureInPicture(ATEMInput.GoPro);
+}
+
+/// <summary>
+/// Enable Picture-in-Picture mode with a specific PiP fill input.
+/// </summary>
+private void EnablePictureInPicture(ATEMInput pipInput)
+{
     if (_atemControl == null || !_atemControl.IsConnected)
     {
         _logDat?.sendInfoMessage("JokiAutomation\nATEM nicht verbunden");
@@ -2370,8 +3047,9 @@ private void EnablePictureInPicture()
 
     try
     {
-        _atemControl.EnablePictureInPicture();
-        _logDat?.sendInfoMessage("JokiAutomation\nBild-in-Bild aktiviert");
+        ATEMControl.VideoSource source = (ATEMControl.VideoSource)((int)pipInput);
+        _atemControl.EnablePictureInPicture(source);
+        _logDat?.sendInfoMessage($"JokiAutomation\nBild-in-Bild aktiviert ({GetATEMInputName(pipInput)})");
     }
     catch (Exception ex)
     {
@@ -2841,7 +3519,7 @@ private async Task ShutdownPtzCameraAsync()
     {
         _logDat?.sendInfoMessage($"JokiAutomation\n✗ PTZ-Kamera Shutdown Fehler: {ex.Message}");
         _logDat?.sendInfoMessage($"JokiAutomation\nStackTrace: {ex.StackTrace}");
-        
+
         // Try to dispose anyway
         try
         {
@@ -2856,6 +3534,58 @@ private async Task ShutdownPtzCameraAsync()
             // Ignore disposal errors
         }
     }
+}
+
+private string ResolveLifecycleMode()
+{
+    if (!string.IsNullOrEmpty(Application.ProductName) &&
+        Application.ProductName.IndexOf("EventTimer", StringComparison.OrdinalIgnoreCase) >= 0)
+    {
+        return "EventTimer";
+    }
+
+    if (!ShowInTaskbar && Opacity <= 0.0d)
+    {
+        return "CLI";
+    }
+
+    if (Visible)
+    {
+        return "GUI";
+    }
+
+    return "UNKNOWN";
+}
+
+protected override void OnShown(EventArgs e)
+{
+    LogData.LogLifecycle(ResolveLifecycleMode(), "FORM_SHOWN");
+    base.OnShown(e);
+}
+
+protected override void OnFormClosing(FormClosingEventArgs e)
+{
+    LogData.LogLifecycle(
+        ResolveLifecycleMode(),
+        "FORM_CLOSING",
+        $"CloseReason={e.CloseReason} Cancel={e.Cancel} Visible={Visible} IsDisposed={IsDisposed} Disposing={Disposing} OpenFormsCount={Application.OpenForms.Count} ShutdownInProgress={Program.IsShutdownInProgress}");
+
+    base.OnFormClosing(e);
+
+    LogData.LogLifecycle(
+        ResolveLifecycleMode(),
+        "FORM_CLOSING_RETURN",
+        $"CloseReason={e.CloseReason} Cancel={e.Cancel}");
+}
+
+protected override void OnFormClosed(FormClosedEventArgs e)
+{
+    LogData.LogLifecycle(
+        ResolveLifecycleMode(),
+        "FORM_CLOSED",
+        $"CloseReason={e.CloseReason} OpenFormsCount={Application.OpenForms.Count} ShutdownInProgress={Program.IsShutdownInProgress}");
+
+    base.OnFormClosed(e);
 }
     }
 }
