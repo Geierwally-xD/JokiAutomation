@@ -452,49 +452,48 @@ namespace JokiAutomation
             {
                 int positionID = 0;
                 bool positionfound = false;
-                char[] cam_audioSet = cam_audio.ToArray();
+                PositionControlProfileMapping profileMapping = PositionControlProfileMapper.MapOrThrow(cam_audio);
                 for (; positionID < _PCForm.listBoxCamPosControl.Items.Count; positionID++)
                 {
                     if (position == _PCForm.listBoxCamPosControl.Items[positionID].ToString())
                     {
-                        if (cam_audioSet.Length == 2)
+                        switch (profileMapping.CameraCode)        // Code view during position movement 
                         {
-                            switch (cam_audioSet[0])        // Code view during position movement 
-                            {
-                                case 'L':                  // Laptop PowerPoint view (0)
-                                    positionID |= 0x0000;
+                            case 'L':                  // Laptop PowerPoint view (0)
+                                positionID |= 0x0000;
                                 break;
-                                case 'G':                  // GoPro action cam view (1)
-                                    positionID |= 0x0100;
+                            case 'G':                  // GoPro action cam view (1)
+                                positionID |= 0x0100;
                                 break;
-                                default:
-                                case 'A':                  // Camcorder with position control view (2)
-                                    positionID |= 0x0200;
+                            case 'A':                  // Camcorder with position control view (2)
+                                positionID |= 0x0200;
                                 break;
-                                case 'K':                  // Camcorder preacher view (3)
-                                    positionID |= 0x0300;
+                            case 'K':                  // Camcorder preacher view (3)
+                                positionID |= 0x0300;
                                 break;
-                            }
-                            switch (cam_audioSet[1])       // Code audio profile
-                            {
-                                case 'D':                  // Audio profile slideshow (0)
-                                    positionID |= 0x0000;
-                                break;
-                                default:
-                                case 'G':                  // Audio profile worship (1)
-                                    positionID |= 0x1000;
-                                    break;
-                                case 'P':                  // Audio profile sermon (2)
-                                    positionID |= 0x2000;
-                                break;
-                                case 'T':                  // Audio profile text (3)
-                                    positionID |= 0x3000;
-                                break;
-                                case 'B':                  // Audio profile band (4)
-                                    positionID |= 0x4000;
-                                break;
+                            default:
+                                throw new ArgumentException($"Unbekannter Kamera-Profilcode: {profileMapping.CameraCode}", nameof(cam_audio));
+                        }
 
-                            }
+                        switch (profileMapping.AudioCode)       // Code audio profile
+                        {
+                            case 'D':                  // Audio profile slideshow (0)
+                                positionID |= 0x0000;
+                                break;
+                            case 'G':                  // Audio profile worship (1)
+                                positionID |= 0x1000;
+                                break;
+                            case 'P':                  // Audio profile sermon (2)
+                                positionID |= 0x2000;
+                                break;
+                            case 'T':                  // Audio profile text (3)
+                                positionID |= 0x3000;
+                                break;
+                            case 'B':                  // Audio profile band (4)
+                                positionID |= 0x4000;
+                                break;
+                            default:
+                                throw new ArgumentException($"Unbekannter Audio-Profilcode: {profileMapping.AudioCode}", nameof(cam_audio));
                         }
 
                         if (_isPtzMode && _canonPtzController != null)
@@ -643,5 +642,174 @@ namespace JokiAutomation
             Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.Machine);
         private static Form1 _PCForm;
         private bool disposed = false;
+    }
+
+    internal sealed class PositionControlProfileMapping
+    {
+        public PositionControlProfileMapping(char cameraCode, char audioCode, int audioProfileId)
+        {
+            CameraCode = cameraCode;
+            AudioCode = audioCode;
+            AudioProfileId = audioProfileId;
+        }
+
+        public char CameraCode { get; }
+
+        public char AudioCode { get; }
+
+        public int AudioProfileId { get; }
+
+        public int AudioCommandId => AudioMix.AM_PROFILE + AudioProfileId;
+    }
+
+    internal static class PositionControlProfileMapper
+    {
+        public static bool TryMap(string profileCode, out PositionControlProfileMapping mapping)
+        {
+            mapping = null;
+
+            if (string.IsNullOrWhiteSpace(profileCode) || profileCode.Length != 2)
+            {
+                return false;
+            }
+
+            char cameraCode = char.ToUpperInvariant(profileCode[0]);
+            char audioCode = char.ToUpperInvariant(profileCode[1]);
+
+            if (cameraCode != 'A' && cameraCode != 'G' && cameraCode != 'K' && cameraCode != 'L')
+            {
+                return false;
+            }
+
+            int audioProfileId;
+            switch (audioCode)
+            {
+                case 'D':
+                    audioProfileId = 0;
+                    break;
+                case 'G':
+                    audioProfileId = 1;
+                    break;
+                case 'P':
+                    audioProfileId = 2;
+                    break;
+                case 'T':
+                    audioProfileId = 3;
+                    break;
+                case 'B':
+                    audioProfileId = 4;
+                    break;
+                default:
+                    return false;
+            }
+
+            mapping = new PositionControlProfileMapping(cameraCode, audioCode, audioProfileId);
+            return true;
+        }
+
+        public static PositionControlProfileMapping MapOrThrow(string profileCode)
+        {
+            if (TryMap(profileCode, out PositionControlProfileMapping mapping))
+            {
+                return mapping;
+            }
+
+            throw new ArgumentException($"Ungültiges PositionControl-Profil: {profileCode}", nameof(profileCode));
+        }
+    }
+
+    internal sealed class PositionControlPtzAudioOrchestrator
+    {
+        private readonly Func<int, Task> _executeAudioAsync;
+        private readonly Func<int, Form1.ATEMInput, Form1.ATEMInput, Task> _executeCameraSwitchSequenceAsync;
+        private readonly Action<string> _log;
+
+        public PositionControlPtzAudioOrchestrator(
+            Func<int, Task> executeAudioAsync,
+            Func<int, Form1.ATEMInput, Form1.ATEMInput, Task> executeCameraSwitchSequenceAsync,
+            Action<string> log)
+        {
+            _executeAudioAsync = executeAudioAsync ?? throw new ArgumentNullException(nameof(executeAudioAsync));
+            _executeCameraSwitchSequenceAsync = executeCameraSwitchSequenceAsync ?? throw new ArgumentNullException(nameof(executeCameraSwitchSequenceAsync));
+            _log = log;
+        }
+
+        public async Task<PositionControlPtzExecutionResult> ExecuteAsync(
+            string positionName,
+            string profileCode,
+            IReadOnlyList<string> positions)
+        {
+            PositionControlProfileMapping profileMapping = PositionControlProfileMapper.MapOrThrow(profileCode);
+            int seqPositionId = FindPositionIndex(positionName, positions);
+            Form1.ATEMInput movementInput = ResolveMovementInput(profileMapping.CameraCode);
+            Form1.ATEMInput finalInput = Form1.ATEMInput.CanonPtzMain;
+
+            await _executeAudioAsync(profileMapping.AudioCommandId);
+
+            _log?.Invoke(
+                $"JokiAutomation\nAudio-Profil an Raspberry Pi gesendet - Profil={profileMapping.AudioCode}, ID={profileMapping.AudioProfileId}, CommandID={profileMapping.AudioCommandId}");
+
+            await _executeCameraSwitchSequenceAsync(seqPositionId, movementInput, finalInput);
+
+            return new PositionControlPtzExecutionResult(seqPositionId, profileMapping, movementInput, finalInput);
+        }
+
+        private static int FindPositionIndex(string positionName, IReadOnlyList<string> positions)
+        {
+            if (positions == null)
+            {
+                throw new ArgumentNullException(nameof(positions));
+            }
+
+            for (int i = 0; i < positions.Count; i++)
+            {
+                if (string.Equals(positionName, positions[i], StringComparison.Ordinal))
+                {
+                    return i;
+                }
+            }
+
+            throw new ArgumentException($"PositionControl: Position '{positionName}' nicht in ListBox gefunden", nameof(positionName));
+        }
+
+        private static Form1.ATEMInput ResolveMovementInput(char cameraCode)
+        {
+            switch (cameraCode)
+            {
+                case 'G':
+                    return Form1.ATEMInput.GoPro;
+                case 'K':
+                    return Form1.ATEMInput.CanonPtzPreacher;
+                case 'L':
+                    return Form1.ATEMInput.Laptop;
+                case 'A':
+                    return Form1.ATEMInput.CanonPtzMain;
+                default:
+                    throw new ArgumentException($"Nicht unterstützter PositionControl-Kameracode: {cameraCode}", nameof(cameraCode));
+            }
+        }
+    }
+
+    internal sealed class PositionControlPtzExecutionResult
+    {
+        public PositionControlPtzExecutionResult(
+            int positionId,
+            PositionControlProfileMapping profileMapping,
+            Form1.ATEMInput movementInput,
+            Form1.ATEMInput finalInput)
+        {
+            PositionId = positionId;
+            ProfileMapping = profileMapping ?? throw new ArgumentNullException(nameof(profileMapping));
+            MovementInput = movementInput;
+            FinalInput = finalInput;
+        }
+
+        public int PositionId { get; }
+
+        public PositionControlProfileMapping ProfileMapping { get; }
+
+        public Form1.ATEMInput MovementInput { get; }
+
+        public Form1.ATEMInput FinalInput { get; }
     }
 }

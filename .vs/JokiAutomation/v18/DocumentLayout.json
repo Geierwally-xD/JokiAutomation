@@ -1,25 +1,9 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\",
+  "WorkspaceRootPath": "D:\\JoKiAutomation\\JokiAutomation\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{00000000-0000-0000-0000-000000000000}|\u003CSolution\u003E|JokiAutomation||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|i:\\mygitrepos\\jokiautomation\\jokiautomation\\jokiautomation.tests\\jokiautomation.tests.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
-      "RelativeMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|solutionrelative:jokiautomation.tests\\jokiautomation.tests.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|i:\\mygitrepos\\jokiautomation\\jokiautomation\\jokiautomation.tests\\jokiautomation.lifecycletests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|solutionrelative:jokiautomation.tests\\jokiautomation.lifecycletests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\jokiautomation\\raspi.async.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\raspi.async.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation.runsettings||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:JokiAutomation.runsettings||{8B382828-6202-11D1-8870-0000F87579D2}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\advore0\\.copilot\\plans\\plan-audio-pipeline-lifetime-fix-phase-a-(reproduction)-phase-b-(fix).md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|MarkdownSecurePreview"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\advore0\\.copilot\\plans\\plan-add-lifecycle-regression-test-project.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|MarkdownSecurePreview"
@@ -103,74 +87,136 @@
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\advore0\\.copilot\\plans\\plan-fix-eventtimer-start-regression.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|MarkdownSecurePreview"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\CanonRemoteControl1.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.runsettings||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:JokiAutomation.runsettings||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|d:\\jokiautomation\\jokiautomation\\jokiautomation.tests\\fakes\\fakeraspicommandexecutor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|solutionrelative:jokiautomation.tests\\fakes\\fakeraspicommandexecutor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|d:\\jokiautomation\\jokiautomation\\jokiautomation.tests\\hardware\\audioprofilehardwaretests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|solutionrelative:jokiautomation.tests\\hardware\\audioprofilehardwaretests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\JokiAutomation1.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:JokiAutomation\\JokiAutomation1.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|D:\\JoKiAutomation\\JokiAutomation\\jokiautomation\\positioncontrol.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\positioncontrol.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|D:\\JoKiAutomation\\JokiAutomation\\jokiautomation\\raspi.async.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\raspi.async.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|D:\\JoKiAutomation\\JokiAutomation\\jokiautomation\\properties\\assemblyinfo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\properties\\assemblyinfo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|D:\\JoKiAutomation\\JokiAutomation\\jokiautomation\\raspi.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\raspi.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|D:\\JoKiAutomation\\JokiAutomation\\jokiautomation\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|d:\\jokiautomation\\jokiautomation\\jokiautomation.tests\\unit\\raspiexecuteasynctests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|solutionrelative:jokiautomation.tests\\unit\\raspiexecuteasynctests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|d:\\jokiautomation\\jokiautomation\\jokiautomation.tests\\jokiautomation.lifecycletests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|solutionrelative:jokiautomation.tests\\jokiautomation.lifecycletests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\CanonRemoteControl1.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:CanonRemoteControl\\CanonRemoteControl1.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\RasPi.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:JokiAutomation\\RasPi.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:JokiAutomation\\Form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:JokiAutomation\\Program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{8B5E5B5E-8B5E-4B5E-8B5E-8B5E5B5E8B5E}|CanonRemoteControl\\CanonRemoteControl.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\App.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{8B5E5B5E-8B5E-4B5E-8B5E-8B5E5B5E8B5E}|CanonRemoteControl\\CanonRemoteControl.csproj|D:\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\App.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{8B5E5B5E-8B5E-4B5E-8B5E-8B5E5B5E8B5E}|CanonRemoteControl\\CanonRemoteControl.csproj|solutionrelative:CanonRemoteControl\\App.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\AudioMix.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:JokiAutomation\\AudioMix.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.AudioProfile.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:JokiAutomation\\Form1.AudioProfile.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\EventTimer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:JokiAutomation\\EventTimer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.Designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:JokiAutomation\\Form1.Designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\LogData.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:JokiAutomation\\LogData.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\JokiAutomation\\RasPi.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:JokiAutomation\\JokiAutomation\\RasPi.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\JokiAutomation\\AudioMix.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:JokiAutomation\\JokiAutomation\\AudioMix.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{469765C0-1124-416E-8C20-C25603B57094}|EventTimer\\EventTimer.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\EventTimer\\Form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{469765C0-1124-416E-8C20-C25603B57094}|EventTimer\\EventTimer.csproj|D:\\JoKiAutomation\\JokiAutomation\\EventTimer\\Form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{469765C0-1124-416E-8C20-C25603B57094}|EventTimer\\EventTimer.csproj|solutionrelative:EventTimer\\Form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\PositionControl.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:JokiAutomation\\PositionControl.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Network.cfg||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:JokiAutomation\\Network.cfg||{8B382828-6202-11D1-8870-0000F87579D2}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{8B5E5B5E-8B5E-4B5E-8B5E-8B5E5B5E8B5E}|CanonRemoteControl\\CanonRemoteControl.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\MainWindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{8B5E5B5E-8B5E-4B5E-8B5E-8B5E5B5E8B5E}|CanonRemoteControl\\CanonRemoteControl.csproj|D:\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\MainWindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{8B5E5B5E-8B5E-4B5E-8B5E-8B5E5B5E8B5E}|CanonRemoteControl\\CanonRemoteControl.csproj|solutionrelative:CanonRemoteControl\\MainWindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Pipeline_Phase_Status.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\JoKiAutomation\\JokiAutomation\\scripts\\Copy-LogsToDropbox.ps1||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:scripts\\Copy-LogsToDropbox.ps1||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|i:\\mygitrepos\\jokiautomation\\jokiautomation\\jokiautomation\\||{B270807C-D8C6-49EB-8EBE-8E8D566637A1}|6185191f-1008-4fb2-a715-3a4e4f27e610"
+      "AbsoluteMoniker": "D:0:0:{8B5E5B5E-8B5E-4B5E-8B5E-8B5E5B5E8B5E}|CanonRemoteControl\\CanonRemoteControl.csproj|D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Network.cfg||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{8B5E5B5E-8B5E-4B5E-8B5E-8B5E5B5E8B5E}|CanonRemoteControl\\CanonRemoteControl.csproj|solutionrelative:JokiAutomation\\Network.cfg||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|d:\\jokiautomation\\jokiautomation\\jokiautomation.tests\\dropboxapiuploadertests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|solutionrelative:jokiautomation.tests\\dropboxapiuploadertests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\PositionControlProfileMapper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:JokiAutomation\\PositionControlProfileMapper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|D:\\JoKiAutomation\\JokiAutomation\\jokiautomation\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|d:\\jokiautomation\\jokiautomation\\jokiautomation\\pipeline_phase_status.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
+      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\pipeline_phase_status.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|D:\\JoKiAutomation\\JokiAutomation\\jokiautomation\\audiomix.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\audiomix.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|D:\\JoKiAutomation\\JokiAutomation\\jokiautomation\\form1.audioprofile.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\form1.audioprofile.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|D:\\JoKiAutomation\\JokiAutomation\\jokiautomation\\eventtimer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\eventtimer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|D:\\JoKiAutomation\\JokiAutomation\\jokiautomation\\form1.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\form1.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|D:\\JoKiAutomation\\JokiAutomation\\jokiautomation\\logdata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\logdata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\PositionControlPtzAudioOrchestrator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:JokiAutomation\\PositionControlPtzAudioOrchestrator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\RasPiCommandExecution.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:JokiAutomation\\RasPiCommandExecution.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|d:\\jokiautomation\\jokiautomation\\jokiautomation.tests\\hardware\\audiocontrollogparser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|solutionrelative:jokiautomation.tests\\hardware\\audiocontrollogparser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|d:\\jokiautomation\\jokiautomation\\jokiautomation.tests\\hardware\\audiocontrollogparsertests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|solutionrelative:jokiautomation.tests\\hardware\\audiocontrollogparsertests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|d:\\jokiautomation\\jokiautomation\\jokiautomation.tests\\jokiautomation.tests.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|solutionrelative:jokiautomation.tests\\jokiautomation.tests.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|d:\\jokiautomation\\jokiautomation\\jokiautomation.tests\\regression\\audiopipelinelifetimeanalysis.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
+      "RelativeMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|solutionrelative:jokiautomation.tests\\regression\\audiopipelinelifetimeanalysis.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|d:\\jokiautomation\\jokiautomation\\jokiautomation.tests\\regression\\audiopipelinelifetimeregressiontests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|solutionrelative:jokiautomation.tests\\regression\\audiopipelinelifetimeregressiontests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -180,15 +226,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 7,
+          "SelectedChildIndex": 8,
           "Children": [
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
-            },
-            {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{c6f34f0d-7ae5-4f3a-be61-fe0c21ae9eb8}"
             },
             {
               "$type": "Bookmark",
@@ -212,535 +254,689 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "JokiAutomation",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\JokiAutomation.csproj",
-              "RelativeDocumentMoniker": "JokiAutomation\\JokiAutomation.csproj",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\JokiAutomation.csproj",
-              "RelativeToolTip": "JokiAutomation\\JokiAutomation.csproj",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-09-06T04:30:25.489Z",
+              "DocumentIndex": 60,
+              "Title": "AudioPipelineLifetimeRegressionTests.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\Regression\\AudioPipelineLifetimeRegressionTests.cs",
+              "RelativeDocumentMoniker": "JokiAutomation.Tests\\Regression\\AudioPipelineLifetimeRegressionTests.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\Regression\\AudioPipelineLifetimeRegressionTests.cs",
+              "RelativeToolTip": "JokiAutomation.Tests\\Regression\\AudioPipelineLifetimeRegressionTests.cs",
+              "ViewState": "AgIAAHwAAAAAAAAAAIBJwIAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-22T03:22:38.604Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "JokiAutomation.Tests.csproj",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\JokiAutomation.Tests.csproj",
-              "RelativeDocumentMoniker": "JokiAutomation.Tests\\JokiAutomation.Tests.csproj",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\JokiAutomation.Tests.csproj",
-              "RelativeToolTip": "JokiAutomation.Tests\\JokiAutomation.Tests.csproj",
-              "ViewState": "AgIAAA4AAAAAAAAAAAASwBYAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2026-10-09T05:38:14.07Z"
+              "DocumentIndex": 59,
+              "Title": "AudioPipelineLifetimeAnalysis.md",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\Regression\\AudioPipelineLifetimeAnalysis.md",
+              "RelativeDocumentMoniker": "JokiAutomation.Tests\\Regression\\AudioPipelineLifetimeAnalysis.md",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\Regression\\AudioPipelineLifetimeAnalysis.md",
+              "RelativeToolTip": "JokiAutomation.Tests\\Regression\\AudioPipelineLifetimeAnalysis.md",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAEYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-22T02:58:57.572Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "JokiAutomation.LifecycleTests.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\JokiAutomation.LifecycleTests.cs",
-              "RelativeDocumentMoniker": "JokiAutomation.Tests\\JokiAutomation.LifecycleTests.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\JokiAutomation.LifecycleTests.cs",
-              "RelativeToolTip": "JokiAutomation.Tests\\JokiAutomation.LifecycleTests.cs",
-              "ViewState": "AgIAAFcBAAAAAAAAAAAAAGQBAAAvAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-09T04:36:53.199Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "JokiAutomation.runsettings",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation.runsettings",
-              "RelativeDocumentMoniker": "JokiAutomation.runsettings",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation.runsettings",
-              "RelativeToolTip": "JokiAutomation.runsettings",
-              "ViewState": "AgIAAAIAAAAAAAAAAAAUwA8AAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-10-09T05:35:30.511Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "RasPi.Async.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\RasPi.Async.cs",
-              "RelativeDocumentMoniker": "JokiAutomation\\RasPi.Async.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\RasPi.Async.cs",
-              "RelativeToolTip": "JokiAutomation\\RasPi.Async.cs",
-              "ViewState": "AgIAANsBAAAAAAAAAAAcwOcBAAAUAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-04T05:10:39.085Z"
+              "DocumentIndex": 0,
+              "Title": "plan-audio-pipeline-lifetime-fix-phase-a-(reproduction)-phase-b-(fix).md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-audio-pipeline-lifetime-fix-phase-a-(reproduction)-phase-b-(fix).md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-audio-pipeline-lifetime-fix-phase-a-(reproduction)-phase-b-(fix).md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-22T02:57:30.003Z",
+              "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 5,
+              "Title": "plan-lifecycle-race-fix-primary,-pipe,-dispatcher,-background-jobs,-and-mutex-coordin.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-lifecycle-race-fix-primary,-pipe,-dispatcher,-background-jobs,-and-mutex-coordin.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-lifecycle-race-fix-primary,-pipe,-dispatcher,-background-jobs,-and-mutex-coordin.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-19T17:22:16.601Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "plan-minimal-primary-lifecycle-race-fix.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-minimal-primary-lifecycle-race-fix.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-minimal-primary-lifecycle-race-fix.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-19T17:22:16.566Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "plan-finalize-minimal-lifecycle-race-fix.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-finalize-minimal-lifecycle-race-fix.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-finalize-minimal-lifecycle-race-fix.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-19T17:22:16.56Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "plan-close-final-minimal-lifecycle-gaps.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-close-final-minimal-lifecycle-gaps.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-close-final-minimal-lifecycle-gaps.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-19T17:22:16.544Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
               "Title": "plan-add-lifecycle-regression-test-project.md [Preview]",
               "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-add-lifecycle-regression-test-project.md",
               "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-add-lifecycle-regression-test-project.md [Preview]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T04:35:16.221Z",
+              "WhenOpened": "2026-10-19T17:22:16.537Z",
               "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 6,
-              "Title": "plan-close-final-minimal-lifecycle-gaps.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-close-final-minimal-lifecycle-gaps.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-close-final-minimal-lifecycle-gaps.md [Preview]",
+              "Title": "plan-raspi-reset-hardening-and-legacy-isolation.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-raspi-reset-hardening-and-legacy-isolation.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-raspi-reset-hardening-and-legacy-isolation.md [Preview]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:40:20.373Z",
+              "WhenOpened": "2026-10-19T17:22:16.572Z",
               "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 7,
-              "Title": "plan-finalize-minimal-lifecycle-race-fix.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-finalize-minimal-lifecycle-race-fix.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-finalize-minimal-lifecycle-race-fix.md [Preview]",
+              "Title": "plan-ir-control-regression-fix-and-awaited-raspi-sequencing.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-ir-control-regression-fix-and-awaited-raspi-sequencing.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-ir-control-regression-fix-and-awaited-raspi-sequencing.md [Preview]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:36:48.262Z",
+              "WhenOpened": "2026-10-19T17:22:16.578Z",
               "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 8,
-              "Title": "plan-minimal-primary-lifecycle-race-fix.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-minimal-primary-lifecycle-race-fix.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-minimal-primary-lifecycle-race-fix.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:33:08.742Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 10,
-              "Title": "plan-raspi-reset-hardening-and-legacy-isolation.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-raspi-reset-hardening-and-legacy-isolation.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-raspi-reset-hardening-and-legacy-isolation.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:22:02.528Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 11,
-              "Title": "plan-ir-control-regression-fix-and-awaited-raspi-sequencing.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-ir-control-regression-fix-and-awaited-raspi-sequencing.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-ir-control-regression-fix-and-awaited-raspi-sequencing.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:22:02.333Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 12,
               "Title": "plan-pipe-server-shutdown-hardening-and-mutex-integration-verification.md [Preview]",
               "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-pipe-server-shutdown-hardening-and-mutex-integration-verification.md",
               "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-pipe-server-shutdown-hardening-and-mutex-integration-verification.md [Preview]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:22:01.614Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 13,
-              "Title": "plan-harden-pipe-server-shutdown-and-verify-log-progression.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-harden-pipe-server-shutdown-and-verify-log-progression.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-harden-pipe-server-shutdown-and-verify-log-progression.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:22:01.424Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 14,
-              "Title": "plan-implement-phase-3-audiopipeline.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-3-audiopipeline.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-3-audiopipeline.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:22:01.145Z",
+              "WhenOpened": "2026-10-19T17:22:16.583Z",
               "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 9,
-              "Title": "plan-lifecycle-race-fix-primary,-pipe,-dispatcher,-background-jobs,-and-mutex-coordin.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-lifecycle-race-fix-primary,-pipe,-dispatcher,-background-jobs,-and-mutex-coordin.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-lifecycle-race-fix-primary,-pipe,-dispatcher,-background-jobs,-and-mutex-coordin.md [Preview]",
+              "Title": "plan-harden-pipe-server-shutdown-and-verify-log-progression.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-harden-pipe-server-shutdown-and-verify-log-progression.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-harden-pipe-server-shutdown-and-verify-log-progression.md [Preview]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-08T17:41:15.51Z",
+              "WhenOpened": "2026-10-19T17:22:16.589Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "plan-implement-phase-3-audiopipeline.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-3-audiopipeline.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-3-audiopipeline.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-19T17:22:16.595Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "plan-implement-phase-2-positionpipeline.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-2-positionpipeline.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-2-positionpipeline.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-19T17:22:16.606Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "plan-refine-phase-1-scene-mapping-for-altarpredigt.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-refine-phase-1-scene-mapping-for-altarpredigt.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-refine-phase-1-scene-mapping-for-altarpredigt.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-19T17:22:16.613Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "plan-run-phase-01-regression-tests.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-run-phase-01-regression-tests.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-run-phase-01-regression-tests.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-19T17:22:16.618Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "plan-implement-phase-0-logging-hardening.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-0-logging-hardening.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-0-logging-hardening.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-19T17:22:16.624Z",
               "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 15,
-              "Title": "plan-implement-phase-2-positionpipeline.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-2-positionpipeline.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-2-positionpipeline.md [Preview]",
+              "Title": "plan-implement-phase-1-serial-dispatcher-path.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-1-serial-dispatcher-path.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-1-serial-dispatcher-path.md [Preview]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:22:00.929Z",
+              "WhenOpened": "2026-10-19T17:22:16.63Z",
               "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 16,
-              "Title": "plan-refine-phase-1-scene-mapping-for-altarpredigt.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-refine-phase-1-scene-mapping-for-altarpredigt.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-refine-phase-1-scene-mapping-for-altarpredigt.md [Preview]",
+              "Title": "plan-continue-dispatcher-handoff-integration.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-continue-dispatcher-handoff-integration.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-continue-dispatcher-handoff-integration.md [Preview]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:22:00.658Z",
+              "WhenOpened": "2026-10-19T17:22:16.636Z",
               "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 17,
-              "Title": "plan-run-phase-01-regression-tests.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-run-phase-01-regression-tests.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-run-phase-01-regression-tests.md [Preview]",
+              "Title": "plan-split-internal-execution-into-audiovideoui-pipelines-with-dispatcher-and-handoff.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-split-internal-execution-into-audiovideoui-pipelines-with-dispatcher-and-handoff.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-split-internal-execution-into-audiovideoui-pipelines-with-dispatcher-and-handoff.md [Preview]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:22:00.355Z",
+              "WhenOpened": "2026-10-19T17:22:16.642Z",
               "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 18,
-              "Title": "plan-implement-phase-0-logging-hardening.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-0-logging-hardening.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-0-logging-hardening.md [Preview]",
+              "Title": "plan-separate-audio-and-visual-command-pipelines-for-scene-switches.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-separate-audio-and-visual-command-pipelines-for-scene-switches.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-separate-audio-and-visual-command-pipelines-for-scene-switches.md [Preview]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:22:00.01Z",
+              "WhenOpened": "2026-10-19T17:22:16.649Z",
               "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 19,
-              "Title": "plan-implement-phase-1-serial-dispatcher-path.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-1-serial-dispatcher-path.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-1-serial-dispatcher-path.md [Preview]",
+              "Title": "plan-deterministic-audio-profile-mapping-and-awaitable-raspi-dispatch.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-deterministic-audio-profile-mapping-and-awaitable-raspi-dispatch.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-deterministic-audio-profile-mapping-and-awaitable-raspi-dispatch.md [Preview]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:21:59.727Z",
+              "WhenOpened": "2026-10-19T17:22:16.655Z",
               "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 20,
-              "Title": "plan-continue-dispatcher-handoff-integration.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-continue-dispatcher-handoff-integration.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-continue-dispatcher-handoff-integration.md [Preview]",
+              "Title": "plan-fix-deterministic-audio-profile-resolution-for-cli-commands.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-fix-deterministic-audio-profile-resolution-for-cli-commands.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-fix-deterministic-audio-profile-resolution-for-cli-commands.md [Preview]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:21:59.496Z",
+              "WhenOpened": "2026-10-19T17:22:16.663Z",
               "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 21,
-              "Title": "plan-split-internal-execution-into-audiovideoui-pipelines-with-dispatcher-and-handoff.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-split-internal-execution-into-audiovideoui-pipelines-with-dispatcher-and-handoff.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-split-internal-execution-into-audiovideoui-pipelines-with-dispatcher-and-handoff.md [Preview]",
+              "Title": "plan-stabilize-shutdownmutex-handoff-in-program-and-form1.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-stabilize-shutdownmutex-handoff-in-program-and-form1.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-stabilize-shutdownmutex-handoff-in-program-and-form1.md [Preview]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:21:59.224Z",
+              "WhenOpened": "2026-10-19T17:22:16.668Z",
               "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 22,
-              "Title": "plan-separate-audio-and-visual-command-pipelines-for-scene-switches.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-separate-audio-and-visual-command-pipelines-for-scene-switches.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-separate-audio-and-visual-command-pipelines-for-scene-switches.md [Preview]",
+              "Title": "plan-stabilize-single-instance,-queue,-and-eventtimer-handoff-behavior.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-stabilize-single-instance,-queue,-and-eventtimer-handoff-behavior.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-stabilize-single-instance,-queue,-and-eventtimer-handoff-behavior.md [Preview]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:21:58.976Z",
+              "WhenOpened": "2026-10-19T17:22:16.675Z",
               "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 23,
-              "Title": "plan-deterministic-audio-profile-mapping-and-awaitable-raspi-dispatch.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-deterministic-audio-profile-mapping-and-awaitable-raspi-dispatch.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-deterministic-audio-profile-mapping-and-awaitable-raspi-dispatch.md [Preview]",
+              "Title": "plan-diagnose-and-stabilize-pausetimer-audio-regression-after-single-instance-queue-r.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-diagnose-and-stabilize-pausetimer-audio-regression-after-single-instance-queue-r.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-diagnose-and-stabilize-pausetimer-audio-regression-after-single-instance-queue-r.md [Preview]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:21:58.301Z",
+              "WhenOpened": "2026-10-19T17:22:16.681Z",
               "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 24,
-              "Title": "plan-fix-deterministic-audio-profile-resolution-for-cli-commands.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-fix-deterministic-audio-profile-resolution-for-cli-commands.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-fix-deterministic-audio-profile-resolution-for-cli-commands.md [Preview]",
+              "Title": "plan-analyze-and-stabilize-current-single-instancepipequeue-implementation.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-analyze-and-stabilize-current-single-instancepipequeue-implementation.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-analyze-and-stabilize-current-single-instancepipequeue-implementation.md [Preview]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:21:58.19Z",
+              "WhenOpened": "2026-10-19T17:22:16.687Z",
               "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 25,
-              "Title": "plan-stabilize-shutdownmutex-handoff-in-program-and-form1.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-stabilize-shutdownmutex-handoff-in-program-and-form1.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-stabilize-shutdownmutex-handoff-in-program-and-form1.md [Preview]",
+              "Title": "plan-add-lifecycle-diagnostics-for-jokiautomation-and-eventtimer.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-add-lifecycle-diagnostics-for-jokiautomation-and-eventtimer.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-add-lifecycle-diagnostics-for-jokiautomation-and-eventtimer.md [Preview]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:21:57.943Z",
+              "WhenOpened": "2026-10-19T17:22:16.693Z",
               "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 26,
-              "Title": "plan-stabilize-single-instance,-queue,-and-eventtimer-handoff-behavior.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-stabilize-single-instance,-queue,-and-eventtimer-handoff-behavior.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-stabilize-single-instance,-queue,-and-eventtimer-handoff-behavior.md [Preview]",
+              "Title": "plan-investigate-eventtimer-launch-regression.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-investigate-eventtimer-launch-regression.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-investigate-eventtimer-launch-regression.md [Preview]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:21:57.713Z",
+              "WhenOpened": "2026-10-19T17:22:16.699Z",
               "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 27,
-              "Title": "plan-diagnose-and-stabilize-pausetimer-audio-regression-after-single-instance-queue-r.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-diagnose-and-stabilize-pausetimer-audio-regression-after-single-instance-queue-r.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-diagnose-and-stabilize-pausetimer-audio-regression-after-single-instance-queue-r.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:21:57.488Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 28,
-              "Title": "plan-analyze-and-stabilize-current-single-instancepipequeue-implementation.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-analyze-and-stabilize-current-single-instancepipequeue-implementation.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-analyze-and-stabilize-current-single-instancepipequeue-implementation.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:21:57.294Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 29,
-              "Title": "plan-add-lifecycle-diagnostics-for-jokiautomation-and-eventtimer.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-add-lifecycle-diagnostics-for-jokiautomation-and-eventtimer.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-add-lifecycle-diagnostics-for-jokiautomation-and-eventtimer.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:21:55.988Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 30,
-              "Title": "plan-investigate-eventtimer-launch-regression.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-investigate-eventtimer-launch-regression.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-investigate-eventtimer-launch-regression.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:21:55.647Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 31,
               "Title": "plan-fix-eventtimer-start-regression.md [Preview]",
               "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-fix-eventtimer-start-regression.md",
               "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-fix-eventtimer-start-regression.md [Preview]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-09T03:21:54.003Z",
+              "WhenOpened": "2026-10-19T17:22:16.705Z",
               "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 33,
-              "Title": "RasPi.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\RasPi.cs",
-              "RelativeDocumentMoniker": "JokiAutomation\\RasPi.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\RasPi.cs",
-              "RelativeToolTip": "JokiAutomation\\RasPi.cs",
-              "ViewState": "AgIAAFsAAAAAAAAAAABBwKcAAAAIAAAAAAAAAA==",
+              "DocumentIndex": 58,
+              "Title": "JokiAutomation.Tests.csproj",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\JokiAutomation.Tests.csproj",
+              "RelativeDocumentMoniker": "JokiAutomation.Tests\\JokiAutomation.Tests.csproj",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\JokiAutomation.Tests.csproj",
+              "RelativeToolTip": "JokiAutomation.Tests\\JokiAutomation.Tests.csproj",
+              "ViewState": "AgIAABQAAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-10-21T16:10:04.622Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 56,
+              "Title": "AudioControlLogParser.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\Hardware\\AudioControlLogParser.cs",
+              "RelativeDocumentMoniker": "JokiAutomation.Tests\\Hardware\\AudioControlLogParser.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\Hardware\\AudioControlLogParser.cs",
+              "RelativeToolTip": "JokiAutomation.Tests\\Hardware\\AudioControlLogParser.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAALcAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-01T05:39:50.4Z"
+              "WhenOpened": "2026-10-21T15:58:59.485Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 57,
+              "Title": "AudioControlLogParserTests.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\Hardware\\AudioControlLogParserTests.cs",
+              "RelativeDocumentMoniker": "JokiAutomation.Tests\\Hardware\\AudioControlLogParserTests.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\Hardware\\AudioControlLogParserTests.cs",
+              "RelativeToolTip": "JokiAutomation.Tests\\Hardware\\AudioControlLogParserTests.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAKwAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-21T15:59:29.675Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 28,
+              "Title": "JokiAutomation.runsettings",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.runsettings",
+              "RelativeDocumentMoniker": "JokiAutomation.runsettings",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.runsettings",
+              "RelativeToolTip": "JokiAutomation.runsettings",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-10-19T17:22:16.549Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 29,
+              "Title": "FakeRasPiCommandExecutor.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\Fakes\\FakeRasPiCommandExecutor.cs",
+              "RelativeDocumentMoniker": "JokiAutomation.Tests\\Fakes\\FakeRasPiCommandExecutor.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\Fakes\\FakeRasPiCommandExecutor.cs",
+              "RelativeToolTip": "JokiAutomation.Tests\\Fakes\\FakeRasPiCommandExecutor.cs",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAiwHwAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-19T17:22:16.491Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 30,
+              "Title": "AudioProfileHardwareTests.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\Hardware\\AudioProfileHardwareTests.cs",
+              "RelativeDocumentMoniker": "JokiAutomation.Tests\\Hardware\\AudioProfileHardwareTests.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\Hardware\\AudioProfileHardwareTests.cs",
+              "RelativeToolTip": "JokiAutomation.Tests\\Hardware\\AudioProfileHardwareTests.cs",
+              "ViewState": "AgIAAPwAAAAAAAAAAIBQwB4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-20T15:47:24.328Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 38,
+              "Title": "JokiAutomation.LifecycleTests.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\JokiAutomation.LifecycleTests.cs",
+              "RelativeDocumentMoniker": "JokiAutomation.Tests\\JokiAutomation.LifecycleTests.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\JokiAutomation.LifecycleTests.cs",
+              "RelativeToolTip": "JokiAutomation.Tests\\JokiAutomation.LifecycleTests.cs",
+              "ViewState": "AgIAABgBAAAAAAAAAABBwHkBAAAvAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-19T17:22:16.526Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 37,
+              "Title": "RasPiExecuteAsyncTests.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\Unit\\RasPiExecuteAsyncTests.cs",
+              "RelativeDocumentMoniker": "JokiAutomation.Tests\\Unit\\RasPiExecuteAsyncTests.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\Unit\\RasPiExecuteAsyncTests.cs",
+              "RelativeToolTip": "JokiAutomation.Tests\\Unit\\RasPiExecuteAsyncTests.cs",
+              "ViewState": "AgIAAJUAAAAAAAAAAAAQwMUAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-19T17:22:16.463Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 45,
+              "Title": "DropboxApiUploaderTests.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\DropboxApiUploaderTests.cs",
+              "RelativeDocumentMoniker": "JokiAutomation.Tests\\DropboxApiUploaderTests.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\DropboxApiUploaderTests.cs",
+              "RelativeToolTip": "JokiAutomation.Tests\\DropboxApiUploaderTests.cs",
+              "ViewState": "AgIAAEkAAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-19T17:22:16.531Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 43,
+              "Title": "Copy-LogsToDropbox.ps1",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\scripts\\Copy-LogsToDropbox.ps1",
+              "RelativeDocumentMoniker": "scripts\\Copy-LogsToDropbox.ps1",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\scripts\\Copy-LogsToDropbox.ps1",
+              "RelativeToolTip": "scripts\\Copy-LogsToDropbox.ps1",
+              "ViewState": "AgIAAJsAAAAAAAAAAABBwKkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-10-19T17:22:16.554Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 39,
+              "Title": "CanonRemoteControl1.csproj",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\CanonRemoteControl1.csproj",
+              "RelativeDocumentMoniker": "CanonRemoteControl\\CanonRemoteControl1.csproj",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\CanonRemoteControl1.csproj",
+              "RelativeToolTip": "CanonRemoteControl\\CanonRemoteControl1.csproj",
+              "ViewState": "AgIAAEMAAAAAAAAAAABBwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-10-19T17:22:16.768Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 31,
+              "Title": "JokiAutomation1.csproj",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\JokiAutomation1.csproj",
+              "RelativeDocumentMoniker": "JokiAutomation\\JokiAutomation1.csproj",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\JokiAutomation1.csproj",
+              "RelativeToolTip": "JokiAutomation\\JokiAutomation1.csproj",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-10-19T17:42:09.699Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 54,
+              "Title": "PositionControlPtzAudioOrchestrator.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\PositionControlPtzAudioOrchestrator.cs",
+              "RelativeDocumentMoniker": "JokiAutomation\\PositionControlPtzAudioOrchestrator.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\PositionControlPtzAudioOrchestrator.cs",
+              "RelativeToolTip": "JokiAutomation\\PositionControlPtzAudioOrchestrator.cs",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-19T17:22:16.458Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 46,
+              "Title": "PositionControlProfileMapper.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\PositionControlProfileMapper.cs",
+              "RelativeDocumentMoniker": "JokiAutomation\\PositionControlProfileMapper.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\PositionControlProfileMapper.cs",
+              "RelativeToolTip": "JokiAutomation\\PositionControlProfileMapper.cs",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-19T17:22:16.495Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 55,
+              "Title": "RasPiCommandExecution.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\RasPiCommandExecution.cs",
+              "RelativeDocumentMoniker": "JokiAutomation\\RasPiCommandExecution.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\RasPiCommandExecution.cs",
+              "RelativeToolTip": "JokiAutomation\\RasPiCommandExecution.cs",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-19T17:22:16.501Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 33,
+              "Title": "RasPi.Async.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\RasPi.Async.cs",
+              "RelativeDocumentMoniker": "JokiAutomation\\RasPi.Async.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\RasPi.Async.cs",
+              "RelativeToolTip": "JokiAutomation\\RasPi.Async.cs",
+              "ViewState": "AgIAAOcBAAAAAAAAAIBJwBcCAAAUAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-19T17:22:16.52Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 32,
+              "Title": "PositionControl.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\PositionControl.cs",
+              "RelativeDocumentMoniker": "JokiAutomation\\PositionControl.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\PositionControl.cs",
+              "RelativeToolTip": "JokiAutomation\\PositionControl.cs",
+              "ViewState": "AgIAAKMBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-19T17:22:16.763Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 34,
-              "Title": "Form1.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.cs",
-              "RelativeDocumentMoniker": "JokiAutomation\\Form1.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.cs",
-              "RelativeToolTip": "JokiAutomation\\Form1.cs",
-              "ViewState": "AgIAAB0EAAAAAAAAAIBJwDACAAA+AAAAAAAAAA==",
+              "Title": "AssemblyInfo.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Properties\\AssemblyInfo.cs",
+              "RelativeDocumentMoniker": "JokiAutomation\\Properties\\AssemblyInfo.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Properties\\AssemblyInfo.cs",
+              "RelativeToolTip": "JokiAutomation\\Properties\\AssemblyInfo.cs",
+              "ViewState": "AgIAACUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-03T14:43:29.469Z"
+              "WhenOpened": "2026-10-19T17:22:16.514Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 35,
-              "Title": "Program.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Program.cs",
-              "RelativeDocumentMoniker": "JokiAutomation\\Program.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Program.cs",
-              "RelativeToolTip": "JokiAutomation\\Program.cs",
-              "ViewState": "AgIAANIGAAAAAAAAAABgwCQEAAAUAAAAAAAAAA==",
+              "Title": "RasPi.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\RasPi.cs",
+              "RelativeDocumentMoniker": "JokiAutomation\\RasPi.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\RasPi.cs",
+              "RelativeToolTip": "JokiAutomation\\RasPi.cs",
+              "ViewState": "AgIAAEMCAAAAAAAAAAAAAN0AAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-03T04:09:48.804Z"
+              "WhenOpened": "2026-10-19T17:22:16.711Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 36,
+              "Title": "Form1.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.cs",
+              "RelativeDocumentMoniker": "JokiAutomation\\Form1.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.cs",
+              "RelativeToolTip": "JokiAutomation\\Form1.cs",
+              "ViewState": "AgIAACcFAAAAAAAAAIBJwHcCAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-19T17:22:16.508Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 47,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Program.cs",
+              "RelativeDocumentMoniker": "JokiAutomation\\Program.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Program.cs",
+              "RelativeToolTip": "JokiAutomation\\Program.cs",
+              "ViewState": "AgIAANIGAAAAAAAAAABgwCQEAAAUAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-19T17:22:16.716Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 40,
               "Title": "App.xaml.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\App.xaml.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\App.xaml.cs",
               "RelativeDocumentMoniker": "CanonRemoteControl\\App.xaml.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\App.xaml.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\App.xaml.cs",
               "RelativeToolTip": "CanonRemoteControl\\App.xaml.cs",
               "ViewState": "AgIAAAsBAAAAAAAAAABBwPwAAAAqAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-01T04:01:23.441Z"
+              "WhenOpened": "2026-10-19T17:22:16.719Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 48,
               "Title": "Pipeline_Phase_Status.md",
               "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Pipeline_Phase_Status.md",
+              "RelativeDocumentMoniker": "JokiAutomation\\Pipeline_Phase_Status.md",
               "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Pipeline_Phase_Status.md",
-              "ViewState": "AgIAAGYAAAAAAAAAAABBwHgAAAAAAAAAAAAAAA==",
+              "RelativeToolTip": "JokiAutomation\\Pipeline_Phase_Status.md",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-09-04T18:22:40.201Z"
+              "WhenOpened": "2026-10-19T17:22:16.726Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 37,
+              "DocumentIndex": 49,
               "Title": "AudioMix.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\AudioMix.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\AudioMix.cs",
               "RelativeDocumentMoniker": "JokiAutomation\\AudioMix.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\AudioMix.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\AudioMix.cs",
               "RelativeToolTip": "JokiAutomation\\AudioMix.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAABBwAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-04T04:46:15.996Z"
+              "WhenOpened": "2026-10-19T17:22:16.729Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 38,
+              "DocumentIndex": 50,
               "Title": "Form1.AudioProfile.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.AudioProfile.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.AudioProfile.cs",
               "RelativeDocumentMoniker": "JokiAutomation\\Form1.AudioProfile.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.AudioProfile.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.AudioProfile.cs",
               "RelativeToolTip": "JokiAutomation\\Form1.AudioProfile.cs",
-              "ViewState": "AgIAANcAAAAAAAAAAABBwAAAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAABEBAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-03T17:55:01.815Z"
+              "WhenOpened": "2026-10-19T17:22:16.734Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 39,
+              "DocumentIndex": 51,
               "Title": "EventTimer.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\EventTimer.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\EventTimer.cs",
               "RelativeDocumentMoniker": "JokiAutomation\\EventTimer.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\EventTimer.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\EventTimer.cs",
               "RelativeToolTip": "JokiAutomation\\EventTimer.cs",
               "ViewState": "AgIAAFAAAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-03T14:44:12.235Z"
+              "WhenOpened": "2026-10-19T17:22:16.739Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 40,
+              "DocumentIndex": 52,
               "Title": "Form1.Designer.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.Designer.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.Designer.cs",
               "RelativeDocumentMoniker": "JokiAutomation\\Form1.Designer.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.Designer.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.Designer.cs",
               "RelativeToolTip": "JokiAutomation\\Form1.Designer.cs",
               "ViewState": "AgIAAFUAAAAAAAAAAABBwAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-03T14:43:46.177Z"
+              "WhenOpened": "2026-10-19T17:22:16.744Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 53,
+              "Title": "LogData.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\LogData.cs",
+              "RelativeDocumentMoniker": "JokiAutomation\\LogData.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\LogData.cs",
+              "RelativeToolTip": "JokiAutomation\\LogData.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAABRwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-19T17:22:16.749Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 41,
-              "Title": "LogData.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\LogData.cs",
-              "RelativeDocumentMoniker": "JokiAutomation\\LogData.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\LogData.cs",
-              "RelativeToolTip": "JokiAutomation\\LogData.cs",
-              "ViewState": "AgIAAAYAAAAAAAAAAABRwAAAAAAAAAAAAAAAAA==",
+              "Title": "Form1.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\EventTimer\\Form1.cs",
+              "RelativeDocumentMoniker": "EventTimer\\Form1.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\EventTimer\\Form1.cs",
+              "RelativeToolTip": "EventTimer\\Form1.cs",
+              "ViewState": "AgIAAIIEAAAAAAAAAIBZwGMBAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-03T14:41:32.692Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 42,
-              "Title": "RasPi.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\JokiAutomation\\RasPi.cs",
-              "RelativeDocumentMoniker": "JokiAutomation\\JokiAutomation\\RasPi.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\JokiAutomation\\RasPi.cs",
-              "RelativeToolTip": "JokiAutomation\\JokiAutomation\\RasPi.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-01T15:54:54.081Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 43,
-              "Title": "AudioMix.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\JokiAutomation\\AudioMix.cs",
-              "RelativeDocumentMoniker": "JokiAutomation\\JokiAutomation\\AudioMix.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\JokiAutomation\\AudioMix.cs",
-              "RelativeToolTip": "JokiAutomation\\JokiAutomation\\AudioMix.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-01T15:51:27.514Z"
+              "WhenOpened": "2026-10-22T04:51:14.944Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 44,
-              "Title": "Form1.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\EventTimer\\Form1.cs",
-              "RelativeDocumentMoniker": "EventTimer\\Form1.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\EventTimer\\Form1.cs",
-              "RelativeToolTip": "EventTimer\\Form1.cs",
-              "ViewState": "AgIAAIIEAAAAAAAAAIBZwGMBAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-01T15:28:14.982Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 45,
-              "Title": "PositionControl.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\PositionControl.cs",
-              "RelativeDocumentMoniker": "JokiAutomation\\PositionControl.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\PositionControl.cs",
-              "RelativeToolTip": "JokiAutomation\\PositionControl.cs",
-              "ViewState": "AgIAAGUBAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-01T05:40:45.903Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 32,
-              "Title": "CanonRemoteControl1.csproj",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\CanonRemoteControl1.csproj",
-              "RelativeDocumentMoniker": "CanonRemoteControl\\CanonRemoteControl1.csproj",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\CanonRemoteControl1.csproj",
-              "RelativeToolTip": "CanonRemoteControl\\CanonRemoteControl1.csproj",
-              "ViewState": "AgIAAEMAAAAAAAAAAABBwAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2026-09-01T04:01:37.159Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 46,
               "Title": "Network.cfg",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Network.cfg",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Network.cfg",
               "RelativeDocumentMoniker": "JokiAutomation\\Network.cfg",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Network.cfg",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Network.cfg",
               "RelativeToolTip": "JokiAutomation\\Network.cfg",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAC4AAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAACAAAAAAAAAAAABBwCsAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-08-28T17:45:42.573Z"
+              "WhenOpened": "2026-10-19T17:22:16.772Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 47,
+              "DocumentIndex": 42,
               "Title": "MainWindow.xaml.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\MainWindow.xaml.cs",
+              "DocumentMoniker": "D:\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\MainWindow.xaml.cs",
               "RelativeDocumentMoniker": "CanonRemoteControl\\MainWindow.xaml.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\MainWindow.xaml.cs",
+              "ToolTip": "D:\\JoKiAutomation\\JokiAutomation\\CanonRemoteControl\\MainWindow.xaml.cs",
               "RelativeToolTip": "CanonRemoteControl\\MainWindow.xaml.cs",
               "ViewState": "AgIAAHYAAAAAAAAAAAAgwAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-01T04:01:23.452Z"
+              "WhenOpened": "2026-10-19T17:22:16.773Z"
             }
           ]
         }

@@ -153,7 +153,11 @@ namespace JokiAutomation
                 }
 
                 DateTime queuedAtUtc = DateTime.UtcNow;
-                QueueAudioProfileDispatch(commandID, requestedName, source, effectiveDelay, _activeCommandRequestId.Value, queuedAtUtc);
+                // Expose the completion Task for THIS specific audio segment so that callers
+                // which require correctness (e.g. the CLI/CommandInterpreter path) can await
+                // it before reporting command success, without blocking the parallel
+                // visual/PTZ/ATEM work that proceeds immediately after this method returns.
+                _pendingAudioCompletionTask = QueueAudioProfileDispatch(commandID, requestedName, source, effectiveDelay, _activeCommandRequestId.Value, queuedAtUtc);
                 _logDat?.sendInfoMessage(
                     $"JokiAutomation\n[AUDIO_DISPATCH_QUEUED] Command=30 ID={commandID} RequestId='{_activeCommandRequestId.Value}' QueuedAtUtc='{queuedAtUtc:O}'");
                 _logDat?.sendInfoMessage(
@@ -183,6 +187,16 @@ namespace JokiAutomation
             return ApplyAudioProfileByNameAsync(profileName, postSendDelay, cancellationToken);
         }
 
+        /// <summary>
+        /// Queues an audio profile dispatch and immediately returns once the job is
+        /// enqueued onto the shared background pipeline, WITHOUT waiting for it to
+        /// complete. This preserves parallelism with the visual/PTZ/ATEM work that the
+        /// caller performs right after this returns. The completion Task of THIS specific
+        /// audio segment is exposed via <see cref="_pendingAudioCompletionTask"/> so that
+        /// CommandInterpreterAsync can await it once, at the actual CLI lifecycle end
+        /// point (after all parallel work of the command has finished), before reporting
+        /// success.
+        /// </summary>
         private Task<bool> QueueAudioProfileByNameAsync(
             string profileName,
             TimeSpan? postSendDelay = null,
@@ -191,7 +205,16 @@ namespace JokiAutomation
             return ApplyAudioProfileByNameAsync(profileName, postSendDelay, cancellationToken, waitForCompletion: false);
         }
 
-        private void QueueAudioProfileDispatch(
+        /// <summary>
+        /// Queues an audio profile dispatch onto the shared, serialized background pipeline
+        /// (_audioPipelineTail) so that audio for different commands never races against
+        /// itself, while still running in parallel to the visual/PTZ/ATEM work of the
+        /// calling command. Returns the Task representing THIS specific audio segment so
+        /// that callers that need a correctness guarantee (e.g. the CLI/CommandInterpreter
+        /// path) can await it for completion/failure, without having to drain the whole
+        /// shared pipeline and without breaking the shared tail on failure.
+        /// </summary>
+        private Task QueueAudioProfileDispatch(
             int commandID,
             string requestedName,
             string source,
@@ -199,6 +222,8 @@ namespace JokiAutomation
             string requestId,
             DateTime queuedAtUtc)
         {
+            var segmentCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
             lock (_audioPipelineSync)
             {
                 _audioPipelineTail = _audioPipelineTail.ContinueWith(async _ =>
@@ -214,6 +239,7 @@ namespace JokiAutomation
                             $"JokiAutomation\n[AUDIO_PROFILE_COMPLETED] Profile=\"{requestedName}\" Source=\"{source}\" RequestId='{requestId}' Result=\"SuccessBackground\"");
                         _logDat?.sendInfoMessage(
                             $"JokiAutomation\n[PIPE_PARALLEL] AudioBackgroundCompleted RequestId='{requestId}' Profile='{requestedName}' CommandId={commandID}");
+                        segmentCompletion.TrySetResult(true);
                     }
                     catch (Exception ex)
                     {
@@ -221,8 +247,30 @@ namespace JokiAutomation
                             $"JokiAutomation\n[AUDIO] PROFILE_FAILED Profile=\"{requestedName}\" Source=\"{source}\" RequestId='{requestId}' Error=\"{ex.Message}\"");
                         _logDat?.sendInfoMessage(
                             $"JokiAutomation\n[AUDIO_PROFILE_COMPLETED] Profile=\"{requestedName}\" Source=\"{source}\" RequestId='{requestId}' Result=\"FailedBackground\"");
+                        // Do not fault the shared pipeline tail - subsequent queued profiles
+                        // must still run. The failure is surfaced via segmentCompletion only.
+                        segmentCompletion.TrySetException(ex);
                     }
                 }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
+            }
+
+            return segmentCompletion.Task;
+        }
+
+        /// <summary>
+        /// Awaits (and clears) the completion Task of the most recently queued audio
+        /// segment, if any. Consuming it here - once, at the end of
+        /// CommandInterpreterAsync - lets audio run in parallel with the visual/PTZ/ATEM
+        /// work of the current command while still ensuring the CLI only reports success
+        /// once that audio request has actually finished; an audio failure/exception
+        /// propagates to the caller (and thus into CommandExitCodes.CommandFailed).
+        /// </summary>
+        private async Task AwaitPendingAudioCompletionAsync()
+        {
+            Task audioCompletionTask = Interlocked.Exchange(ref _pendingAudioCompletionTask, null);
+            if (audioCompletionTask != null)
+            {
+                await audioCompletionTask.ConfigureAwait(true);
             }
         }
     }

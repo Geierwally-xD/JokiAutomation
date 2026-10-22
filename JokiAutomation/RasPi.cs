@@ -15,6 +15,60 @@ namespace JokiAutomation
 {
     partial class RasPi
     {
+        private readonly IRasPiCommandExecutor _commandExecutor;
+        private string _testIpAddress;
+        private string _testUsername;
+        private string _testPassword;
+        private Action<string> _testLogSink;
+
+        public RasPi()
+            : this(new SshNetRasPiCommandExecutor())
+        {
+        }
+
+        internal RasPi(IRasPiCommandExecutor commandExecutor)
+        {
+            _commandExecutor = commandExecutor ?? throw new ArgumentNullException(nameof(commandExecutor));
+        }
+
+        internal void SetConnectionSettingsForTests(string host, string username, string password)
+        {
+            _testIpAddress = host;
+            _testUsername = username;
+            _testPassword = password;
+        }
+
+        internal void SetLogSinkForTests(Action<string> logSink)
+        {
+            _testLogSink = logSink;
+        }
+
+        private void LogRasPiMessage(string message)
+        {
+            _rasPiForm?._logDat?.sendInfoMessage(message);
+            _testLogSink?.Invoke(message);
+        }
+
+        private string ResolveRaspberryPiIpAddress()
+        {
+            return !string.IsNullOrWhiteSpace(_testIpAddress)
+                ? _testIpAddress
+                : GetRaspberryPiIpFromNetwork();
+        }
+
+        private string ResolveRaspberryPiUsername()
+        {
+            return !string.IsNullOrWhiteSpace(_testUsername)
+                ? _testUsername
+                : _rasPiConfig[1];
+        }
+
+        private string ResolveRaspberryPiPassword()
+        {
+            return !string.IsNullOrWhiteSpace(_testPassword)
+                ? _testPassword
+                : _rasPiConfig[2];
+        }
 
         public void initRasPi(Form1 winForm)
         {
@@ -524,5 +578,104 @@ namespace JokiAutomation
             Environment.GetEnvironmentVariable("JokiAutomation", EnvironmentVariableTarget.Machine);
         static private string[] _rasPiConfig = { "", "pi", "raspberry" }; // IP loaded from Network.cfg, default login data
         private readonly SemaphoreSlim _rasPiResetSemaphore = new SemaphoreSlim(1, 1);
+    }
+
+    internal interface IRasPiCommandExecutor
+    {
+        Task<RasPiCommandExecutionResult> ExecuteAsync(
+            string host,
+            int port,
+            string username,
+            string password,
+            string command,
+            TimeSpan timeout,
+            CancellationToken cancellationToken);
+    }
+
+    internal sealed class RasPiCommandExecutionResult
+    {
+        public int? ExitCode { get; set; }
+        public string StandardOutput { get; set; }
+        public string StandardError { get; set; }
+    }
+
+    internal sealed class RasPiCommandFailedException : InvalidOperationException
+    {
+        public RasPiCommandFailedException(int command, int id, int exitCode)
+            : base($"RasPi command failed (command={command}, id={id}, exit={exitCode})")
+        {
+            Command = command;
+            Id = id;
+            ExitCode = exitCode;
+        }
+
+        public RasPiCommandFailedException(int command, int id, string message)
+            : base(message)
+        {
+            Command = command;
+            Id = id;
+        }
+
+        public int Command { get; }
+
+        public int Id { get; }
+
+        public int? ExitCode { get; }
+    }
+
+    internal sealed class SshNetRasPiCommandExecutor : IRasPiCommandExecutor
+    {
+        public async Task<RasPiCommandExecutionResult> ExecuteAsync(
+            string host,
+            int port,
+            string username,
+            string password,
+            string command,
+            TimeSpan timeout,
+            CancellationToken cancellationToken)
+        {
+            return await Task.Run(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var keybAuth = new KeyboardInteractiveAuthenticationMethod(username);
+                var pauth = new PasswordAuthenticationMethod(username, password);
+                keybAuth.AuthenticationPrompt += (sender, e) =>
+                {
+                    foreach (AuthenticationPrompt prompt in e.Prompts)
+                    {
+                        if (prompt.Request.IndexOf("Password:", StringComparison.InvariantCultureIgnoreCase) != -1)
+                        {
+                            prompt.Response = password;
+                        }
+                    }
+                };
+
+                var connectionInfo = new ConnectionInfo(host, port, username, pauth, keybAuth)
+                {
+                    Timeout = timeout
+                };
+
+                using (var sshClient = new SshClient(connectionInfo))
+                {
+                    sshClient.KeepAliveInterval = TimeSpan.FromSeconds(30);
+                    sshClient.Connect();
+
+                    var cmd = sshClient.CreateCommand(command);
+                    cmd.CommandTimeout = timeout;
+                    cmd.Execute();
+
+                    var result = new RasPiCommandExecutionResult
+                    {
+                        ExitCode = cmd.ExitStatus.HasValue ? cmd.ExitStatus.Value : (int?)null,
+                        StandardOutput = cmd.Result,
+                        StandardError = cmd.Error
+                    };
+
+                    sshClient.Disconnect();
+                    return result;
+                }
+            }, cancellationToken);
+        }
     }
 }

@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -68,11 +69,17 @@ namespace JokiAutomation
         private const string CANON_CAMERA_CONFIG_KEY = "CANON_CRN100";
         private const string PTZ_PRESET_RECALL_PATH_CONFIG_KEY = "PTZ_PRESET_RECALL_PATH";
         private const string PTZ_PRESET_RECALL_PATHS_CONFIG_KEY = "PTZ_PRESET_RECALL_PATHS";
-        private const string DROPBOX_LOG_PATH_CONFIG_KEY = "DROPBOX_LOG_PATH";
+        // Dropbox API v2 Configuration
+        private const string DROPBOX_APP_KEY_CONFIG_KEY = "DROPBOX_APP_KEY";
+        private const string DROPBOX_APP_SECRET_CONFIG_KEY = "DROPBOX_APP_SECRET";
+        private const string DROPBOX_REFRESH_TOKEN_CONFIG_KEY = "DROPBOX_REFRESH_TOKEN";
+
         private bool _isPtzCameraMode;
         private ICanonPtzController _canonPtzController;
         private string _ptzPresetRecallPath;
-        private string _dropBoxLogDirectory;
+        private string _dropboxAppKey;
+        private string _dropboxAppSecret;
+        private string _dropboxRefreshToken;
         private List<string> _ptzPresetRecallFallbackPaths = new List<string>();
 
         private volatile string _currentCommand = string.Empty;
@@ -249,22 +256,25 @@ namespace JokiAutomation
                         continue;
                     }
 
-                    // DropBox log export path configuration
-                    if (deviceName.Equals(DROPBOX_LOG_PATH_CONFIG_KEY, StringComparison.OrdinalIgnoreCase))
+                    // Dropbox API v2 configuration
+                    if (deviceName.Equals(DROPBOX_APP_KEY_CONFIG_KEY, StringComparison.OrdinalIgnoreCase))
                     {
-                        int separatorIndex = line.IndexOf(';');
-                        _dropBoxLogDirectory = separatorIndex >= 0
-                            ? line.Substring(separatorIndex + 1).Trim()
-                            : parts[1].Trim();
+                        _dropboxAppKey = parts[1].Trim();
+                        _logDat?.sendInfoMessage("JokiAutomation\nDROPBOX_APP_KEY konfiguriert.");
+                        continue;
+                    }
 
-                        if (!string.IsNullOrWhiteSpace(_dropBoxLogDirectory))
-                        {
-                            _logDat?.sendInfoMessage($"JokiAutomation\nDROPBOX_LOG_PATH = {_dropBoxLogDirectory}");
-                        }
-                        else
-                        {
-                            _logDat?.sendInfoMessage("JokiAutomation\nDROPBOX_LOG_PATH ist leer - Log-Export wird übersprungen.");
-                        }
+                    if (deviceName.Equals(DROPBOX_APP_SECRET_CONFIG_KEY, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _dropboxAppSecret = parts[1].Trim();
+                        _logDat?.sendInfoMessage("JokiAutomation\nDROPBOX_APP_SECRET konfiguriert.");
+                        continue;
+                    }
+
+                    if (deviceName.Equals(DROPBOX_REFRESH_TOKEN_CONFIG_KEY, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _dropboxRefreshToken = parts[1].Trim();
+                        _logDat?.sendInfoMessage("JokiAutomation\nDROPBOX_REFRESH_TOKEN konfiguriert.");
                         continue;
                     }
 
@@ -558,18 +568,19 @@ namespace JokiAutomation
 
         private async Task ExportLogsToDropBoxAsync()
         {
-            if (string.IsNullOrWhiteSpace(_dropBoxLogDirectory))
+            if (string.IsNullOrWhiteSpace(_dropboxAppKey) || 
+                string.IsNullOrWhiteSpace(_dropboxAppSecret) || 
+                string.IsNullOrWhiteSpace(_dropboxRefreshToken))
             {
-                _logDat?.sendInfoMessage("JokiAutomation\nAusschaltsequenz: DROPBOX_LOG_PATH nicht konfiguriert - Log-Export übersprungen.");
+                _logDat?.sendInfoMessage("JokiAutomation\nAusschaltsequenz: Dropbox API-Zugangsdaten nicht konfiguriert - Log-Export übersprungen.");
                 return;
             }
 
+            string filePrefix = DateTime.Now.ToString("yyyyMMdd_HHmmss") + "_";
+            string localTempDirectory = Path.Combine(Path.GetTempPath(), "JokiAutomationLogs");
+
             try
             {
-                string folderName = DateTime.Now.ToString("yyyyMMdd_HHmmss") + "JoKiLog";
-                string targetDirectory = Path.Combine(_dropBoxLogDirectory, folderName);
-                Directory.CreateDirectory(targetDirectory);
-
                 string appDirectory = AppDomain.CurrentDomain.BaseDirectory;
                 var localLogFiles = Directory.GetFiles(appDirectory, "*", SearchOption.TopDirectoryOnly)
                     .Where(file =>
@@ -583,29 +594,53 @@ namespace JokiAutomation
                     })
                     .ToList();
 
-                int localCount = 0;
-                foreach (string file in localLogFiles)
-                {
-                    string targetFile = Path.Combine(targetDirectory, Path.GetFileName(file));
-                    File.Copy(file, targetFile, true);
-                    localCount++;
-                }
-
+                Directory.CreateDirectory(localTempDirectory);
                 int rasPiCount = 0;
                 try
                 {
-                    rasPiCount = await _infraredControl.DownloadRaspberryPiLogsAsync(targetDirectory);
+                    rasPiCount = await _infraredControl.DownloadRaspberryPiLogsAsync(localTempDirectory);
                 }
                 catch (Exception ex)
                 {
-                    _logDat?.sendInfoMessage($"JokiAutomation\nAusschaltsequenz: RasPi-Logs konnten nicht kopiert werden: {ex.Message}");
+                    _logDat?.sendInfoMessage($"JokiAutomation\nAusschaltsequenz: RasPi-Logs konnten nicht heruntergeladen werden: {ex.Message}");
                 }
 
-                _logDat?.sendInfoMessage($"JokiAutomation\nAusschaltsequenz: Log-Export nach '{targetDirectory}' abgeschlossen (Lokal={localCount}, RasPi={rasPiCount}).");
+                using (var httpClient = new HttpClient())
+                {
+                    var uploader = new DropboxApiUploader(httpClient, _dropboxAppKey, _dropboxAppSecret, _dropboxRefreshToken);
+                    int localUploadCount = 0;
+                    foreach (string file in localLogFiles)
+                    {
+                        string targetFileName = filePrefix + Path.GetFileName(file);
+                        if (await uploader.UploadFileAsync(file, targetFileName))
+                        {
+                            localUploadCount++;
+                        }
+                    }
+
+                    int rasPiUploadCount = 0;
+                    foreach (string file in Directory.GetFiles(localTempDirectory, "*", SearchOption.TopDirectoryOnly))
+                    {
+                        string targetFileName = filePrefix + "RasPi_" + Path.GetFileName(file);
+                        if (await uploader.UploadFileAsync(file, targetFileName))
+                        {
+                            rasPiUploadCount++;
+                        }
+                    }
+
+                    _logDat?.sendInfoMessage($"JokiAutomation\nAusschaltsequenz: Log-Export zu Dropbox abgeschlossen (Lokal={localUploadCount}/{localLogFiles.Count}, RasPi={rasPiUploadCount}/{rasPiCount}).");
+                }
             }
             catch (Exception ex)
             {
                 _logDat?.sendInfoMessage($"JokiAutomation\nAusschaltsequenz: Fehler beim Log-Export nach DropBox: {ex.Message}");
+            }
+            finally
+            {
+                if (Directory.Exists(localTempDirectory))
+                {
+                    Directory.Delete(localTempDirectory, true);
+                }
             }
         }
 
@@ -1058,23 +1093,35 @@ namespace JokiAutomation
                     case "PositionControl":
                         if (commands.Length >= 4 && !string.IsNullOrEmpty(commands[3]))
                         {
-                            char firstChar = char.ToUpper(commands[3][0]);
+                            PositionControlProfileMapping profileMapping;
+                            try
+                            {
+                                profileMapping = PositionControlProfileMapper.MapOrThrow(commands[3]);
+                            }
+                            catch (ArgumentException ex)
+                            {
+                                _logDat?.sendInfoMessage($"JokiAutomation\n{ex.Message}");
+                                exitCode = CommandExitCodes.InvalidArguments;
+                                return exitCode;
+                            }
+
                             await DisablePictureInPictureAsync();
 
                             _logDat?.sendInfoMessage(
-                                $"JokiAutomation\nPositionControl: Position={commands[2]}, Profil={commands[3]}, Modus={firstChar}");
+                                $"JokiAutomation\nPositionControl: Position={commands[2]}, Profil={commands[3]}, Modus={profileMapping.CameraCode}");
 
                             // The first profile character selects the cover image during PTZ movement.
                             // After a successful PTZ move, the sequence always returns to Input 3.
                             ATEMInput movementInput;
                             ATEMInput finalInput = ATEMInput.CanonPtzMain;
-                            switch (firstChar)
+                            switch (profileMapping.CameraCode)
                             {
                                 case 'G': movementInput = ATEMInput.GoPro;            break;
                                 case 'K': movementInput = ATEMInput.CanonPtzPreacher; break;
                                 case 'L': movementInput = ATEMInput.Laptop;           break;
-                                case 'A':
-                                default:  movementInput = ATEMInput.CanonPtzMain;     break;
+                                case 'A': movementInput = ATEMInput.CanonPtzMain;     break;
+                                default:
+                                    throw new InvalidOperationException($"Nicht unterstützter PositionControl-Kameracode: {profileMapping.CameraCode}");
                             }
 
                             // Resolve ListBox position index
@@ -1097,21 +1144,15 @@ namespace JokiAutomation
 
                             if (_isPtzCameraMode && _canonPtzController != null)
                             {
-                                // AudioMix controls the audio profile through Raspberry Pi.
-                                int audioProfileId = GetAudioProfileId(commands[3]);
-                                int audioCommandId = AudioMix.AM_PROFILE + audioProfileId;
-                                await _audioMix.ExecuteAudioAsync(audioCommandId);
+                                var ptzOrchestrator = new PositionControlPtzAudioOrchestrator(
+                                    commandId => _audioMix.ExecuteAudioAsync(commandId),
+                                    (positionId, coverInput, targetInput) => ExecuteCameraSwitchSequenceAsync(positionId, coverInput, targetInput),
+                                    message => _logDat?.sendInfoMessage(message));
 
-                                _logDat?.sendInfoMessage(
-                                    $"JokiAutomation\nAudio-Profil an Raspberry Pi gesendet - " +
-                                    $"Profil={commands[3][1]}, ID={audioProfileId}, CommandID={audioCommandId}");
-
-                                // Cover the PTZ movement, wait for the centralized settling time,
-                                // then return to the positioned PTZ main camera on Input 3.
-                                await ExecuteCameraSwitchSequenceAsync(
-                                    seqPositionId,
-                                    movementInput,
-                                    finalInput);
+                                await ptzOrchestrator.ExecuteAsync(
+                                    commands[2],
+                                    commands[3],
+                                    listBoxCamPosControl.Items.Cast<object>().Select(item => item?.ToString()).ToList());
                             }
                             else
                             {
@@ -1270,6 +1311,13 @@ namespace JokiAutomation
                         _logDat?.sendInfoMessage($"JokiAutomation\nUnbekanntes Kommando: '{cmd}'");
                         break;
                 }
+
+                // Audio for this command (if any) was dispatched in parallel to the
+                // visual/PTZ/ATEM work above. Await its completion now, at the actual CLI
+                // lifecycle end, so that success is only reported once the audio request
+                // has actually finished; failures/exceptions propagate into the command
+                // result via the catch block below.
+                await AwaitPendingAudioCompletionAsync();
 
                 _logDat?.sendInfoMessage($"JokiAutomation\n✓ Kommando '{cmd}' erfolgreich abgeschlossen");
                 exitCode = CommandExitCodes.Success;
@@ -2232,6 +2280,7 @@ namespace JokiAutomation
         private readonly SemaphoreSlim _visualCommandSemaphore = new SemaphoreSlim(1, 1);
         private readonly object _audioPipelineSync = new object();
         private Task _audioPipelineTail = Task.CompletedTask;
+        private volatile Task _pendingAudioCompletionTask;
         private volatile bool _startupInitCompleted;
         private string _User = "DefaultUser"; // set user
         private string _requestedUser = "DefaultUser"; // requestet user
@@ -2515,27 +2564,6 @@ private void moveCamPos_Click(object sender, EventArgs e)
     catch (Exception ex)
     {
         _logDat?.sendInfoMessage($"JokiAutomation\nFehler beim Bewegen der Position:\n{ex.Message}\n{ex.StackTrace}");
-    }
-}
-
-/// <summary>
-/// Maps the second PositionControl profile character to the AudioMix profile index.
-/// D=Diashow(0), G=Gottesdienst(1), P=Predigt(2), T=Text(3), B=Band(4).
-/// </summary>
-private static int GetAudioProfileId(string profile)
-{
-    if (string.IsNullOrWhiteSpace(profile) || profile.Length != 2)
-        throw new ArgumentException("PositionControl-Profil muss genau zwei Zeichen enthalten.", nameof(profile));
-
-    switch (char.ToUpperInvariant(profile[1]))
-    {
-        case 'D': return 0;
-        case 'G': return 1;
-        case 'P': return 2;
-        case 'T': return 3;
-        case 'B': return 4;
-        default:
-            throw new ArgumentException($"Unbekanntes Audio-Profil: {profile[1]}", nameof(profile));
     }
 }
 

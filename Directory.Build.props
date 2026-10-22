@@ -1,6 +1,6 @@
 <Project>
     <PropertyGroup>
         <Deterministic>true</Deterministic>
-        <PathMap>$(SolutionDir)=/src</PathMap>
+        <PathMap Condition="'$(SolutionDir)' != ''">$(SolutionDir)=/src</PathMap>
     </PropertyGroup>
 </Project>

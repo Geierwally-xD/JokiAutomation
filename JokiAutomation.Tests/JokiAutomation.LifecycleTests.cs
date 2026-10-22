@@ -271,8 +271,13 @@ namespace JokiAutomation.Tests
             }
 
             candidates.Add(Path.Combine(testDirectory, "JokiAutomation.exe"));
-            candidates.Add(Path.GetFullPath(Path.Combine(testDirectory, "..", "..", "..", "..", "JokiAutomation", "bin", "x64", "Release", "JokiAutomation.exe")));
-            candidates.Add(Path.GetFullPath(Path.Combine(testDirectory, "..", "..", "..", "..", "JokiAutomation", "bin", "x64", "Debug", "JokiAutomation.exe")));
+
+            string solutionRoot = FindSolutionRoot(testDirectory);
+            if (solutionRoot != null)
+            {
+                candidates.Add(Path.Combine(solutionRoot, "JokiAutomation", "bin", "x64", "Release", "JokiAutomation.exe"));
+                candidates.Add(Path.Combine(solutionRoot, "JokiAutomation", "bin", "x64", "Debug", "JokiAutomation.exe"));
+            }
 
             string existingCandidate = candidates
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -286,6 +291,22 @@ namespace JokiAutomation.Tests
             }
 
             return Path.GetFullPath(Path.Combine(testDirectory, "JokiAutomation.exe"));
+        }
+
+        private static string FindSolutionRoot(string startDirectory)
+        {
+            DirectoryInfo directory = new DirectoryInfo(startDirectory);
+            while (directory != null)
+            {
+                if (directory.GetFiles("*.sln").Length > 0)
+                {
+                    return directory.FullName;
+                }
+
+                directory = directory.Parent;
+            }
+
+            return null;
         }
 
         private static void AssertSingleInstanceMutexAvailableOrIgnore()

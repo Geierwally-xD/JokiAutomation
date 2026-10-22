@@ -28,104 +28,97 @@ namespace JokiAutomation
 
             int activeCommands = Interlocked.Increment(ref _activeRasPiCommands);
 
-            _rasPiForm?._logDat?.sendInfoMessage(
+            LogRasPiMessage(
                 $"JokiAutomation\n[RASPI_ASYNC_ENTER] Active={activeCommands} Command={command} Position={id} PID={Process.GetCurrentProcess().Id} TID={Thread.CurrentThread.ManagedThreadId}");
 
             if (activeCommands > 1)
             {
-                _rasPiForm?._logDat?.sendInfoMessage(
+                LogRasPiMessage(
                     $"JokiAutomation\n[RASPI_CONCURRENCY_WARNING] Active={activeCommands} Command={command} Position={id} PID={Process.GetCurrentProcess().Id} TID={Thread.CurrentThread.ManagedThreadId}");
             }
 
-            _rasPiForm?._logDat?.sendInfoMessage(
+            LogRasPiMessage(
                 $"JokiAutomation\n[RASPI_ASYNC_BEGIN] Command={command} Position={id} PID={Process.GetCurrentProcess().Id} TID={Thread.CurrentThread.ManagedThreadId}");
-            _rasPiForm?._logDat?.sendInfoMessage(
+            LogRasPiMessage(
                 $"JokiAutomation\n[RASPI_REQUEST] Command={command} ID={id} PID={Process.GetCurrentProcess().Id} TID={Thread.CurrentThread.ManagedThreadId}");
 
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                string ipAddress = GetRaspberryPiIpFromNetwork();
+                string ipAddress = ResolveRaspberryPiIpAddress();
                 if (string.IsNullOrWhiteSpace(ipAddress))
                 {
                     throw new InvalidOperationException("RaspberryPi_Main IP nicht in Network.cfg gefunden.");
                 }
 
-                string username = _rasPiConfig[1];
-                string password = _rasPiConfig[2];
+                string username = ResolveRaspberryPiUsername();
+                string password = ResolveRaspberryPiPassword();
                 if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
                 {
                     throw new InvalidOperationException("Raspberry Pi Login-Daten fehlen (RaspberryPi.cfg).");
                 }
 
-                await Task.Run(() =>
+                string escapedPassword = password.Replace("'", "'\"'\"'");
+                string remoteCommand = "echo '" + escapedPassword + "' | sudo -S /home/pi/JokiAutomation/RasPiAutomation " + command + " " + id;
+
+                LogRasPiMessage(
+                    $"JokiAutomation\n[RASPI_SSH_SEND] Host='{ipAddress}' Command={command} ID={id}");
+
+                RasPiCommandExecutionResult result = await _commandExecutor.ExecuteAsync(
+                    ipAddress,
+                    22,
+                    username,
+                    password,
+                    remoteCommand,
+                    effectiveTimeout,
+                    cancellationToken);
+
+                if (!string.IsNullOrWhiteSpace(result?.StandardOutput))
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    LogRasPiMessage(result.StandardOutput);
+                }
 
-                    KeyboardInteractiveAuthenticationMethod keybAuth = new KeyboardInteractiveAuthenticationMethod(username);
-                    PasswordAuthenticationMethod pauth = new PasswordAuthenticationMethod(username, password);
-                    keybAuth.AuthenticationPrompt += new EventHandler<Renci.SshNet.Common.AuthenticationPromptEventArgs>(HandleKeyEvent);
+                if (!string.IsNullOrWhiteSpace(result?.StandardError))
+                {
+                    LogRasPiMessage(result.StandardError);
+                }
 
-                    ConnectionInfo connectionInfo = new ConnectionInfo(ipAddress, 22, username, pauth, keybAuth)
-                    {
-                        Timeout = effectiveTimeout
-                    };
+                string exitText = result?.ExitCode.HasValue == true
+                    ? result.ExitCode.Value.ToString()
+                    : "<missing>";
 
-                    using (SshClient sshClient = new SshClient(connectionInfo))
-                    {
-                        sshClient.KeepAliveInterval = TimeSpan.FromSeconds(30);
-                        sshClient.Connect();
+                LogRasPiMessage(
+                    $"JokiAutomation\n[RASPI_SSH_RESULT] Command={command} ID={id} ExitCode={exitText}");
 
-                        string escapedPassword = password.Replace("'", "'\"'\"'");
-                        string remoteCommand = "echo '" + escapedPassword + "' | sudo -S /home/pi/JokiAutomation/RasPiAutomation " + command + " " + id;
+                if (result == null || !result.ExitCode.HasValue)
+                {
+                    throw new RasPiCommandFailedException(command, id, "RasPi command returned no exit status.");
+                }
 
-                        _rasPiForm?._logDat?.sendInfoMessage(
-                            $"JokiAutomation\n[RASPI_SSH_SEND] Host='{ipAddress}' Command={command} ID={id}");
+                if (result.ExitCode.Value != 0)
+                {
+                    throw new RasPiCommandFailedException(command, id, result.ExitCode.Value);
+                }
 
-                        SshCommand cmd = sshClient.CreateCommand(remoteCommand);
-                        cmd.CommandTimeout = effectiveTimeout;
-                        cmd.Execute();
-
-                        int exit = cmd.ExitStatus.HasValue ? cmd.ExitStatus.Value : -1;
-                        string stdout = cmd.Result;
-                        string stderr = cmd.Error;
-
-                        if (!string.IsNullOrWhiteSpace(stdout))
-                        {
-                            _rasPiForm?._logDat?.sendInfoMessage(stdout);
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(stderr))
-                        {
-                            _rasPiForm?._logDat?.sendInfoMessage(stderr);
-                        }
-
-                        _rasPiForm?._logDat?.sendInfoMessage(
-                            $"JokiAutomation\n[RASPI_SSH_RESULT] Command={command} ID={id} ExitCode={exit}");
-                        _rasPiForm?._logDat?.sendInfoMessage(
-                            $"JokiAutomation\n[RASPI_ASYNC_END] Command={command} Position={id} ExitCode={exit} DurationMs={stopwatch.ElapsedMilliseconds} PID={Process.GetCurrentProcess().Id} TID={Thread.CurrentThread.ManagedThreadId}");
-
-                        sshClient.Disconnect();
-
-                        if (exit != 0)
-                        {
-                            throw new InvalidOperationException($"RasPi command failed (exit={exit})");
-                        }
-                    }
-                }, cancellationToken);
+                LogRasPiMessage(
+                    $"JokiAutomation\n[RASPI_ASYNC_END] Command={command} Position={id} ExitCode=0 DurationMs={stopwatch.ElapsedMilliseconds} PID={Process.GetCurrentProcess().Id} TID={Thread.CurrentThread.ManagedThreadId}");
             }
             catch (OperationCanceledException)
             {
-                _rasPiForm?._logDat?.sendInfoMessage(
+                LogRasPiMessage(
                     $"RasPiExecuteAsync CANCELED: command={command}, id={id}, elapsed={stopwatch.ElapsedMilliseconds}ms");
                 throw;
             }
             catch (Exception ex)
             {
-                _rasPiForm?._logDat?.sendInfoMessage(
-                    $"JokiAutomation\n[RASPI_ASYNC_FAIL] Command={command} Position={id} Exception={ex.GetType().Name} Message={ex.Message} DurationMs={stopwatch.ElapsedMilliseconds} PID={Process.GetCurrentProcess().Id} TID={Thread.CurrentThread.ManagedThreadId}");
-                _rasPiForm?._logDat?.sendInfoMessage(
+                string exitCodePart = ex is RasPiCommandFailedException failed && failed.ExitCode.HasValue
+                    ? $" ExitCode={failed.ExitCode.Value}"
+                    : string.Empty;
+
+                LogRasPiMessage(
+                    $"JokiAutomation\n[RASPI_ASYNC_FAIL] Command={command} Position={id}{exitCodePart} Exception={ex.GetType().Name} Message={ex.Message} DurationMs={stopwatch.ElapsedMilliseconds} PID={Process.GetCurrentProcess().Id} TID={Thread.CurrentThread.ManagedThreadId}");
+                LogRasPiMessage(
                     $"RasPiExecuteAsync ERROR: {ex.GetType().Name} - {ex.Message}");
                 throw;
             }
@@ -137,11 +130,11 @@ namespace JokiAutomation
 
                 if (activeCommands < 0)
                 {
-                    _rasPiForm?._logDat?.sendInfoMessage(
+                    LogRasPiMessage(
                         $"JokiAutomation\n[RASPI_ACTIVE_COUNTER_ERROR] Active={activeCommands} Command={command} Position={id} PID={Process.GetCurrentProcess().Id} TID={Thread.CurrentThread.ManagedThreadId}");
                 }
 
-                _rasPiForm?._logDat?.sendInfoMessage(
+                LogRasPiMessage(
                     $"JokiAutomation\n[RASPI_ASYNC_EXIT] Active={activeCommands} Command={command} Position={id} DurationMs={stopwatch.ElapsedMilliseconds} PID={Process.GetCurrentProcess().Id} TID={Thread.CurrentThread.ManagedThreadId}");
             }
         }
@@ -436,6 +429,61 @@ namespace JokiAutomation
                 _rasPiForm?._logDat?.sendInfoMessage($"JokiAutomation\nInitialisierung: Raspberry Pi Zeit auf {timestamp} gesetzt.");
                 return true;
             }, cancellationToken);
+        }
+
+        /// <summary>
+        /// Downloads a single remote text file via SFTP and returns its content.
+        /// Used by hardware regression tests to read logs such as AudioControl.log
+        /// without introducing a second independent SSH stack.
+        /// </summary>
+        public async Task<string> DownloadRemoteTextFileAsync(string remoteFilePath, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(remoteFilePath))
+            {
+                throw new ArgumentException("remoteFilePath must not be empty.", nameof(remoteFilePath));
+            }
+
+            return await Task.Run(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                string ipAddress = ResolveRaspberryPiIpAddress();
+                string username = ResolveRaspberryPiUsername();
+                string password = ResolveRaspberryPiPassword();
+
+                if (string.IsNullOrWhiteSpace(ipAddress) || string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+                {
+                    throw new InvalidOperationException("Raspberry Pi connection settings (IP/username/password) are incomplete.");
+                }
+
+                var auth = new PasswordAuthenticationMethod(username, password);
+                var connectionInfo = new ConnectionInfo(ipAddress, 22, username, auth)
+                {
+                    Timeout = TimeSpan.FromSeconds(20)
+                };
+
+                using (var sftp = new SftpClient(connectionInfo))
+                {
+                    sftp.Connect();
+
+                    if (!sftp.Exists(remoteFilePath))
+                    {
+                        sftp.Disconnect();
+                        throw new FileNotFoundException($"Remote file not found: {remoteFilePath}", remoteFilePath);
+                    }
+
+                    using (var stream = new MemoryStream())
+                    {
+                        sftp.DownloadFile(remoteFilePath, stream);
+                        sftp.Disconnect();
+                        stream.Position = 0;
+                        using (var reader = new StreamReader(stream))
+                        {
+                            return reader.ReadToEnd();
+                        }
+                    }
+                }
+            }, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
