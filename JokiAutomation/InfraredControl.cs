@@ -69,6 +69,19 @@ namespace JokiAutomation
         }
 
         /// <summary>
+        /// Clears Raspberry Pi log files so only data from the next run is collected.
+        /// </summary>
+        public async Task<int> ClearRaspberryPiLogsAsync()
+        {
+            if (_rasPi == null)
+            {
+                throw new InvalidOperationException("Infrared control not initialized. Call InitIR() first.");
+            }
+
+            return await _rasPi.ClearRaspberryPiLogsAsync();
+        }
+
+        /// <summary>
         /// Teach/program a new infrared sequence
         /// Puts Raspberry Pi into learning mode to record new IR command
         /// </summary>

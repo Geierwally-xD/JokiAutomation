@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -147,6 +148,145 @@ namespace JokiAutomation.Tests
             Assert.That(newLog, Does.Contain("Event=PIPE_CONNECT_FAILED"), newLog);
             Assert.That(newLog, Does.Not.Contain("Event=PIPE_ACK_TIMEOUT"), newLog);
             Assert.That(newLog, Does.Not.Contain("Event=PIPE_RESPONSE_TIMEOUT"), newLog);
+        }
+
+        [Test]
+        [Category("Lifecycle")]
+        public async Task Forwarder_DuringPrimaryShutdown_DoesNotEndWithConnectTimeout()
+        {
+            string suffix = Guid.NewGuid().ToString("N");
+            string mutexName = $@"Global\JokiAutomation_Test_{suffix}";
+            string pipeName = $"JokiAutomation.Test.Shutdown.{suffix}";
+            string gateSuffix = $"JokiAutomation.Test.Gate.{suffix}";
+
+            string pipeStoppedEventName = "Global\\" + gateSuffix + ".PipeStopped";
+            string allowMutexReleaseEventName = "Global\\" + gateSuffix + ".AllowMutexRelease";
+
+            EventWaitHandle pipeStoppedEvent = null;
+            EventWaitHandle allowMutexReleaseEvent = null;
+            Process primaryProcess = null;
+            Process forwarderProcess = null;
+
+            try
+            {
+                pipeStoppedEvent = new EventWaitHandle(false, EventResetMode.ManualReset, pipeStoppedEventName);
+                allowMutexReleaseEvent = new EventWaitHandle(false, EventResetMode.ManualReset, allowMutexReleaseEventName);
+
+                string primaryArgs = $"--gated-primary-shutdown --mutex={mutexName} --pipe={pipeName} --gate={gateSuffix} --timeoutMs=10000";
+                var primaryStartInfo = new ProcessStartInfo
+                {
+                    FileName = _exePath,
+                    Arguments = primaryArgs,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+
+                primaryProcess = new Process { StartInfo = primaryStartInfo, EnableRaisingEvents = true };
+                var primaryStdOut = new StringBuilder();
+                var primaryStdErr = new StringBuilder();
+                primaryProcess.OutputDataReceived += (s, e) => { if (e.Data != null) primaryStdOut.AppendLine(e.Data); };
+                primaryProcess.ErrorDataReceived += (s, e) => { if (e.Data != null) primaryStdErr.AppendLine(e.Data); };
+                primaryProcess.Start();
+                primaryProcess.BeginOutputReadLine();
+                primaryProcess.BeginErrorReadLine();
+
+                bool pipeStoppedSignaled = pipeStoppedEvent.WaitOne(TimeSpan.FromSeconds(10));
+                Assert.That(pipeStoppedSignaled, Is.True,
+                    "Primary host did not signal PipeStopped in time." + Environment.NewLine + primaryStdOut + primaryStdErr);
+
+                // Deterministic race window: mutex is still held by the primary host, but its pipe
+                // server has already stopped. A forwarder launched now must not surface a blind
+                // connect-timeout failure (ExitCode 4) just because the primary happens to be mid-shutdown.
+                // We only observe the forwarder's own lifecycle markers up to the point where it has
+                // decided it is no longer blindly failing (PIPE_CONNECT_FAILED -> FORWARDER_EXIT with
+                // ExitCode 4), or has successfully re-evaluated and selected itself as Primary. We do not
+                // let it run a full CLI/Primary session (which would touch real hardware/PTZ/ATEM).
+                var forwarderStartInfo = new ProcessStartInfo
+                {
+                    FileName = _exePath,
+                    Arguments = "ConnectDuringShutdownProbe",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+                forwarderStartInfo.EnvironmentVariables["JOKI_SINGLE_INSTANCE_MUTEX"] = mutexName;
+                forwarderStartInfo.EnvironmentVariables["JOKI_COMMAND_PIPE"] = pipeName;
+
+                var forwarderStdOut = new StringBuilder();
+                var forwarderStdErr = new StringBuilder();
+                var decisionReached = new ManualResetEventSlim(false);
+                object syncRoot = new object();
+
+                forwarderProcess = new Process { StartInfo = forwarderStartInfo, EnableRaisingEvents = true };
+                forwarderProcess.OutputDataReceived += (s, e) =>
+                {
+                    if (e.Data == null) return;
+                    lock (syncRoot)
+                    {
+                        forwarderStdOut.AppendLine(e.Data);
+                        if (e.Data.Contains("FORWARDER_EXIT") || e.Data.Contains("Event=PRIMARY_INSTANCE_SELECTED"))
+                        {
+                            decisionReached.Set();
+                        }
+                    }
+                };
+                forwarderProcess.ErrorDataReceived += (s, e) => { if (e.Data != null) { lock (syncRoot) { forwarderStdErr.AppendLine(e.Data); } } };
+                forwarderProcess.Start();
+                forwarderProcess.BeginOutputReadLine();
+                forwarderProcess.BeginErrorReadLine();
+
+                bool decided = decisionReached.Wait(TimeSpan.FromSeconds(15));
+
+                allowMutexReleaseEvent.Set();
+
+                string combinedForwarderOutput;
+                lock (syncRoot)
+                {
+                    combinedForwarderOutput = forwarderStdOut + Environment.NewLine + forwarderStdErr;
+                }
+
+                Assert.That(decided, Is.True,
+                    "Forwarder did not reach a FORWARDER_EXIT or PRIMARY_INSTANCE_SELECTED decision in time." +
+                    Environment.NewLine + combinedForwarderOutput);
+
+                Assert.That(primaryProcess.WaitForExit(10000), Is.True, "Primary host did not exit in time.");
+
+                bool endedAsBlindConnectFailure = combinedForwarderOutput.Contains("FORWARDER_EXIT") &&
+                    combinedForwarderOutput.Contains("ExitCode=" + CommandExitCodes.PipeConnectFailed) &&
+                    !combinedForwarderOutput.Contains("Event=MUTEX_REEVALUATION_RESULT Reacquired=True");
+
+                Assert.That(endedAsBlindConnectFailure, Is.False,
+                    "Forwarder must not fail with a blind connect-timeout (ExitCode 4) while the primary is mid-shutdown." +
+                    Environment.NewLine + combinedForwarderOutput);
+            }
+            finally
+            {
+                try { allowMutexReleaseEvent?.Set(); } catch { }
+                try
+                {
+                    if (forwarderProcess != null && !forwarderProcess.HasExited)
+                    {
+                        forwarderProcess.Kill();
+                    }
+                }
+                catch { }
+                try
+                {
+                    if (primaryProcess != null && !primaryProcess.HasExited)
+                    {
+                        primaryProcess.Kill();
+                    }
+                }
+                catch { }
+
+                forwarderProcess?.Dispose();
+                primaryProcess?.Dispose();
+                pipeStoppedEvent?.Dispose();
+                allowMutexReleaseEvent?.Dispose();
+            }
         }
 
         [Test]

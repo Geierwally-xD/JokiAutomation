@@ -629,6 +629,32 @@ namespace JokiAutomation
                     }
 
                     _logDat?.sendInfoMessage($"JokiAutomation\nAusschaltsequenz: Log-Export zu Dropbox abgeschlossen (Lokal={localUploadCount}/{localLogFiles.Count}, RasPi={rasPiUploadCount}/{rasPiCount}).");
+
+                    if (localUploadCount == localLogFiles.Count)
+                    {
+                        ClearLocalLogFiles(localLogFiles);
+                    }
+                    else
+                    {
+                        _logDat?.sendInfoMessage("JokiAutomation\nAusschaltsequenz: Lokale Logs werden nicht geleert, da nicht alle Dateien hochgeladen wurden.");
+                    }
+
+                    if (rasPiCount > 0 && rasPiUploadCount == rasPiCount)
+                    {
+                        try
+                        {
+                            int clearedCount = await _infraredControl.ClearRaspberryPiLogsAsync();
+                            _logDat?.sendInfoMessage($"JokiAutomation\nAusschaltsequenz: RasPi-Logs geleert ({clearedCount}).");
+                        }
+                        catch (Exception ex)
+                        {
+                            _logDat?.sendInfoMessage($"JokiAutomation\nAusschaltsequenz: RasPi-Logs konnten nicht geleert werden: {ex.Message}");
+                        }
+                    }
+                    else if (rasPiCount > 0)
+                    {
+                        _logDat?.sendInfoMessage("JokiAutomation\nAusschaltsequenz: RasPi-Logs werden nicht geleert, da nicht alle Dateien hochgeladen wurden.");
+                    }
                 }
             }
             catch (Exception ex)
@@ -640,6 +666,25 @@ namespace JokiAutomation
                 if (Directory.Exists(localTempDirectory))
                 {
                     Directory.Delete(localTempDirectory, true);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Clears the local log files on the Windows PC after they have been
+        /// successfully uploaded to Dropbox, so the next run only collects fresh data.
+        /// </summary>
+        private void ClearLocalLogFiles(List<string> localLogFiles)
+        {
+            foreach (string file in localLogFiles)
+            {
+                try
+                {
+                    File.WriteAllText(file, string.Empty);
+                }
+                catch (Exception ex)
+                {
+                    _logDat?.sendInfoMessage($"JokiAutomation\nAusschaltsequenz: Lokale Log-Datei '{Path.GetFileName(file)}' konnte nicht geleert werden: {ex.Message}");
                 }
             }
         }

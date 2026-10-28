@@ -565,5 +565,72 @@ namespace JokiAutomation
                 return copiedCount;
             }, cancellationToken);
         }
+
+        /// <summary>
+        /// Clears (truncates) Raspberry Pi log files via SFTP so only data from the
+        /// next run accumulates. Files are truncated to zero bytes instead of being
+        /// deleted so the remote logging process can keep writing to the same handle.
+        /// </summary>
+        public async Task<int> ClearRaspberryPiLogsAsync(CancellationToken cancellationToken = default)
+        {
+            return await Task.Run(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                string ipAddress = GetRaspberryPiIpFromNetwork();
+                string username = _rasPiConfig[1];
+                string password = _rasPiConfig[2];
+
+                if (string.IsNullOrWhiteSpace(ipAddress) || string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+                {
+                    _rasPiForm?._logDat?.sendInfoMessage("JokiAutomation\nAusschaltsequenz: RasPi Log-Bereinigung übersprungen (SSH-Daten unvollständig).");
+                    return 0;
+                }
+
+                var auth = new PasswordAuthenticationMethod(username, password);
+                var connectionInfo = new ConnectionInfo(ipAddress, 22, username, auth)
+                {
+                    Timeout = TimeSpan.FromSeconds(20)
+                };
+
+                var remoteCandidates = new[]
+                {
+                    "/home/pi/JokiAutomation/log/AudioControl.log",
+                    "/home/pi/JokiAutomation/log/AudioControl.log.1",
+                    "/home/pi/JokiAutomation/log/AudioControl.log.2",
+                    "/tmp/gdbserver-2345.log",
+                    "/tmp/gdbserver-2345.log.1",
+                    "/tmp/gdbserver-2345.log.2"
+                };
+
+                int clearedCount = 0;
+
+                using (var sftp = new SftpClient(connectionInfo))
+                {
+                    sftp.Connect();
+
+                    foreach (string remoteFile in remoteCandidates)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        if (!sftp.Exists(remoteFile))
+                        {
+                            continue;
+                        }
+
+                        using (var stream = sftp.OpenWrite(remoteFile))
+                        {
+                            stream.SetLength(0);
+                        }
+
+                        clearedCount++;
+                    }
+
+                    sftp.Disconnect();
+                }
+
+                return clearedCount;
+            }, cancellationToken);
+        }
     }
 }

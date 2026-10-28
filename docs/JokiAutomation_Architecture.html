@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>JokiAutomation – Technische Dokumentation für Einsteiger</title>
+<style>
+	:root {
+		--bg: #1e1e1e;
+		--panel: #252526;
+		--accent: #4fc3f7;
+		--text: #d4d4d4;
+		--muted: #9aa0a6;
+		--border: #3c3c3c;
+		--code-bg: #0d1117;
+	}
+	* { box-sizing: border-box; }
+	body {
+		margin: 0;
+		font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+		background: var(--bg);
+		color: var(--text);
+		line-height: 1.6;
+	}
+	header {
+		background: linear-gradient(90deg,#102a3d,#1e1e1e);
+		padding: 32px 48px;
+		border-bottom: 2px solid var(--accent);
+	}
+	header h1 { margin: 0 0 8px 0; color: #fff; font-size: 28px; }
+	header p { margin: 0; color: var(--muted); }
+	nav {
+		background: var(--panel);
+		padding: 16px 48px;
+		border-bottom: 1px solid var(--border);
+		position: sticky;
+		top: 0;
+		z-index: 10;
+	}
+	nav a {
+		color: var(--accent);
+		text-decoration: none;
+		margin-right: 18px;
+		font-size: 14px;
+	}
+	nav a:hover { text-decoration: underline; }
+	main { padding: 24px 48px 80px 48px; max-width: 1100px; margin: 0 auto; }
+	section {
+		background: var(--panel);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 24px 28px;
+		margin-bottom: 28px;
+	}
+	h2 {
+		color: var(--accent);
+		border-bottom: 1px solid var(--border);
+		padding-bottom: 8px;
+		margin-top: 0;
+	}
+	h3 { color: #e0e0e0; margin-bottom: 6px; }
+	h4 { color: var(--muted); margin-bottom: 4px; font-size: 14px; text-transform: uppercase; letter-spacing: .05em;}
+	code.inline {
+		background: var(--code-bg);
+		padding: 2px 6px;
+		border-radius: 4px;
+		color: #ffd479;
+		font-family: Consolas, "Courier New", monospace;
+	}
+	pre {
+		background: var(--code-bg);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		padding: 14px 16px;
+		overflow-x: auto;
+		font-size: 13px;
+		margin: 10px 0 18px 0;
+	}
+	pre code { font-family: Consolas, "Courier New", monospace; white-space: pre; }
+	.kw { color: #569cd6; }
+	.type { color: #4ec9b0; }
+	.str { color: #ce9178; }
+	.com { color: #6a9955; font-style: italic; }
+	.num { color: #b5cea8; }
+	.meth { color: #dcdcaa; }
+	.file-tag {
+		display: inline-block;
+		background: #0e3a53;
+		color: var(--accent);
+		font-size: 12px;
+		padding: 2px 8px;
+		border-radius: 10px;
+		margin-bottom: 10px;
+		font-family: Consolas, monospace;
+	}
+	table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+	th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; font-size: 14px; }
+	th { background: #2d2d2d; color: var(--accent); }
+	.flow {
+		background: #16202a;
+		border-left: 3px solid var(--accent);
+		padding: 10px 16px;
+		margin: 14px 0;
+		font-family: Consolas, monospace;
+		font-size: 13px;
+		color: #c8d6e5;
+	}
+	.badge { display:inline-block; font-size:11px; padding:1px 7px; border-radius:8px; background:#333; color:#bbb; margin-left:6px;}
+	.badge.ssh { background:#3a2d0e; color:#f2c14e; }
+	.badge.com { background:#2d0e2d; color:#e38ef2; }
+	.badge.proc { background:#0e2d1f; color:#5ee3a0; }
+	footer { text-align:center; color: var(--muted); padding: 20px; font-size: 12px; }
+	ul { padding-left: 20px; }
+	li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+
+<header>
+	<h1>JokiAutomation – Architektur &amp; Signalwege</h1>
+	<p>Einsteiger-Dokumentation für Techniker · .NET Framework 4.8 WinForms-Anwendung zur Automatisierung von Gottesdienst-/Veranstaltungstechnik (Audio, Video/ATEM, PTZ-Kamera, Infrarot/Raspberry&nbsp;Pi, Timer)</p>
+</header>
+
+<nav>
+	<a href="#overview">Überblick</a>
+	<a href="#program">Program.cs</a>
+	<a href="#form1">Form1 / CommandInterpreter</a>
+	<a href="#audio">AudioMix &amp; AudioProfile</a>
+	<a href="#raspi">RasPi (SSH)</a>
+	<a href="#atem">ATEMControl</a>
+	<a href="#infrared">InfraredControl</a>
+	<a href="#position">PositionControl &amp; PTZ</a>
+	<a href="#eventtimer">EventTimer</a>
+	<a href="#tests">Tests</a>
+	<a href="#signalpath">Gesamter Signalweg</a>
+</nav>
+
+<main>
+
+<section id="overview">
+	<h2>1. Überblick</h2>
+	<p>JokiAutomation ist eine WinForms-Anwendung (.NET Framework 4.8), die als <strong>CLI-fähige Single-Instance-Anwendung</strong> läuft. Sie kann per Kommandozeile (z.&nbsp;B. durch eine Lichtpult-/Regie-Software) angesteuert werden und steuert dabei reale Hardware:</p>
+	<ul>
+		<li><strong>Audio-Mixer</strong> über den Raspberry Pi (SSH → natives Binary <code class="inline">RasPiAutomation</code>)</li>
+		<li><strong>ATEM Videomischer</strong> (Blackmagic SDK, COM-Interop) für Kameraschnitt</li>
+		<li><strong>Infrarot-Fernbedienungen</strong> (Beamer, TV, Backup) über den Raspberry Pi</li>
+		<li><strong>PTZ-Kameras</strong> entweder über Canon-SDK (COM) oder RasPi-Motorsteuerung</li>
+		<li><strong>EventTimer.exe</strong> als externer Prozess für Pausen-/Countdown-Anzeigen</li>
+	</ul>
+	<p>Die Projektmappe besteht aus:</p>
+	<table>
+		<tr><th>Projekt</th><th>Zweck</th></tr>
+		<tr><td><code class="inline">JokiAutomation</code></td><td>Hauptanwendung (WinForms, CLI-Dispatch, Hardwareintegration)</td></tr>
+		<tr><td><code class="inline">CanonPtzCommon</code></td><td>Gemeinsame Interfaces/Typen für PTZ-Kamerasteuerung (<code class="inline">ICanonPtzController</code>)</td></tr>
+		<tr><td><code class="inline">CanonRemoteControl</code></td><td>Konkrete Canon-PTZ-Implementierungen (Legacy AW-Protokoll und XC-SDK)</td></tr>
+		<tr><td><code class="inline">EventTimer</code></td><td>Eigenständige WinForms-Anwendung für Pausen-/Countdown-Anzeige auf einem zweiten Bildschirm</td></tr>
+		<tr><td><code class="inline">JokiAutomation.Tests</code></td><td>NUnit-Testprojekt (hardwarefreie Regressions-/Lifecycle-Tests mit Fakes für RasPi-Ausführung)</td></tr>
+	</table>
+</section>
+
+<section id="program">
+	<h2>2. Einstiegspunkt: <code class="inline">Program.cs</code></h2>
+	<p>Der Prozess startet entweder im <strong>GUI-Modus</strong> (ohne Argumente) oder im <strong>CLI-Modus</strong> (mit mindestens einem Kommandozeilenargument). Eine <code class="inline">Mutex</code> stellt sicher, dass nur eine Instanz läuft; weitere Aufrufe werden über eine Named Pipe an die laufende Instanz weitergeleitet.</p>
+	<div class="file-tag">JokiAutomation/Program.cs</div>
+	<pre><code><span class="kw">static class</span> <span class="type">Program</span>
+{
+	<span class="kw">private static</span> <span class="type">Form1</span> JA;
+	<span class="kw">private static</span> <span class="type">SingleInstanceCommandServer</span> _commandServer;
+	<span class="kw">private static</span> <span class="type">ICommandDispatcher</span> _commandDispatcher;
+	<span class="kw">private static readonly</span> <span class="type">SemaphoreSlim</span> _commandLock = <span class="kw">new</span> <span class="type">SemaphoreSlim</span>(<span class="num">1</span>, <span class="num">1</span>);
+	<span class="kw">private static readonly</span> <span class="type">AsyncLocal</span>&lt;<span class="type">string</span>&gt; _activeRequestId = <span class="kw">new</span> <span class="type">AsyncLocal</span>&lt;<span class="type">string</span>&gt;();
+
+	[<span class="type">STAThread</span>]
+	<span class="kw">static void</span> <span class="meth">Main</span>(<span class="type">string</span>[] args)
+	{
+		<span class="kw">bool</span> isCliMode = safeArgs.Length &gt;= <span class="num">1</span>;
+		<span class="com">// Single-Instance via benannten Mutex, sonst Weiterleitung per Named Pipe</span>
+		<span class="kw">if</span> (!mutexAcquired)
+		{
+			<span class="type">PipeCommandResponse</span> forwardResult = ForwardToPrimaryInstance(safeArgs);
+			Environment.ExitCode = forwardResult?.ExitCode ?? CommandExitCodes.PipeConnectFailed;
+			<span class="kw">return</span>;
+		}
+
+		<span class="kw">if</span> (isCliMode)
+			Environment.ExitCode = CommandInterpreter(safeArgs); <span class="com">// CLI: synchron bis Ergebnis</span>
+	}
+}</code></pre>
+
+	<p><code class="inline">CommandInterpreter(string[] args)</code> erzeugt im CLI-Modus eine <strong>versteckte</strong> <code class="inline">Form1</code>-Instanz (die trotz CLI-Aufruf als WinForms-Form existiert, da die gesamte Hardwarelogik an die Form gebunden ist):</p>
+	<pre><code><span class="kw">private static int</span> <span class="meth">CommandInterpreter</span>(<span class="type">string</span>[] args)
+{
+	<span class="type">Form1</span> form = <span class="kw">new</span> <span class="type">Form1</span>();
+	JA = form;
+	_commandDispatcher = CreateDispatcher(form);
+	<span class="com">// ... startet Message-Loop / wartet auf Ergebnis des Kommandos</span>
+}</code></pre>
+
+	<p>Jeder eingehende Befehl durchläuft einen globalen <strong>Lock</strong> (<code class="inline">_commandLock</code>, <code class="inline">SemaphoreSlim(1,1)</code>), damit niemals zwei Kommandos gleichzeitig auf die Form/Hardware zugreifen, und wird dann per <code class="inline">BeginInvoke</code> auf den UI-Thread der Form disponiert:</p>
+	<pre><code><span class="kw">private static async</span> <span class="type">Task</span>&lt;<span class="type">int</span>&gt; <span class="meth">ExecuteOnUiThreadAsync</span>(<span class="type">Form1</span> form, <span class="type">string</span>[] safeArgs, <span class="type">string</span> requestId, <span class="type">string</span> source, <span class="type">CancellationToken</span> cancellationToken)
+{
+	<span class="kw">var</span> completion = <span class="kw">new</span> <span class="type">TaskCompletionSource</span>&lt;<span class="type">int</span>&gt;(TaskCreationOptions.RunContinuationsAsynchronously);
+
+	form.BeginInvoke(<span class="kw">new</span> <span class="type">Action</span>(() =&gt;
+	{
+		_ = ExecuteDispatchedCommandAsync(form, safeArgs, requestId, source, completion);
+	}));
+
+	<span class="kw">return await</span> completion.Task.ConfigureAwait(<span class="kw">false</span>);
+}
+
+<span class="kw">private static async</span> <span class="type">Task</span> <span class="meth">ExecuteDispatchedCommandAsync</span>(<span class="type">Form1</span> form, <span class="type">string</span>[] safeArgs, <span class="type">string</span> requestId, <span class="type">string</span> source, <span class="type">TaskCompletionSource</span>&lt;<span class="type">int</span>&gt; completion)
+{
+	<span class="type">string</span>[] formArgs = <span class="kw">new</span> <span class="type">string</span>[safeArgs.Length + <span class="num">1</span>];
+	formArgs[<span class="num">0</span>] = <span class="str">"JokiAutomation.exe"</span>;
+	Array.Copy(safeArgs, <span class="num">0</span>, formArgs, <span class="num">1</span>, safeArgs.Length);
+
+	<span class="type">int</span> exitCode = <span class="kw">await</span> form.CommandInterpreterAsync(formArgs).ConfigureAwait(<span class="kw">true</span>);
+	completion.TrySetResult(exitCode);
+}</code></pre>
+	<p class="flow">CLI-Aufruf → Mutex/Single-Instance-Prüfung → <code class="inline">_commandLock</code> (seriell) → <code class="inline">form.BeginInvoke</code> (UI-Thread) → <code class="inline">Form1.CommandInterpreterAsync(args)</code></p>
+</section>
+
+<section id="form1">
+	<h2>3. Zentraler Dispatcher: <code class="inline">Form1.CommandInterpreterAsync</code></h2>
+	<p>Diese Methode (in <code class="inline">Form1.cs</code>) ist das Herzstück der Kommandoverarbeitung. Sie enthält einen großen <code class="inline">switch (cmd)</code>, der pro Kommandonamen (z.&nbsp;B. <code class="inline">Band</code>, <code class="inline">Predigt</code>, <code class="inline">Altar</code>, <code class="inline">Pause</code>, <code class="inline">BEAMER_*</code>, <code class="inline">Ausschaltsequenz</code> …) die passende Hardware-Choreografie auslöst. Audio, PTZ/ATEM-Videoumschaltung und Diashow/PiP werden dabei bewusst <strong>parallel</strong> angestoßen, damit z.&nbsp;B. der Audio-Fade nicht die Video-Umschaltung blockiert:</p>
+	<div class="file-tag">JokiAutomation/Form1.cs</div>
+	<pre><code><span class="kw">public async</span> <span class="type">Task</span>&lt;<span class="type">int</span>&gt; <span class="meth">CommandInterpreterAsync</span>(<span class="type">string</span>[] commands)
+{
+	...
+	<span class="kw">switch</span> (cmd)
+	{
+		<span class="kw">case</span> <span class="str">"Predigt"</span>:
+			<span class="kw">if</span> (!<span class="kw">await</span> QueueAudioProfileByNameAsync(<span class="str">"Predigt"</span>)) <span class="com">// 1) Audio-Profil NICHT abwarten, nur einreihen</span>
+			{
+				exitCode = CommandExitCodes.CommandFailed;
+				<span class="kw">return</span> exitCode;
+			}
+
+			<span class="com">// 2) Parallel dazu: Bild/Kamera/ATEM umschalten</span>
+			await SwitchATEMInputAsync(ATEMInput.CanonPtzPreacher);
+			await DisablePictureInPictureAsync();
+			<span class="kw">break</span>;
+
+		<span class="kw">case</span> <span class="str">"Band"</span>:
+			<span class="kw">if</span> (!<span class="kw">await</span> QueueAudioProfileByNameAsync(<span class="str">"Band"</span>))
+			{
+				exitCode = CommandExitCodes.CommandFailed;
+				<span class="kw">return</span> exitCode;
+			}
+			await SwitchATEMInputAsync(ATEMInput.Laptop);
+			await DisablePictureInPictureAsync();
+			<span class="kw">break</span>;
+		...
+		<span class="kw">default</span>:
+			...
+			<span class="kw">break</span>;
+	}
+
+	<span class="com">// 3) Erst JETZT auf den zuletzt eingereihten Audio-Auftrag warten,</span>
+	<span class="com">//    damit CLI-Erfolg erst gemeldet wird, wenn Audio wirklich fertig ist</span>
+	<span class="kw">await</span> AwaitPendingAudioCompletionAsync();
+
+	exitCode = CommandExitCodes.Success;
+	<span class="kw">return</span> exitCode;
+}</code></pre>
+	<p>Wichtige Designentscheidung: <code class="inline">QueueAudioProfileByNameAsync</code> reiht den Audio-Auftrag nur <strong>ein</strong> (nicht blockierend), damit PTZ/ATEM parallel starten können. Erst am Ende des Kommandos wartet <code class="inline">AwaitPendingAudioCompletionAsync()</code> auf den zuletzt eingereihten Audio-Task, bevor <code class="inline">CommandExitCodes.Success</code> zurückgegeben wird. Da pro Aufruf genau ein <code class="inline">case</code> durchlaufen wird (mutually exclusive <code class="inline">switch</code>, je ein <code class="inline">break</code>/<code class="inline">return</code>), wird der Single-Slot <code class="inline">_pendingAudioCompletionTask</code> innerhalb eines Kommandos nie überschrieben.</p>
+</section>
+
+<section id="audio">
+	<h2>4. Audio-Pipeline: <code class="inline">Form1.AudioProfile.cs</code> &amp; <code class="inline">AudioMix.cs</code></h2>
+	<div class="file-tag">JokiAutomation/Form1.AudioProfile.cs</div>
+	<p><code class="inline">ApplyAudioProfileByNameAsync</code> sucht das Profil per Name in der UI-Liste (<code class="inline">listBox4</code>) und übergibt den aufgelösten Index an <code class="inline">SendAudioProfileAsync</code>:</p>
+	<pre><code><span class="kw">private async</span> <span class="type">Task</span>&lt;<span class="type">bool</span>&gt; <span class="meth">ApplyAudioProfileByNameAsync</span>(
+	<span class="type">string</span> profileName, <span class="type">TimeSpan</span>? postSendDelay = <span class="kw">null</span>,
+	<span class="type">CancellationToken</span> cancellationToken = <span class="kw">default</span>, <span class="type">bool</span> waitForCompletion = <span class="kw">true</span>)
+{
+	<span class="com">// Profilname -&gt; Index in listBox4 auflösen ...</span>
+	<span class="kw">return await</span> SendAudioProfileAsync(profileIndex, <span class="str">"CLI_NAME"</span>, profileName, postSendDelay, cancellationToken, waitForCompletion);
+}
+
+<span class="kw">private async</span> <span class="type">Task</span>&lt;<span class="type">bool</span>&gt; <span class="meth">SendAudioProfileAsync</span>(<span class="type">int</span> profileIndex, <span class="type">string</span> source, <span class="type">string</span> requestedName, ...)
+{
+	<span class="type">int</span> commandID = AudioMix.AM_PROFILE + profileIndex;  <span class="com">// 0x70 + Index</span>
+	<span class="kw">if</span> (waitForCompletion)
+	{
+		<span class="kw">await</span> _audioMix.ExecuteAudioAsync(commandID, cancellationToken);
+		<span class="kw">await</span> Task.Delay(effectiveDelay, cancellationToken);
+	}
+	...
+}</code></pre>
+
+	<div class="file-tag">JokiAutomation/AudioMix.cs</div>
+	<p><code class="inline">AudioMix</code> kapselt Profil-Konstanten (<code class="inline">AM_PROFILE</code>, <code class="inline">AM_FADEUP</code>, …) und reicht den eigentlichen Befehl per SSH an den Raspberry Pi weiter. Es gibt eine Legacy fire-and-forget-Variante (<code class="inline">rasPiExecute</code>) und die produktive asynchrone Variante:</p>
+	<pre><code><span class="kw">internal class</span> <span class="type">AudioMix</span> : <span class="type">IDisposable</span>
+{
+	<span class="kw">private const int</span> AM_EXECUTE = <span class="num">30</span>;   <span class="com">// Audio Mix command (an RasPiAutomation Binary)</span>
+	<span class="kw">public const int</span> AM_PROFILE = <span class="num">0x70</span>; <span class="com">// execute audio profile</span>
+
+	<span class="kw">public</span> <span class="type">RasPi</span> _rasPi = <span class="kw">new</span> <span class="type">RasPi</span>();
+
+	<span class="kw">public async</span> <span class="type">Task</span> <span class="meth">ExecuteAudioAsync</span>(<span class="type">int</span> ID, <span class="type">CancellationToken</span> cancellationToken = <span class="kw">default</span>)
+	{
+		<span class="kw">await</span> _audioDispatchSemaphore.WaitAsync(cancellationToken); <span class="com">// seriell je Audio-Pipeline</span>
+		<span class="kw">try</span>
+		{
+			<span class="kw">await</span> _rasPi.RasPiExecuteAsync(AM_EXECUTE, ID, cancellationToken: cancellationToken);
+		}
+		<span class="kw">finally</span> { _audioDispatchSemaphore.Release(); }
+	}
+}</code></pre>
+</section>
+
+<section id="raspi">
+	<h2>5. Raspberry-Pi-Anbindung (SSH): <code class="inline">RasPi.cs</code> / <code class="inline">RasPi.Async.cs</code> <span class="badge ssh">SSH.NET</span></h2>
+	<p>Alle hardwarenahen Kommandos (Audio, Infrarot, PTZ-Motor, Shutdown) laufen letztlich über dieselbe SSH-Schnittstelle zu einem natives Binary <code class="inline">RasPiAutomation</code> auf dem Raspberry Pi. Die Ausführung ist über <code class="inline">IRasPiCommandExecutor</code> abstrahiert, damit Tests einen Fake einsetzen können (<code class="inline">SshNetRasPiCommandExecutor</code> in Produktion, <code class="inline">FakeRasPiCommandExecutor</code> in Tests):</p>
+	<div class="file-tag">JokiAutomation/RasPi.cs</div>
+	<pre><code><span class="kw">partial class</span> <span class="type">RasPi</span>
+{
+	<span class="kw">private readonly</span> <span class="type">IRasPiCommandExecutor</span> _commandExecutor;
+
+	<span class="kw">public</span> <span class="meth">RasPi</span>() : <span class="kw">this</span>(<span class="kw">new</span> <span class="type">SshNetRasPiCommandExecutor</span>()) { }
+
+	<span class="kw">internal</span> <span class="meth">RasPi</span>(<span class="type">IRasPiCommandExecutor</span> commandExecutor)
+	{
+		_commandExecutor = commandExecutor ?? <span class="kw">throw new</span> <span class="type">ArgumentNullException</span>(<span class="kw">nameof</span>(commandExecutor));
+	}
+
+	[<span class="type">Obsolete</span>(<span class="str">"Legacy fire-and-forget adapter. Use RasPiExecuteAsync for productive code."</span>)]
+	<span class="kw">public void</span> <span class="meth">rasPiExecute</span>(<span class="type">int</span> command, <span class="type">int</span> ID)
+	{
+		_ = Task.Run(<span class="kw">async</span> () =&gt; <span class="kw">await</span> RasPiExecuteAsync(command, ID, cancellationToken: CancellationToken.None));
+	}
+}</code></pre>
+
+	<div class="file-tag">JokiAutomation/RasPi.Async.cs</div>
+	<pre><code><span class="com">/// Führt ein Raspberry-Pi-Kommando per SSH aus und wartet vollständig</span>
+<span class="com">/// (connect, execute, exit status, stdout/stderr)</span>
+<span class="kw">public async</span> <span class="type">Task</span> <span class="meth">RasPiExecuteAsync</span>(<span class="type">int</span> command, <span class="type">int</span> id, <span class="type">TimeSpan</span>? timeout = <span class="kw">null</span>, <span class="type">CancellationToken</span> cancellationToken = <span class="kw">default</span>)
+{
+	<span class="type">string</span> ipAddress = ResolveRaspberryPiIpAddress();     <span class="com">// aus Network.cfg</span>
+	<span class="type">string</span> username = ResolveRaspberryPiUsername();
+	<span class="type">string</span> password = ResolveRaspberryPiPassword();
+
+	<span class="type">string</span> remoteCommand =
+		<span class="str">"echo '"</span> + escapedPassword + <span class="str">"' | sudo -S /home/pi/JokiAutomation/RasPiAutomation "</span> + command + <span class="str">" "</span> + id;
+
+	<span class="type">RasPiCommandExecutionResult</span> result = <span class="kw">await</span> _commandExecutor.ExecuteAsync(
+		ipAddress, <span class="num">22</span>, username, password, remoteCommand, effectiveTimeout, cancellationToken);
+
+	<span class="kw">if</span> (result == <span class="kw">null</span> || !result.ExitCode.HasValue)
+		<span class="kw">throw new</span> <span class="type">RasPiCommandFailedException</span>(command, id, <span class="str">"RasPi command returned no exit status."</span>);
+}</code></pre>
+	<p class="flow"><code class="inline">AudioMix.ExecuteAudioAsync(cmdId)</code> → <code class="inline">RasPi.RasPiExecuteAsync(30, id)</code> → <code class="inline">IRasPiCommandExecutor.ExecuteAsync(...)</code> → SSH → <code class="inline">sudo /home/pi/JokiAutomation/RasPiAutomation 30 &lt;id&gt;</code> auf dem Pi → physische Relais/GPIO/IR-Ansteuerung</p>
+	<p>Das Kommando <code class="inline">30</code> steht für Audio (<code class="inline">AM_EXECUTE</code>), <code class="inline">50</code> für allgemeine Sequenzen, Infrarot nutzt eigene IDs aus <code class="inline">InfraredControl</code>. Die ID (zweiter Parameter) selektiert innerhalb des Kommandotyps die konkrete Aktion/Position/Profil.</p>
+</section>
+
+<section id="atem">
+	<h2>6. Videoumschaltung: <code class="inline">ATEMControl.cs</code> <span class="badge com">COM/SDK</span></h2>
+	<p>Die Videomischer-Steuerung läuft nicht über den Raspberry Pi, sondern direkt per Blackmagic-ATEM-SDK (COM-Interop, <code class="inline">BMDSwitcherAPI</code>) über das lokale Netzwerk zum ATEM-Switcher. Ein Semaphore serialisiert Umschaltvorgänge, damit keine zwei Transitionen gleichzeitig laufen:</p>
+	<div class="file-tag">JokiAutomation/ATEMControl.cs</div>
+	<pre><code><span class="kw">internal class</span> <span class="type">ATEMControl</span> : <span class="type">IDisposable</span>
+{
+	<span class="com">/// Ensures only one ATEM transition runs at a time.</span>
+	<span class="kw">private readonly</span> <span class="type">SemaphoreSlim</span> _transitionSemaphore = <span class="kw">new</span> <span class="type">SemaphoreSlim</span>(<span class="num">1</span>, <span class="num">1</span>);
+
+	<span class="kw">public</span> <span class="meth">ATEMControl</span>(<span class="type">string</span> ipAddress = <span class="str">"192.168.178.48"</span>, <span class="type">Action</span>&lt;<span class="type">string</span>&gt; persistentLog = <span class="kw">null</span>)
+	{
+		_ipAddress = ipAddress;
+		_isConnected = <span class="kw">false</span>;
+	}
+
+	<span class="kw">public bool</span> <span class="meth">Connect</span>() { <span class="com">// stellt COM-Verbindung zum Switcher her (IBMDSwitcher)</span> ... }
+}</code></pre>
+	<p>Aufrufer ist <code class="inline">Form1.SwitchATEMInputAsync(ATEMInput input)</code>, das aus dem Kommando-Switch heraus parallel zum Audio-Auftrag aufgerufen wird (siehe Abschnitt 3) und so den Eingang (Laptop, GoPro, Canon PTZ Main/Preacher …) am Mischer umschaltet.</p>
+</section>
+
+<section id="infrared">
+	<h2>7. Infrarotsteuerung: <code class="inline">InfraredControl.cs</code></h2>
+	<p>Für Beamer, TV und Backup-Steuerung werden IR-Sequenzen über denselben RasPi-SSH-Kanal gesendet wie Audio – nur mit anderer Kommando-ID (<code class="inline">IR_EXECUTE</code>/<code class="inline">IR_SEQUENCE</code>):</p>
+	<div class="file-tag">JokiAutomation/InfraredControl.cs</div>
+	<pre><code><span class="kw">internal class</span> <span class="type">InfraredControl</span> : <span class="type">IDisposable</span>
+{
+	<span class="kw">public void</span> <span class="meth">InitIR</span>(<span class="type">Form1</span> winForm)
+	{
+		_rasPi = <span class="kw">new</span> <span class="type">RasPi</span>();
+		_rasPi.initRasPi(winForm);
+	}
+
+	<span class="com">/// Sendet Kommando an Raspberry Pi, um IR-Sequenz auszulösen</span>
+	<span class="kw">public void</span> <span class="meth">ExecuteIR</span>(<span class="type">int</span> ID)
+	{
+		<span class="kw">if</span> (_rasPi == <span class="kw">null</span>)
+			<span class="kw">throw new</span> <span class="type">InvalidOperationException</span>(<span class="str">"Infrared control not initialized. Call InitIR() first."</span>);
+
+		_rasPi.rasPiExecute(IR_EXECUTE, ID);
+	}
+}</code></pre>
+	<p>Im Hauptswitch wird dies über <code class="inline">ExecuteIrSequenceAsync(InfraredControl.IR_BEAMER_TOGGLE, "BEAMER_LiveStream", timeout)</code> aufgerufen, z.&nbsp;B. in den <code class="inline">case "BEAMER_*"</code>-Zweigen von <code class="inline">CommandInterpreterAsync</code>.</p>
+</section>
+
+<section id="position">
+	<h2>8. Kamerapositionierung: <code class="inline">PositionControl.cs</code>, <code class="inline">CanonPtzCommon</code>, <code class="inline">CanonRemoteControl</code> <span class="badge com">COM</span><span class="badge proc">Motor/RasPi</span></h2>
+	<p><code class="inline">PositionControl</code> unterstützt zwei Modi für die Kamerapositionierung, abhängig von Konfiguration (<code class="inline">isPtzMode</code>): entweder Motorsteuerung über den Raspberry Pi (Analogkamera auf Schlitten/Pan-Tilt-Kopf) oder eine echte Canon-PTZ-Kamera über <code class="inline">ICanonPtzController</code>. Die IR-/Beamer-Steuerung über RasPi bleibt in jedem Fall aktiv:</p>
+	<div class="file-tag">JokiAutomation/PositionControl.cs</div>
+	<pre><code><span class="kw">class</span> <span class="type">PositionControl</span> : <span class="type">IDisposable</span>
+{
+	<span class="com">/// - Raspberry Pi: ALWAYS active (IR sequences, Audio, Beamer control)</span>
+	<span class="com">/// - Camera positioning: Either RasPi motor control OR Canon PTZ (depending on PTZ_CAM setting)</span>
+	<span class="kw">public void</span> <span class="meth">initPC</span>(<span class="type">Form1</span> winForm, <span class="type">bool</span> isPtzMode = <span class="kw">false</span>, <span class="type">ICanonPtzController</span> canonPtzController = <span class="kw">null</span>)
+	{
+		_isPtzMode = isPtzMode;
+		_canonPtzController = canonPtzController;
+		_rasPi.initRasPi(winForm); <span class="com">// RasPi wird IMMER initialisiert (für IR-Steuerung)</span>
+	}
+}</code></pre>
+
+	<div class="file-tag">CanonPtzCommon/ICanonPtzController.cs</div>
+	<pre><code><span class="kw">public interface</span> <span class="type">ICanonPtzController</span>
+{
+	<span class="type">bool</span> IsConnected { <span class="kw">get</span>; }
+
+	<span class="type">Task</span>&lt;<span class="type">CommandResult</span>&gt; <span class="meth">ConnectAsync</span>();
+	<span class="type">Task</span>&lt;<span class="type">CommandResult</span>&gt; <span class="meth">StartPanLeftAsync</span>();
+	<span class="type">Task</span>&lt;<span class="type">CommandResult</span>&gt; <span class="meth">StartTiltUpAsync</span>();
+	<span class="type">Task</span>&lt;<span class="type">CommandResult</span>&gt; <span class="meth">StartZoomInAsync</span>();
+	<span class="type">Task</span>&lt;<span class="type">CommandResult</span>&gt; <span class="meth">StopAllAsync</span>();
+	<span class="type">Task</span>&lt;<span class="type">CommandResult</span>&gt; <span class="meth">RecallPresetAsync</span>(<span class="type">int</span> presetNumber);
+	<span class="type">Task</span>&lt;<span class="type">CommandResult</span>&gt; <span class="meth">StorePresetAsync</span>(<span class="type">int</span> presetNumber);
+}</code></pre>
+	<p>Diese Schnittstelle wird im Projekt <code class="inline">CanonRemoteControl</code> implementiert – entweder durch <code class="inline">LegacyAwPtzController</code> (älteres AW-Protokoll, z.&nbsp;B. UDP/visca-artig) oder durch <code class="inline">XcCanonPtzController</code> (modernes Canon-XC-SDK, COM-Interop). <code class="inline">PositionControl</code> arbeitet nur gegen das Interface, sodass die konkrete Kameratechnologie austauschbar ist. Für die RasPi-Variante koordiniert <code class="inline">PositionControlPtzAudioOrchestrator</code> Positionsbewegung und parallelen Audio-Fade.</p>
+</section>
+
+<section id="eventtimer">
+	<h2>9. Pausen-/Timeranzeige: <code class="inline">EventTimer.cs</code> <span class="badge proc">externer Prozess</span></h2>
+	<p>Für Pausenbildschirme und Countdown wird nicht JokiAutomation selbst verwendet, sondern das separate Projekt <code class="inline">EventTimer</code> als eigenständige <code class="inline">EventTimer.exe</code>, die mit Kommandozeilenargumenten gestartet wird:</p>
+	<div class="file-tag">JokiAutomation/EventTimer.cs</div>
+	<pre><code><span class="kw">internal class</span> <span class="type">EventTimer</span> : <span class="type">IDisposable</span>
+{
+	<span class="kw">private const string</span> EXECUTABLE_NAME = <span class="str">"EventTimer.exe"</span>;
+
+	<span class="com">/// Startet EventTimer.exe im Pausenmodus mit zwei Anzeigetexten</span>
+	<span class="kw">public</span> <span class="type">EventTimerStartResult</span> <span class="meth">sendPause</span>(<span class="type">string</span> text1, <span class="type">string</span> text2, <span class="type">string</span> requestId = <span class="kw">null</span>, <span class="type">string</span> source = <span class="str">"UNKNOWN"</span>)
+	{
+		<span class="type">string</span> arguments = $<span class="str">"Pause {EscapeArgument(text1)} {EscapeArgument(text2)}"</span>;
+		<span class="kw">return</span> StartEventTimer(arguments, <span class="str">"Pause"</span>, <span class="str">"Pause"</span>, effectiveRequestId, source);
+	}
+}</code></pre>
+	<p>Wird aus <code class="inline">CommandInterpreterAsync</code> im <code class="inline">case "Pause"</code> bzw. <code class="inline">case "Timer"</code> über <code class="inline">ExecutePauseCommandAsync</code>/<code class="inline">ExecuteTimerCommandAsync</code> aufgerufen (<code class="inline">Process.Start</code> auf <code class="inline">EventTimer.exe</code>).</p>
+</section>
+
+<section id="tests">
+	<h2>10. Testprojekt: <code class="inline">JokiAutomation.Tests</code></h2>
+	<p>Hardwarefreie Tests ersetzen die SSH-Schicht durch <code class="inline">FakeRasPiCommandExecutor</code> (implementiert <code class="inline">IRasPiCommandExecutor</code>), sodass Regressions- und Lifecycle-Tests ohne echten Raspberry Pi laufen können. Wichtige Fixtures:</p>
+	<ul>
+		<li><strong>Fakes/FakeRasPiCommandExecutor.cs</strong> – zeichnet Kommandos auf, erlaubt deterministische Start-/Completion-Gates.</li>
+		<li><strong>Unit/RasPiExecuteAsyncTests.cs</strong> – prüft Fehler-/Exit-Code-Handling von <code class="inline">RasPiExecuteAsync</code>.</li>
+		<li><strong>JokiAutomation.LifecycleTests.cs</strong> &amp; Regression-Tests – prüfen das Zusammenspiel von CLI-Dispatch, <code class="inline">CommandInterpreterAsync</code> und Audio-Lebensdauer (z.&nbsp;B. dass CLI-Erfolg erst nach Abschluss des Audio-Auftrags gemeldet wird).</li>
+	</ul>
+</section>
+
+<section id="signalpath">
+	<h2>11. Gesamter Signalweg am Beispiel <code class="inline">Predigt</code></h2>
+	<p>Zusammenfassung des kompletten Wegs eines CLI-Kommandos von der Konsole bis zur Hardware:</p>
+	<div class="flow">
+1. Konsole: <code class="inline">JokiAutomation.exe Predigt</code><br>
+2. <code class="inline">Program.Main</code> → Mutex-Prüfung → <code class="inline">CommandInterpreter(args)</code><br>
+3. <code class="inline">_commandLock</code> (Serialisierung) → <code class="inline">ExecuteOnUiThreadAsync</code> → <code class="inline">form.BeginInvoke</code><br>
+4. <code class="inline">Form1.CommandInterpreterAsync</code>: <code class="inline">switch(cmd)</code> → <code class="inline">case "Predigt"</code><br>
+5a. <code class="inline">QueueAudioProfileByNameAsync("Predigt")</code> → <code class="inline">SendAudioProfileAsync</code> → <code class="inline">AudioMix.ExecuteAudioAsync</code> → <code class="inline">RasPi.RasPiExecuteAsync(30, id)</code> → SSH → <code class="inline">RasPiAutomation</code> auf dem Pi<br>
+5b. <em>parallel dazu:</em> <code class="inline">SwitchATEMInputAsync(CanonPtzPreacher)</code> → <code class="inline">ATEMControl</code> (COM) → ATEM-Switcher im Netzwerk<br>
+6. <code class="inline">AwaitPendingAudioCompletionAsync()</code> wartet auf Abschluss von Schritt 5a<br>
+7. Rückgabe <code class="inline">CommandExitCodes.Success</code> → <code class="inline">completion.TrySetResult</code> → CLI-Exitcode an aufrufenden Prozess
+	</div>
+	<p>Dieses Muster (Audio asynchron einreihen, Video/PTZ parallel ausführen, am Ende auf Audio-Abschluss warten) gilt analog für alle anderen Kommandos im Switch (<code class="inline">Band</code>, <code class="inline">Text</code>, <code class="inline">GoPro</code>, <code class="inline">Altar</code>, <code class="inline">Gebet</code>, <code class="inline">LesungMulti</code>, <code class="inline">BandMulti</code>).</p>
+</section>
+
+</main>
+
+<footer>JokiAutomation · interne technische Dokumentation · generiert für den Einstieg neuer Techniker</footer>
+
+</body>
+</html>
