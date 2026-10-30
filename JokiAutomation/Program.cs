@@ -82,32 +82,10 @@ namespace JokiAutomation
                     LogData.LogLifecycle("FORWARDER", "FORWARDER_INSTANCE_SELECTED", $"Args=\"{FormatArgsForLifecycle(safeArgs)}\"");
 
                     PipeCommandResponse forwardResult = ForwardToPrimaryInstance(safeArgs);
+                    Environment.ExitCode = forwardResult?.ExitCode ?? CommandExitCodes.PipeConnectFailed;
 
-                    if (forwardResult?.ExitCode == CommandExitCodes.PipeConnectFailed)
-                    {
-                        // The mutex owner's pipe is unreachable even though the mutex is still held.
-                        // The mutex only signals "a process currently owns the single-instance resource",
-                        // not "a usable Primary pipe is guaranteed" - the owner may be mid-shutdown
-                        // (pipe already stopped, mutex release still pending). Re-evaluate deterministically
-                        // with a single bounded wait instead of surfacing a hard connect-timeout failure.
-                        LogData.LogLifecycle("FORWARDER", "PRIMARY_UNREACHABLE_REEVALUATING", $"RequestId={forwardResult.RequestId}");
-
-                        bool reacquired = singleInstanceMutex.WaitOne(TimeSpan.FromSeconds(5), false);
-                        LogData.LogLifecycle("FORWARDER", "MUTEX_REEVALUATION_RESULT", $"Reacquired={reacquired}");
-
-                        if (reacquired)
-                        {
-                            mutexAcquired = true;
-                        }
-                    }
-
-                    if (!mutexAcquired)
-                    {
-                        Environment.ExitCode = forwardResult?.ExitCode ?? CommandExitCodes.PipeConnectFailed;
-
-                        LogData.LogLifecycle("FORWARDER", "FORWARDER_EXIT", $"RequestId={forwardResult?.RequestId} ExitCode={Environment.ExitCode}");
-                        return;
-                    }
+                    LogData.LogLifecycle("FORWARDER", "FORWARDER_EXIT", $"RequestId={forwardResult?.RequestId} ExitCode={Environment.ExitCode}");
+                    return;
                 }
 
                 LogData.LogLifecycle(mode, "PRIMARY_INSTANCE_SELECTED");
@@ -1186,9 +1164,6 @@ namespace JokiAutomation
                 case "--forward-connect-timeout":
                     exitCode = RunForwardConnectTimeoutHost(safeArgs);
                     return true;
-                case "--gated-primary-shutdown":
-                    exitCode = RunGatedPrimaryShutdownHost(safeArgs);
-                    return true;
                 default:
                     return false;
             }
@@ -1636,122 +1611,6 @@ namespace JokiAutomation
             }
             finally
             {
-                Console.WriteLine("TEST_PROCESS_EXIT");
-            }
-        }
-
-        /// <summary>
-        /// Deterministic shutdown-race test host. Acts as a "Primary" instance that stops its
-        /// Named Pipe server and then blocks, with the mutex still held, until the test explicitly
-        /// signals that the mutex may be released. This lets a test deterministically launch a
-        /// Forwarder exactly in the window where the mutex is held but the pipe is already gone,
-        /// instead of relying on arbitrary Task.Delay timing.
-        /// Gate names are derived from --gate=&lt;suffix&gt; and use two named EventWaitHandles:
-        ///   &lt;suffix&gt;.PipeStopped      - signaled by this host once the pipe server has stopped.
-        ///   &lt;suffix&gt;.AllowMutexRelease - waited on by this host before releasing the mutex.
-        /// </summary>
-        private static int RunGatedPrimaryShutdownHost(string[] args)
-        {
-            string mutexName = GetArgumentValue(args, "--mutex=") ?? @"Global\JokiAutomation_ShutdownTest_Mutex";
-            string pipeName = GetArgumentValue(args, "--pipe=") ?? "JokiAutomation.ShutdownTest.Pipe";
-            string gateSuffix = GetArgumentValue(args, "--gate=") ?? Guid.NewGuid().ToString("N");
-            int timeoutMs = GetHostTimeoutMs(args, 5000);
-
-            string pipeStoppedEventName = "Global\\" + gateSuffix + ".PipeStopped";
-            string allowMutexReleaseEventName = "Global\\" + gateSuffix + ".AllowMutexRelease";
-
-            Mutex mutex = null;
-            bool acquired = false;
-            SingleInstanceCommandServer server = null;
-            EventWaitHandle pipeStoppedEvent = null;
-            EventWaitHandle allowMutexReleaseEvent = null;
-
-            try
-            {
-                Console.WriteLine("TEST_MODE GATED_PRIMARY_SHUTDOWN");
-
-                pipeStoppedEvent = new EventWaitHandle(false, EventResetMode.ManualReset, pipeStoppedEventName);
-                allowMutexReleaseEvent = new EventWaitHandle(false, EventResetMode.ManualReset, allowMutexReleaseEventName);
-
-                mutex = new Mutex(false, mutexName);
-                acquired = mutex.WaitOne(0, false);
-                if (!acquired)
-                {
-                    Console.WriteLine("TEST_MUTEX_NOT_ACQUIRED");
-                    return 50;
-                }
-
-                Console.WriteLine("TEST_MUTEX_ACQUIRED");
-
-                var dispatcher = new NoOpCommandDispatcher();
-                server = new SingleInstanceCommandServer(
-                    (incomingArgs, requestId, senderPid, token) => Task.FromResult(CommandExitCodes.Success),
-                    dispatcher,
-                    pipeName);
-                server.Start();
-                Console.WriteLine("TEST_PIPE_SERVER_STARTED");
-
-                Console.WriteLine("TEST_SHUTDOWN_BEGIN");
-                Task stopTask = server.StopAsync();
-                bool stopped = stopTask.Wait(timeoutMs);
-                if (!stopped)
-                {
-                    Console.WriteLine("TEST_PIPE_SERVER_STOP_TIMEOUT");
-                    return 53;
-                }
-
-                Console.WriteLine("TEST_PIPE_SERVER_STOPPED");
-
-                // Mutex is still held here while the pipe is already gone - this is the race window.
-                Console.WriteLine("TEST_MUTEX_STILL_HELD");
-                pipeStoppedEvent.Set();
-                Console.WriteLine("TEST_GATE_PIPE_STOPPED_SIGNALED");
-
-                bool allowed = allowMutexReleaseEvent.WaitOne(timeoutMs);
-                if (!allowed)
-                {
-                    Console.WriteLine("TEST_GATE_ALLOW_MUTEX_RELEASE_TIMEOUT");
-                    return 54;
-                }
-
-                Console.WriteLine("TEST_GATE_ALLOW_MUTEX_RELEASE_RECEIVED");
-                return 0;
-            }
-            catch (AbandonedMutexException)
-            {
-                Console.WriteLine("TEST_MUTEX_ABANDONED");
-                return 51;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("TEST_HOST_EXCEPTION " + ex.GetType().Name + " " + ex.Message);
-                return 52;
-            }
-            finally
-            {
-                try
-                {
-                    server?.Dispose();
-                }
-                catch { }
-
-                if (acquired && mutex != null)
-                {
-                    Console.WriteLine("TEST_MUTEX_RELEASE_BEGIN");
-                    try
-                    {
-                        mutex.ReleaseMutex();
-                        Console.WriteLine("TEST_MUTEX_RELEASED");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine("TEST_MUTEX_RELEASE_EXCEPTION " + ex.GetType().Name);
-                    }
-                }
-
-                mutex?.Dispose();
-                pipeStoppedEvent?.Dispose();
-                allowMutexReleaseEvent?.Dispose();
                 Console.WriteLine("TEST_PROCESS_EXIT");
             }
         }
