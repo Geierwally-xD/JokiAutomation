@@ -437,7 +437,7 @@ namespace JokiAutomation
                         string cliRequestId = Guid.NewGuid().ToString("N");
 
                         LogData.LogLifecycle("CLI", "COMMAND_BEGIN", $"RequestId={cliRequestId} Command=\"{EscapeForLifecycle(commandName)}\"");
-                        commandExitCode = await ExecuteCommandQueuedAsync(form, safeArgs, cliRequestId, "CLI", Process.GetCurrentProcess().Id, CancellationToken.None);
+                        commandExitCode = await DispatchUnifiedAsync(_commandDispatcher, safeArgs, cliRequestId, "CLI", CancellationToken.None);
 
                         commandSucceeded = commandExitCode == CommandExitCodes.Success;
                         LogData.LogLifecycle("CLI", "COMMAND_END", $"RequestId={cliRequestId} Command=\"{EscapeForLifecycle(commandName)}\" Success={commandSucceeded} ExitCode={commandExitCode}");
@@ -630,6 +630,45 @@ namespace JokiAutomation
             }
         }
 
+        /// <summary>
+        /// Phase 2A unified entry point: routes a legacy command through the same
+        /// CommandDispatcher/ScenePlan infrastructure used by the Pipe path, without changing
+        /// actual hardware execution (still ScenePlan -> legacy executor -> ExecuteCommandQueuedAsync
+        /// -> Form1.CommandInterpreterAsync). Used by CLI and direct-pipe-callsites so every external
+        /// entry point receives exactly one SceneId while preserving the original RequestId.
+        /// </summary>
+        private static async Task<int> DispatchUnifiedAsync(ICommandDispatcher dispatcher, string[] args, string externalRequestId, string source, CancellationToken cancellationToken)
+        {
+            string[] safeArgs = args ?? new string[0];
+            string normalizedSource = string.IsNullOrWhiteSpace(source) ? "UNKNOWN" : source;
+
+            if (dispatcher == null)
+            {
+                LogData.LogLifecycle(normalizedSource, "DISPATCH_UNIFIED_FAILED", $"RequestId={externalRequestId} Reason=DispatcherNull");
+                return CommandExitCodes.CommandFailed;
+            }
+
+            var dispatchRequest = new SceneDispatchRequest
+            {
+                ExternalRequestId = externalRequestId,
+                Source = normalizedSource,
+                CommandName = safeArgs.Length > 0 ? safeArgs[0] : string.Empty,
+                Arguments = safeArgs,
+                WaitMode = CommandWaitMode.WaitForScene,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+
+            LogData.LogLifecycle(normalizedSource, "DISPATCH_BEGIN",
+                $"ExternalRequestId={externalRequestId} Command=\"{EscapeForLifecycle(dispatchRequest.CommandName)}\" Source={normalizedSource}");
+
+            SceneDispatchResult result = await dispatcher.DispatchAsync(dispatchRequest, cancellationToken).ConfigureAwait(false);
+
+            LogData.LogLifecycle(normalizedSource, "DISPATCH_END",
+                $"ExternalRequestId={externalRequestId} SceneId={result?.SceneId} State={result?.State} ExitCode={result?.ExitCode}");
+
+            return result?.ExitCode ?? CommandExitCodes.CommandFailed;
+        }
+
         private static async Task<int> ExecuteOnUiThreadAsync(Form1 form, string[] safeArgs, string requestId, string source, CancellationToken cancellationToken)
         {
             if (form == null)
@@ -775,11 +814,105 @@ namespace JokiAutomation
             }
 
             return new CommandDispatcher(
-                CreateLegacyScenePlan,
-                command => ExecuteCommandQueuedAsync(form, ToDispatchArguments(command), command.RequestId.ToString("N"), "PIPE", Process.GetCurrentProcess().Id, command.CancellationToken),
-                command => ExecuteCommandQueuedAsync(form, ToDispatchArguments(command), command.RequestId.ToString("N"), "PIPE", Process.GetCurrentProcess().Id, command.CancellationToken),
-                command => ExecuteCommandQueuedAsync(form, ToDispatchArguments(command), command.RequestId.ToString("N"), "PIPE", Process.GetCurrentProcess().Id, command.CancellationToken),
-                command => ExecuteCommandQueuedAsync(form, ToDispatchArguments(command), command.RequestId.ToString("N"), "PIPE", Process.GetCurrentProcess().Id, command.CancellationToken));
+                (request, token) => CreateLegacyScenePlan(form, request, token),
+                command => ExecuteCommandQueuedAsync(form, ToDispatchArguments(command), ResolveExecutorRequestId(command), command.ExecutorSource, Process.GetCurrentProcess().Id, command.CancellationToken),
+                command => ExecuteMigratedAudioCommandAsync(form, command),
+                command => ExecuteMigratedVideoCommandAsync(form, command),
+                command => ExecutePositionCommandAsync(form, command),
+                command => ExecuteCommandQueuedAsync(form, ToDispatchArguments(command), ResolveExecutorRequestId(command), command.ExecutorSource, Process.GetCurrentProcess().Id, command.CancellationToken));
+        }
+
+        // Phase 2C/2D/2E: AudioCommand executor for migrated scenes (Predigt, Gebet, BandMulti,
+        // LesungMulti, Text). All five scenes use the exact same technical audio execution: the
+        // existing production ApplyAudioProfileByNameAsync(waitForCompletion:true) path (exposed via
+        // Form1.ExecuteSceneAudioProfileAsync), i.e. the full Queue/Start -> RasPiExecuteAsync -> SSH
+        // result -> completion/exception chain - not just the enqueue step. Intentionally does not call
+        // QueueAudioProfileByNameAsync/AwaitPendingAudioCompletionAsync (no second completion barrier).
+        private static readonly IReadOnlyDictionary<string, string> MigratedSceneAudioProfiles =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Predigt"] = "Predigt",
+                ["Gebet"] = "Gottesdienst",
+                ["BandMulti"] = "Band",
+                ["LesungMulti"] = "Predigt",
+                ["Text"] = "Text"
+            };
+
+        private static async Task<int> ExecuteMigratedAudioCommandAsync(Form1 form, PipelineCommand command)
+        {
+            if (command?.CommandName != null && MigratedSceneAudioProfiles.TryGetValue(command.CommandName, out string profileName))
+            {
+                bool success = await form.ExecuteSceneAudioProfileAsync(profileName, command.CancellationToken).ConfigureAwait(false);
+                return success ? CommandExitCodes.Success : CommandExitCodes.CommandFailed;
+            }
+
+            // No other scene currently populates AudioCommands; fall back to the legacy queue path
+            // defensively so this executor is never silently a no-op for an unexpected command.
+            return await ExecuteCommandQueuedAsync(form, ToDispatchArguments(command), ResolveExecutorRequestId(command), command.ExecutorSource, Process.GetCurrentProcess().Id, command.CancellationToken).ConfigureAwait(false);
+        }
+
+        // Phase 2C/2D/2E: VideoCommand executor for migrated scenes. "Predigt" keeps its own dedicated
+        // hook (ExecutePredigtVideoAsync); "Gebet"/"BandMulti"/"LesungMulti" share the exact same
+        // DisablePictureInPicture -> SwitchATEMInputAsync(Laptop) -> Task.Delay(1000) ->
+        // EnablePictureInPicture(pipInput) sequence via Form1.ExecuteSceneVideoAsync, unchanged in order,
+        // delay and PiP-input resolution. "Text" has its own dedicated hook (ExecuteTextVideoAsync)
+        // because, unlike the multiview scenes, it never re-enables PiP (Disable -> Switch(Laptop) ->
+        // Disable only). Does not change SwitchATEMInputAsync's existing error handling (Video failure
+        // propagation = existing legacy behavior, documented, not changed here).
+        private static readonly HashSet<string> MultiViewVideoScenes =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Gebet", "BandMulti", "LesungMulti" };
+
+        private static async Task<int> ExecuteMigratedVideoCommandAsync(Form1 form, PipelineCommand command)
+        {
+            if (string.Equals(command?.CommandName, "Predigt", StringComparison.OrdinalIgnoreCase))
+            {
+                await form.ExecutePredigtVideoAsync().ConfigureAwait(false);
+                return CommandExitCodes.Success;
+            }
+
+            if (string.Equals(command?.CommandName, "Text", StringComparison.OrdinalIgnoreCase))
+            {
+                await form.ExecuteTextVideoAsync().ConfigureAwait(false);
+                return CommandExitCodes.Success;
+            }
+
+            if (command?.CommandName != null && MultiViewVideoScenes.Contains(command.CommandName))
+            {
+                await form.ExecuteSceneVideoAsync(command.CommandName, command.Arguments).ConfigureAwait(false);
+                return CommandExitCodes.Success;
+            }
+
+            // No other scene currently populates VideoCommands; fall back to the legacy queue path
+            // defensively so this executor is never silently a no-op for an unexpected command.
+            return await ExecuteCommandQueuedAsync(form, ToDispatchArguments(command), ResolveExecutorRequestId(command), command.ExecutorSource, Process.GetCurrentProcess().Id, command.CancellationToken).ConfigureAwait(false);
+        }
+
+        // Phase 2F: PositionCommand executor for active-PTZ "PositionControl" requests. Reuses the
+        // existing, unchanged PositionControlPtzAudioOrchestrator (via Form1.ExecutePositionControlPtzAsync)
+        // with the unmodified production arguments (Arguments[2]=position name, Arguments[3]=profile
+        // code), exactly once. Only "PositionControl" populates PositionCommands as of Phase 2F; any
+        // other command defensively falls back to the legacy queue path so this executor is never
+        // silently a no-op for an unexpected command.
+        private static async Task<int> ExecutePositionCommandAsync(Form1 form, PipelineCommand command)
+        {
+            if (string.Equals(command?.CommandName, "PositionControl", StringComparison.OrdinalIgnoreCase)
+                && command.Arguments != null && command.Arguments.Count >= 4)
+            {
+                await form.ExecutePositionControlPtzAsync(command.Arguments[2], command.Arguments[3]).ConfigureAwait(false);
+                return CommandExitCodes.Success;
+            }
+
+            return await ExecuteCommandQueuedAsync(form, ToDispatchArguments(command), ResolveExecutorRequestId(command), command.ExecutorSource, Process.GetCurrentProcess().Id, command.CancellationToken).ConfigureAwait(false);
+        }
+
+        private static string ResolveExecutorRequestId(PipelineCommand command)
+        {
+            // Preserve the original external (CLI/Pipe/Forwarder) correlation id when present, instead of
+            // replacing it with the dispatcher-internal Guid. Falls back to the internal Guid only when no
+            // external id was supplied at all.
+            return !string.IsNullOrWhiteSpace(command.ExternalRequestId)
+                ? command.ExternalRequestId
+                : command.RequestId.ToString("N");
         }
 
         private static string ResolveSceneCommandName(SceneDispatchRequest request)
@@ -809,6 +942,12 @@ namespace JokiAutomation
                 : commandName.Trim();
         }
 
+        // Phase 1 provisional helper. No longer used for LegacyCommand routing as of Phase 2B
+        // (see CreateLegacyScenePlan, which now routes every not-yet-decomposed command through
+        // ScenePlan.LegacyCommands instead of guessing an Audio/Video/Position/Ui pipeline for it).
+        // Left in place in case a future, real Audio/Video/Position/Ui decomposition needs a
+        // comparable mapping; do not reintroduce its mappings for LegacyCommand routing.
+        [Obsolete("Phase 2B: no longer used for LegacyCommand routing. Kept only for potential future real pipeline decomposition.")]
         private static CommandPipeline ResolvePhaseOneTargetPipeline(string normalizedCommandName)
         {
             if (string.IsNullOrWhiteSpace(normalizedCommandName))
@@ -837,6 +976,8 @@ namespace JokiAutomation
         private static PipelineCommand CreateLegacyPipelineCommand(
             Guid sceneId,
             Guid requestId,
+            string externalRequestId,
+            string executorSource,
             CommandPipeline pipeline,
             string commandName,
             IReadOnlyList<string> arguments,
@@ -850,43 +991,135 @@ namespace JokiAutomation
                 CommandName = commandName,
                 Arguments = arguments ?? Array.Empty<string>(),
                 CreatedAt = DateTimeOffset.UtcNow,
-                CancellationToken = cancellationToken
+                CancellationToken = cancellationToken,
+                ExternalRequestId = externalRequestId,
+                ExecutorSource = string.IsNullOrWhiteSpace(executorSource) ? "UNKNOWN" : executorSource
             };
         }
 
-        private static ScenePlan CreateLegacyScenePlan(SceneDispatchRequest request, CancellationToken cancellationToken)
+        private static ScenePlan CreateLegacyScenePlan(Form1 form, SceneDispatchRequest request, CancellationToken cancellationToken)
         {
             Guid sceneId = Guid.NewGuid();
             Guid requestId;
-            if (!Guid.TryParse(request.ExternalRequestId, out requestId))
+            bool externalRequestIdWasGuid = Guid.TryParse(request.ExternalRequestId, out requestId);
+            if (!externalRequestIdWasGuid)
             {
                 requestId = Guid.NewGuid();
             }
+
+            // The original technical correlation id (CLI/Pipe/Forwarder) must never be silently discarded,
+            // even when it isn't itself a parseable Guid. It is carried separately on PipelineCommand/log lines.
+            string originalExternalRequestId = request.ExternalRequestId;
 
             string resolvedCommandName = ResolveSceneCommandName(request);
             string normalizedCommandName = NormalizeSceneCommandName(resolvedCommandName);
             IReadOnlyList<string> dispatchArguments = request.Arguments ?? Array.Empty<string>();
 
-            CommandPipeline targetPipeline = ResolvePhaseOneTargetPipeline(normalizedCommandName);
+            // Phase 2C/2D/2E: "Predigt", "Gebet", "BandMulti", "LesungMulti" and "Text" are migrated
+            // out of LegacyCommands. Each is represented as exactly one AudioCommand + one VideoCommand
+            // (no LegacyCommands/PositionCommands/UiCommands), executed in parallel via
+            // ExecutionMode=ParallelAudioVideo. "Text" has no separate UI domain in production code (its
+            // DisablePictureInPicture/SwitchATEMInputAsync calls are pure ATEM hardware control, not
+            // WinForms UI), so no UiCommand is introduced for it (UiCount=0). All other commands remain
+            // explicit, not-yet-decomposed LegacyCommands as established in Phase 2B.
+            if (MigratedSceneAudioProfiles.ContainsKey(normalizedCommandName))
+            {
+                PipelineCommand audioCommand = CreateLegacyPipelineCommand(
+                    sceneId,
+                    requestId,
+                    originalExternalRequestId,
+                    request.Source,
+                    CommandPipeline.Audio,
+                    normalizedCommandName,
+                    dispatchArguments,
+                    cancellationToken);
 
+                PipelineCommand videoCommand = CreateLegacyPipelineCommand(
+                    sceneId,
+                    requestId,
+                    originalExternalRequestId,
+                    request.Source,
+                    CommandPipeline.Video,
+                    normalizedCommandName,
+                    dispatchArguments,
+                    cancellationToken);
+
+                LogData.LogLifecycle("DISPATCHER", "SCENE_PLAN_MAPPED",
+                    $"SceneId={sceneId} ExternalRequestId={originalExternalRequestId} InternalRequestId={requestId:N} ExternalRequestIdWasGuid={externalRequestIdWasGuid} Scene={normalizedCommandName} Pipeline={CommandPipeline.Audio}+{CommandPipeline.Video} Command={normalizedCommandName}");
+
+                return new ScenePlan
+                {
+                    SceneId = sceneId,
+                    SceneName = normalizedCommandName,
+                    ExecutionMode = SceneExecutionMode.ParallelAudioVideo,
+                    LegacyCommands = Array.Empty<PipelineCommand>(),
+                    AudioCommands = new[] { audioCommand },
+                    VideoCommands = new[] { videoCommand },
+                    PositionCommands = Array.Empty<PipelineCommand>(),
+                    UiCommands = Array.Empty<PipelineCommand>()
+                };
+            }
+
+            // Phase 2F: active-PTZ "PositionControl" requests are represented as exactly one
+            // PositionCommand (no Legacy/Audio/Video/Ui commands). The PositionCommand still runs the
+            // full, unchanged PositionControlPtzAudioOrchestrator internally (Audio -> Cover -> PTZ ->
+            // Final). Inactive-PTZ PositionControl requests fall through unchanged to LegacyCommand
+            // below, preserving the existing legacy RasPi positioning path. Reuses the exact same
+            // production condition (Form1.IsActivePtzPositionControlMode) used by the legacy
+            // CommandInterpreterAsync branch so the two paths cannot diverge.
+            if (string.Equals(normalizedCommandName, "PositionControl", StringComparison.OrdinalIgnoreCase)
+                && form.IsActivePtzPositionControlMode())
+            {
+                PipelineCommand positionCommand = CreateLegacyPipelineCommand(
+                    sceneId,
+                    requestId,
+                    originalExternalRequestId,
+                    request.Source,
+                    CommandPipeline.Position,
+                    normalizedCommandName,
+                    dispatchArguments,
+                    cancellationToken);
+
+                LogData.LogLifecycle("DISPATCHER", "SCENE_PLAN_MAPPED",
+                    $"SceneId={sceneId} ExternalRequestId={originalExternalRequestId} InternalRequestId={requestId:N} ExternalRequestIdWasGuid={externalRequestIdWasGuid} Scene={normalizedCommandName} Pipeline={CommandPipeline.Position} Command={normalizedCommandName}");
+
+                return new ScenePlan
+                {
+                    SceneId = sceneId,
+                    SceneName = normalizedCommandName,
+                    LegacyCommands = Array.Empty<PipelineCommand>(),
+                    AudioCommands = Array.Empty<PipelineCommand>(),
+                    VideoCommands = Array.Empty<PipelineCommand>(),
+                    PositionCommands = new[] { positionCommand },
+                    UiCommands = Array.Empty<PipelineCommand>()
+                };
+            }
+
+            // Phase 2B: every not-yet-decomposed command is routed as a single, explicit LegacyCommand.
+            // It is intentionally NOT mapped onto Audio/Video/Position/Ui; the legacy executor forwards
+            // it unchanged to Form1.CommandInterpreterAsync, which remains the sole source of truth for
+            // its internal Audio/ATEM/PTZ/PiP/RasPi behavior.
             PipelineCommand legacyCommand = CreateLegacyPipelineCommand(
                 sceneId,
                 requestId,
-                targetPipeline,
+                originalExternalRequestId,
+                request.Source,
+                CommandPipeline.Legacy,
                 normalizedCommandName,
                 dispatchArguments,
                 cancellationToken);
 
             LogData.LogLifecycle("DISPATCHER", "SCENE_PLAN_MAPPED",
-                $"SceneId={sceneId} ExternalRequestId={request.ExternalRequestId} Scene={normalizedCommandName} Pipeline={targetPipeline} Command={normalizedCommandName}");
+                $"SceneId={sceneId} ExternalRequestId={originalExternalRequestId} InternalRequestId={requestId:N} ExternalRequestIdWasGuid={externalRequestIdWasGuid} Scene={normalizedCommandName} Pipeline={CommandPipeline.Legacy} Command={normalizedCommandName}");
 
             return new ScenePlan
             {
                 SceneId = sceneId,
                 SceneName = normalizedCommandName,
-                AudioCommands = targetPipeline == CommandPipeline.Audio ? new[] { legacyCommand } : Array.Empty<PipelineCommand>(),
-                VideoCommands = targetPipeline == CommandPipeline.Video ? new[] { legacyCommand } : Array.Empty<PipelineCommand>(),
-                PositionCommands = targetPipeline == CommandPipeline.Position ? new[] { legacyCommand } : Array.Empty<PipelineCommand>(),
+                LegacyCommands = new[] { legacyCommand },
+                AudioCommands = Array.Empty<PipelineCommand>(),
+                VideoCommands = Array.Empty<PipelineCommand>(),
+                PositionCommands = Array.Empty<PipelineCommand>(),
                 UiCommands = Array.Empty<PipelineCommand>()
             };
         }
@@ -2663,7 +2896,11 @@ namespace JokiAutomation
         Audio,
         Video,
         Position,
-        Ui
+        Ui,
+        // Phase 2B: explicit path for not-yet-decomposed legacy scenes. A LegacyCommand represents a
+        // full, still-monolithic scene that is forwarded as-is to Form1.CommandInterpreterAsync instead
+        // of being artificially mapped onto Audio/Video/Position/Ui.
+        Legacy
     }
 
     internal enum PipelineCommandState
@@ -2693,8 +2930,21 @@ namespace JokiAutomation
         WaitForScene
     }
 
+    // Phase 2C: explicit, minimal execution-strategy switch for a ScenePlan. Default (Sequential)
+    // preserves the Phase 2B behavior (Legacy -> Audio -> Video -> Position -> Ui, one list after
+    // another). ParallelAudioVideo is opt-in per ScenePlan (e.g. for "Predigt") and only changes how
+    // AudioCommands/VideoCommands of THIS plan are awaited (Task.WhenAll instead of sequential awaits).
+    // This is intentionally not inferred from AudioCommands.Count > 0 && VideoCommands.Count > 0, since
+    // future scenes may contain both lists while still requiring sequential/dependent execution.
+    internal enum SceneExecutionMode
+    {
+        Sequential,
+        ParallelAudioVideo
+    }
+
     internal sealed class PipelineCommand
     {
+        // Internal correlation id used for dispatcher-internal bookkeeping (queueing, result matching).
         public Guid RequestId { get; set; }
         public Guid SceneId { get; set; }
         public CommandPipeline Pipeline { get; set; }
@@ -2702,6 +2952,14 @@ namespace JokiAutomation
         public IReadOnlyList<string> Arguments { get; set; } = Array.Empty<string>();
         public DateTimeOffset CreatedAt { get; set; }
         public CancellationToken CancellationToken { get; set; }
+
+        // Original, externally supplied technical correlation id (CLI/Pipe/Forwarder). Preserved verbatim
+        // even when RequestId above had to fall back to a newly generated Guid (e.g. unparsable external id).
+        public string ExternalRequestId { get; set; }
+
+        // Original request source label (CLI/PIPE/...) carried through to legacy executor/log lines so unifying
+        // the dispatcher entry point does not relabel CLI-originated commands as "PIPE".
+        public string ExecutorSource { get; set; }
     }
 
     internal sealed class PipelineCommandResult
@@ -2720,6 +2978,14 @@ namespace JokiAutomation
     {
         public Guid SceneId { get; set; }
         public string SceneName { get; set; }
+        // Phase 2C: explicit execution strategy for this plan. Defaults to Sequential (Phase 2B
+        // behavior). Only plans that opt into ParallelAudioVideo (e.g. "Predigt") run their
+        // AudioCommands/VideoCommands concurrently.
+        public SceneExecutionMode ExecutionMode { get; set; } = SceneExecutionMode.Sequential;
+        // Phase 2B: explicit, not-yet-decomposed legacy scenes. Reuses PipelineCommand (no new class
+        // hierarchy). A command placed here must NOT also appear in AudioCommands/VideoCommands/
+        // PositionCommands/UiCommands (exactly-once execution).
+        public IReadOnlyList<PipelineCommand> LegacyCommands { get; set; } = Array.Empty<PipelineCommand>();
         public IReadOnlyList<PipelineCommand> AudioCommands { get; set; } = Array.Empty<PipelineCommand>();
         public IReadOnlyList<PipelineCommand> VideoCommands { get; set; } = Array.Empty<PipelineCommand>();
         public IReadOnlyList<PipelineCommand> PositionCommands { get; set; } = Array.Empty<PipelineCommand>();
@@ -2770,6 +3036,7 @@ namespace JokiAutomation
         private int _acceptingRequests = 1;
         private int _activeDispatchCalls;
         private TaskCompletionSource<bool> _dispatchCallsIdle = CreateCompletedIdleSource();
+        private readonly Func<PipelineCommand, Task<int>> _legacyExecutor;
         private readonly Func<PipelineCommand, Task<int>> _audioExecutor;
         private readonly Func<PipelineCommand, Task<int>> _videoExecutor;
         private readonly Func<PipelineCommand, Task<int>> _positionExecutor;
@@ -2784,12 +3051,14 @@ namespace JokiAutomation
 
         public CommandDispatcher(
             Func<SceneDispatchRequest, CancellationToken, ScenePlan> scenePlanner,
+            Func<PipelineCommand, Task<int>> legacyExecutor,
             Func<PipelineCommand, Task<int>> audioExecutor,
             Func<PipelineCommand, Task<int>> videoExecutor,
             Func<PipelineCommand, Task<int>> positionExecutor,
             Func<PipelineCommand, Task<int>> uiExecutor)
         {
             _scenePlanner = scenePlanner ?? throw new ArgumentNullException(nameof(scenePlanner));
+            _legacyExecutor = legacyExecutor ?? throw new ArgumentNullException(nameof(legacyExecutor));
             _audioExecutor = audioExecutor ?? throw new ArgumentNullException(nameof(audioExecutor));
             _videoExecutor = videoExecutor ?? throw new ArgumentNullException(nameof(videoExecutor));
             _positionExecutor = positionExecutor ?? throw new ArgumentNullException(nameof(positionExecutor));
@@ -2894,19 +3163,20 @@ namespace JokiAutomation
             var context = new SceneExecutionContext(scenePlan.SceneId, request.ExternalRequestId, scenePlan.SceneName);
             _sceneContexts[scenePlan.SceneId] = context;
 
+            int legacyCount = scenePlan.LegacyCommands?.Count ?? 0;
             int audioCount = scenePlan.AudioCommands?.Count ?? 0;
             int videoCount = scenePlan.VideoCommands?.Count ?? 0;
             int positionCount = scenePlan.PositionCommands?.Count ?? 0;
             int uiCount = scenePlan.UiCommands?.Count ?? 0;
 
-            context.InitializePending(audioCount + videoCount + positionCount + uiCount);
+            context.InitializePending(legacyCount + audioCount + videoCount + positionCount + uiCount);
 
             LogData.LogLifecycle(request.Source ?? "UNKNOWN", "SCENE_BEGIN",
                 $"SceneId={scenePlan.SceneId} ExternalRequestId={request.ExternalRequestId} Command={scenePlan.SceneName} WaitMode={request.WaitMode} Source={request.Source ?? "UNKNOWN"} CreatedAt={request.CreatedAt:O} PID={Process.GetCurrentProcess().Id} TID={Thread.CurrentThread.ManagedThreadId}");
             LogData.LogLifecycle(request.Source ?? "UNKNOWN", "DISPATCH_BEGIN",
                 $"SceneId={scenePlan.SceneId} ExternalRequestId={request.ExternalRequestId} Command={scenePlan.SceneName} WaitMode={request.WaitMode} Source={request.Source ?? "UNKNOWN"} PID={Process.GetCurrentProcess().Id} TID={Thread.CurrentThread.ManagedThreadId}");
             LogData.LogLifecycle(request.Source ?? "UNKNOWN", "SCENE_PLAN",
-                $"SceneId={scenePlan.SceneId} ExternalRequestId={request.ExternalRequestId} AudioCount={audioCount} VideoCount={videoCount} PositionCount={positionCount} UiCount={uiCount}");
+                $"SceneId={scenePlan.SceneId} ExternalRequestId={request.ExternalRequestId} LegacyCount={legacyCount} AudioCount={audioCount} VideoCount={videoCount} PositionCount={positionCount} UiCount={uiCount}");
 
             if (request.WaitMode == CommandWaitMode.HandoffOnly)
             {
@@ -3117,8 +3387,25 @@ namespace JokiAutomation
                 return;
             }
 
-            await ExecuteCommandListAsync(scenePlan.AudioCommands, _audioExecutor, source, CommandPipeline.Audio, context, cancellationToken).ConfigureAwait(false);
-            await ExecuteCommandListAsync(scenePlan.VideoCommands, _videoExecutor, source, CommandPipeline.Video, context, cancellationToken).ConfigureAwait(false);
+            await ExecuteCommandListAsync(scenePlan.LegacyCommands, _legacyExecutor, source, CommandPipeline.Legacy, context, cancellationToken).ConfigureAwait(false);
+
+            if (scenePlan.ExecutionMode == SceneExecutionMode.ParallelAudioVideo)
+            {
+                // Phase 2C: explicit, plan-level opt-in (ScenePlan.ExecutionMode), currently only set by
+                // CreateLegacyScenePlan for "Predigt". Audio and Video commands of THIS plan are started
+                // together and awaited via Task.WhenAll, so Audio starts before Video completes and vice
+                // versa; the scene only completes once both are done. This is intentionally not derived
+                // from AudioCommands.Count > 0 && VideoCommands.Count > 0 (see SceneExecutionMode).
+                Task audioTask = ExecuteCommandListAsync(scenePlan.AudioCommands, _audioExecutor, source, CommandPipeline.Audio, context, cancellationToken);
+                Task videoTask = ExecuteCommandListAsync(scenePlan.VideoCommands, _videoExecutor, source, CommandPipeline.Video, context, cancellationToken);
+                await Task.WhenAll(audioTask, videoTask).ConfigureAwait(false);
+            }
+            else
+            {
+                await ExecuteCommandListAsync(scenePlan.AudioCommands, _audioExecutor, source, CommandPipeline.Audio, context, cancellationToken).ConfigureAwait(false);
+                await ExecuteCommandListAsync(scenePlan.VideoCommands, _videoExecutor, source, CommandPipeline.Video, context, cancellationToken).ConfigureAwait(false);
+            }
+
             await ExecuteCommandListAsync(scenePlan.PositionCommands, _positionExecutor, source, CommandPipeline.Position, context, cancellationToken).ConfigureAwait(false);
             await ExecuteCommandListAsync(scenePlan.UiCommands, _uiExecutor, source, CommandPipeline.Ui, context, cancellationToken).ConfigureAwait(false);
         }
@@ -3298,6 +3585,8 @@ namespace JokiAutomation
                     return "POSITION";
                 case CommandPipeline.Ui:
                     return "UI";
+                case CommandPipeline.Legacy:
+                    return "LEGACY";
                 default:
                     return "PIPELINE";
             }
@@ -3413,13 +3702,14 @@ namespace JokiAutomation
                         exitCode = CommandExitCodes.Success;
                     }
 
+                    int? legacyExitCode = GetExitCodeForPipeline(CommandPipeline.Legacy);
                     int? audioExitCode = GetExitCodeForPipeline(CommandPipeline.Audio);
                     int? videoExitCode = GetExitCodeForPipeline(CommandPipeline.Video);
                     int? positionExitCode = GetExitCodeForPipeline(CommandPipeline.Position);
                     int? uiExitCode = GetExitCodeForPipeline(CommandPipeline.Ui);
 
                     LogData.LogLifecycle("DISPATCHER", "SCENE_END",
-                        $"SceneId={SceneId} ExternalRequestId={ExternalRequestId} Scene={SceneName} State={state} ExitCode={exitCode} AudioExitCode={FormatPipelineExitCode(audioExitCode)} VideoExitCode={FormatPipelineExitCode(videoExitCode)} PositionExitCode={FormatPipelineExitCode(positionExitCode)} UiExitCode={FormatPipelineExitCode(uiExitCode)} ElapsedMs={_sceneStopwatch.ElapsedMilliseconds}");
+                        $"SceneId={SceneId} ExternalRequestId={ExternalRequestId} Scene={SceneName} State={state} ExitCode={exitCode} LegacyExitCode={FormatPipelineExitCode(legacyExitCode)} AudioExitCode={FormatPipelineExitCode(audioExitCode)} VideoExitCode={FormatPipelineExitCode(videoExitCode)} PositionExitCode={FormatPipelineExitCode(positionExitCode)} UiExitCode={FormatPipelineExitCode(uiExitCode)} ElapsedMs={_sceneStopwatch.ElapsedMilliseconds}");
 
                     Completion.TrySetResult(new SceneDispatchResult
                     {

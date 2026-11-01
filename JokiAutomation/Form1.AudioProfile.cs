@@ -273,5 +273,39 @@ namespace JokiAutomation
                 await audioCompletionTask.ConfigureAwait(true);
             }
         }
+
+        /// <summary>
+        /// Phase 2C: explicit, fully-awaitable audio execution hook for the "Predigt" scene used by the
+        /// ScenePlan/CommandDispatcher AudioCommand executor. Unlike <see cref="QueueAudioProfileByNameAsync"/>
+        /// (which only enqueues onto the shared, serialized background pipeline and lets
+        /// CommandInterpreterAsync await completion later, once, via
+        /// <see cref="AwaitPendingAudioCompletionAsync"/>), this delegates to the existing production
+        /// <see cref="ApplyAudioProfileByNameAsync"/> with waitForCompletion:true, so the returned Task
+        /// itself represents the full Queue/Start -> RasPiExecuteAsync -> SSH result -> completion/exception
+        /// chain. This does not introduce a second audio queue or a second completion mechanism - it reuses
+        /// the same existing production method/branch that ApplyAudioProfileByNameAsync(waitForCompletion:true)
+        /// already uses today (e.g. for GUI_INDEX), and leaves the shared _audioPipelineTail serialization
+        /// used by the (unchanged) LegacyCommand/CommandInterpreterAsync path fully intact.
+        /// Must only be used by a migrated scene's ScenePlan/dispatcher path, never together with
+        /// AwaitPendingAudioCompletionAsync for the same request (no double completion barrier).
+        /// </summary>
+        internal Task<bool> ExecutePredigtAudioAsync(CancellationToken cancellationToken = default)
+        {
+            return ExecuteSceneAudioProfileAsync("Predigt", cancellationToken);
+        }
+
+        /// <summary>
+        /// Phase 2D: generalized form of <see cref="ExecutePredigtAudioAsync"/> for every migrated
+        /// ScenePlan AudioCommand (Predigt, Gebet, BandMulti, LesungMulti). All four scenes use exactly
+        /// the same technical audio execution (the production <see cref="ApplyAudioProfileByNameAsync"/>
+        /// path with waitForCompletion:true) and only differ by the profile name that is looked up in
+        /// listBox4. No new audio queue/completion mechanism is introduced; this still reuses the same
+        /// production branch/serialization as GUI_INDEX and leaves the legacy
+        /// QueueAudioProfileByNameAsync/AwaitPendingAudioCompletionAsync path fully untouched.
+        /// </summary>
+        internal Task<bool> ExecuteSceneAudioProfileAsync(string profileName, CancellationToken cancellationToken = default)
+        {
+            return ApplyAudioProfileByNameAsync(profileName, postSendDelay: null, cancellationToken, waitForCompletion: true);
+        }
     }
 }

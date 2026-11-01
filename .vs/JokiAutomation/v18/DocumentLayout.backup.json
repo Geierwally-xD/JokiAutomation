@@ -3,8 +3,19 @@
   "WorkspaceRootPath": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation_Architecture_Baseline.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:JokiAutomation_Architecture_Baseline.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
+      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\jokiautomation\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\jokiautomation\\form1.audioprofile.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\form1.audioprofile.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\jokiautomation\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\advore0\\.copilot\\plans\\plan-phase-2c-predigt-als-erste-multi-pipeline-szene-migrieren.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|MarkdownSecurePreview"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\advore0\\.copilot\\plans\\plan-audio-pipeline-lifetime-fix-phase-a-(reproduction)-phase-b-(fix).md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|MarkdownSecurePreview"
@@ -91,16 +102,8 @@
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\advore0\\.copilot\\plans\\plan-fix-eventtimer-start-regression.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|MarkdownSecurePreview"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|i:\\mygitrepos\\jokiautomation\\jokiautomation\\jokiautomation.tests\\jokiautomation.lifecycletests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|solutionrelative:jokiautomation.tests\\jokiautomation.lifecycletests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\jokiautomation\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\jokiautomation\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation_Phase2C_Predigt_Analysis.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:JokiAutomation_Phase2C_Predigt_Analysis.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\jokiautomation\\raspi.async.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -109,6 +112,14 @@
     {
       "AbsoluteMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\jokiautomation\\infraredcontrol.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{4C7CBDE2-D5F4-4E67-A1E8-2DC2DC43C579}|JokiAutomation\\JokiAutomation.csproj|solutionrelative:jokiautomation\\infraredcontrol.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|i:\\mygitrepos\\jokiautomation\\jokiautomation\\jokiautomation.tests\\unit\\predigtsceneplandispatchertests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|solutionrelative:jokiautomation.tests\\unit\\predigtsceneplandispatchertests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|i:\\mygitrepos\\jokiautomation\\jokiautomation\\jokiautomation.tests\\hardware\\audioprofilehardwaretests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4466CC64-B438-48F7-AE1B-B599D4F7A86C}|JokiAutomation.Tests\\JokiAutomation.Tests.csproj|solutionrelative:jokiautomation.tests\\hardware\\audioprofilehardwaretests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -118,8 +129,22 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 6,
+          "SelectedChildIndex": 0,
           "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Form1.cs",
+              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.cs",
+              "RelativeDocumentMoniker": "JokiAutomation\\Form1.cs",
+              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.cs",
+              "RelativeToolTip": "JokiAutomation\\Form1.cs",
+              "ViewState": "AgIAAG8BAAAAAAAAAAAcwIcBAAA5AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-28T14:30:08.702Z",
+              "IsPinned": true,
+              "EditorCaption": ""
+            },
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
@@ -146,336 +171,357 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "JokiAutomation_Architecture_Baseline.md",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation_Architecture_Baseline.md",
-              "RelativeDocumentMoniker": "JokiAutomation_Architecture_Baseline.md",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation_Architecture_Baseline.md",
-              "RelativeToolTip": "JokiAutomation_Architecture_Baseline.md",
-              "ViewState": "AgIAAAIAAAAAAAAAAAAAABcAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T19:08:50.5Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "plan-finalize-minimal-lifecycle-race-fix.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-finalize-minimal-lifecycle-race-fix.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-finalize-minimal-lifecycle-race-fix.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:18.342Z",
-              "EditorCaption": " [Preview]"
+              "DocumentIndex": 36,
+              "Title": "AudioProfileHardwareTests.cs",
+              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\Hardware\\AudioProfileHardwareTests.cs",
+              "RelativeDocumentMoniker": "JokiAutomation.Tests\\Hardware\\AudioProfileHardwareTests.cs",
+              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\Hardware\\AudioProfileHardwareTests.cs",
+              "RelativeToolTip": "JokiAutomation.Tests\\Hardware\\AudioProfileHardwareTests.cs",
+              "ViewState": "AgIAAEwBAAAAAAAAAIBQwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-31T17:13:29.368Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 3,
-              "Title": "plan-close-final-minimal-lifecycle-gaps.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-close-final-minimal-lifecycle-gaps.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-close-final-minimal-lifecycle-gaps.md [Preview]",
+              "Title": "plan-phase-2c-predigt-als-erste-multi-pipeline-szene-migrieren.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-phase-2c-predigt-als-erste-multi-pipeline-szene-migrieren.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-phase-2c-predigt-als-erste-multi-pipeline-szene-migrieren.md [Preview]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:18.487Z",
+              "WhenOpened": "2026-10-31T05:22:29.649Z",
               "EditorCaption": " [Preview]"
             },
             {
               "$type": "Document",
               "DocumentIndex": 2,
-              "Title": "plan-add-lifecycle-regression-test-project.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-add-lifecycle-regression-test-project.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-add-lifecycle-regression-test-project.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:18.973Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "plan-audio-pipeline-lifetime-fix-phase-a-(reproduction)-phase-b-(fix).md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-audio-pipeline-lifetime-fix-phase-a-(reproduction)-phase-b-(fix).md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-audio-pipeline-lifetime-fix-phase-a-(reproduction)-phase-b-(fix).md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:20.044Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "plan-minimal-primary-lifecycle-race-fix.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-minimal-primary-lifecycle-race-fix.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-minimal-primary-lifecycle-race-fix.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:18.024Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 6,
-              "Title": "plan-lifecycle-race-fix-primary,-pipe,-dispatcher,-background-jobs,-and-mutex-coordin.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-lifecycle-race-fix-primary,-pipe,-dispatcher,-background-jobs,-and-mutex-coordin.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-lifecycle-race-fix-primary,-pipe,-dispatcher,-background-jobs,-and-mutex-coordin.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:17.697Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 7,
-              "Title": "plan-raspi-reset-hardening-and-legacy-isolation.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-raspi-reset-hardening-and-legacy-isolation.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-raspi-reset-hardening-and-legacy-isolation.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:17.359Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 8,
-              "Title": "plan-ir-control-regression-fix-and-awaited-raspi-sequencing.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-ir-control-regression-fix-and-awaited-raspi-sequencing.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-ir-control-regression-fix-and-awaited-raspi-sequencing.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:17.146Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 9,
-              "Title": "plan-pipe-server-shutdown-hardening-and-mutex-integration-verification.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-pipe-server-shutdown-hardening-and-mutex-integration-verification.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-pipe-server-shutdown-hardening-and-mutex-integration-verification.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:16.142Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 10,
-              "Title": "plan-harden-pipe-server-shutdown-and-verify-log-progression.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-harden-pipe-server-shutdown-and-verify-log-progression.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-harden-pipe-server-shutdown-and-verify-log-progression.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:15.929Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 11,
-              "Title": "plan-implement-phase-3-audiopipeline.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-3-audiopipeline.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-3-audiopipeline.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:15.472Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 12,
-              "Title": "plan-implement-phase-2-positionpipeline.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-2-positionpipeline.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-2-positionpipeline.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:15.017Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 13,
-              "Title": "plan-refine-phase-1-scene-mapping-for-altarpredigt.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-refine-phase-1-scene-mapping-for-altarpredigt.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-refine-phase-1-scene-mapping-for-altarpredigt.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:14.554Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 14,
-              "Title": "plan-run-phase-01-regression-tests.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-run-phase-01-regression-tests.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-run-phase-01-regression-tests.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:14.234Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 15,
-              "Title": "plan-implement-phase-0-logging-hardening.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-0-logging-hardening.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-0-logging-hardening.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:13.87Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 16,
-              "Title": "plan-implement-phase-1-serial-dispatcher-path.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-1-serial-dispatcher-path.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-1-serial-dispatcher-path.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:13.541Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 17,
-              "Title": "plan-continue-dispatcher-handoff-integration.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-continue-dispatcher-handoff-integration.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-continue-dispatcher-handoff-integration.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:13.237Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 18,
-              "Title": "plan-split-internal-execution-into-audiovideoui-pipelines-with-dispatcher-and-handoff.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-split-internal-execution-into-audiovideoui-pipelines-with-dispatcher-and-handoff.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-split-internal-execution-into-audiovideoui-pipelines-with-dispatcher-and-handoff.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:12.923Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 19,
-              "Title": "plan-separate-audio-and-visual-command-pipelines-for-scene-switches.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-separate-audio-and-visual-command-pipelines-for-scene-switches.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-separate-audio-and-visual-command-pipelines-for-scene-switches.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:12.694Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 20,
-              "Title": "plan-deterministic-audio-profile-mapping-and-awaitable-raspi-dispatch.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-deterministic-audio-profile-mapping-and-awaitable-raspi-dispatch.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-deterministic-audio-profile-mapping-and-awaitable-raspi-dispatch.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:11.901Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 21,
-              "Title": "plan-fix-deterministic-audio-profile-resolution-for-cli-commands.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-fix-deterministic-audio-profile-resolution-for-cli-commands.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-fix-deterministic-audio-profile-resolution-for-cli-commands.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:11.792Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 22,
-              "Title": "plan-stabilize-shutdownmutex-handoff-in-program-and-form1.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-stabilize-shutdownmutex-handoff-in-program-and-form1.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-stabilize-shutdownmutex-handoff-in-program-and-form1.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:11.441Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 23,
-              "Title": "plan-stabilize-single-instance,-queue,-and-eventtimer-handoff-behavior.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-stabilize-single-instance,-queue,-and-eventtimer-handoff-behavior.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-stabilize-single-instance,-queue,-and-eventtimer-handoff-behavior.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:11.175Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 24,
-              "Title": "plan-diagnose-and-stabilize-pausetimer-audio-regression-after-single-instance-queue-r.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-diagnose-and-stabilize-pausetimer-audio-regression-after-single-instance-queue-r.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-diagnose-and-stabilize-pausetimer-audio-regression-after-single-instance-queue-r.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:10.736Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 25,
-              "Title": "plan-analyze-and-stabilize-current-single-instancepipequeue-implementation.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-analyze-and-stabilize-current-single-instancepipequeue-implementation.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-analyze-and-stabilize-current-single-instancepipequeue-implementation.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:10.489Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 26,
-              "Title": "plan-add-lifecycle-diagnostics-for-jokiautomation-and-eventtimer.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-add-lifecycle-diagnostics-for-jokiautomation-and-eventtimer.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-add-lifecycle-diagnostics-for-jokiautomation-and-eventtimer.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:08.363Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 27,
-              "Title": "plan-investigate-eventtimer-launch-regression.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-investigate-eventtimer-launch-regression.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-investigate-eventtimer-launch-regression.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:08.132Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 28,
-              "Title": "plan-fix-eventtimer-start-regression.md [Preview]",
-              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-fix-eventtimer-start-regression.md",
-              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-fix-eventtimer-start-regression.md [Preview]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-10-29T18:39:07.537Z",
-              "EditorCaption": " [Preview]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 29,
-              "Title": "JokiAutomation.LifecycleTests.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\JokiAutomation.LifecycleTests.cs",
-              "RelativeDocumentMoniker": "JokiAutomation.Tests\\JokiAutomation.LifecycleTests.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\JokiAutomation.LifecycleTests.cs",
-              "RelativeToolTip": "JokiAutomation.Tests\\JokiAutomation.LifecycleTests.cs",
-              "ViewState": "AgIAAIoAAAAAAAAAAAAvwAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-29T18:51:25.253Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 30,
               "Title": "Program.cs",
               "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Program.cs",
               "RelativeDocumentMoniker": "JokiAutomation\\Program.cs",
               "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Program.cs",
               "RelativeToolTip": "JokiAutomation\\Program.cs",
-              "ViewState": "AgIAAEAGAAAAAAAAAAAUwAAAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAEcEAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-10-29T18:50:47.083Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 31,
-              "Title": "Form1.cs",
-              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.cs",
-              "RelativeDocumentMoniker": "JokiAutomation\\Form1.cs",
-              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.cs",
-              "RelativeToolTip": "JokiAutomation\\Form1.cs",
-              "ViewState": "AgIAAJICAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "DocumentIndex": 1,
+              "Title": "Form1.AudioProfile.cs",
+              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.AudioProfile.cs",
+              "RelativeDocumentMoniker": "JokiAutomation\\Form1.AudioProfile.cs",
+              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\Form1.AudioProfile.cs",
+              "RelativeToolTip": "JokiAutomation\\Form1.AudioProfile.cs",
+              "ViewState": "AgIAABQBAAAAAAAAAAAwwAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-28T14:30:08.702Z"
+              "WhenOpened": "2026-10-31T05:18:50.855Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 33,
+              "DocumentIndex": 35,
+              "Title": "PredigtScenePlanDispatcherTests.cs",
+              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\Unit\\PredigtScenePlanDispatcherTests.cs",
+              "RelativeDocumentMoniker": "JokiAutomation.Tests\\Unit\\PredigtScenePlanDispatcherTests.cs",
+              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation.Tests\\Unit\\PredigtScenePlanDispatcherTests.cs",
+              "RelativeToolTip": "JokiAutomation.Tests\\Unit\\PredigtScenePlanDispatcherTests.cs",
+              "ViewState": "AgIAACUAAAAAAAAAAABRwLkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-31T16:23:47.299Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "plan-audio-pipeline-lifetime-fix-phase-a-(reproduction)-phase-b-(fix).md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-audio-pipeline-lifetime-fix-phase-a-(reproduction)-phase-b-(fix).md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-audio-pipeline-lifetime-fix-phase-a-(reproduction)-phase-b-(fix).md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:36.163Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "plan-add-lifecycle-regression-test-project.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-add-lifecycle-regression-test-project.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-add-lifecycle-regression-test-project.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:35.035Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "plan-close-final-minimal-lifecycle-gaps.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-close-final-minimal-lifecycle-gaps.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-close-final-minimal-lifecycle-gaps.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:34.623Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "plan-finalize-minimal-lifecycle-race-fix.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-finalize-minimal-lifecycle-race-fix.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-finalize-minimal-lifecycle-race-fix.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:34.382Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "plan-minimal-primary-lifecycle-race-fix.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-minimal-primary-lifecycle-race-fix.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-minimal-primary-lifecycle-race-fix.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:34.113Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "plan-lifecycle-race-fix-primary,-pipe,-dispatcher,-background-jobs,-and-mutex-coordin.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-lifecycle-race-fix-primary,-pipe,-dispatcher,-background-jobs,-and-mutex-coordin.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-lifecycle-race-fix-primary,-pipe,-dispatcher,-background-jobs,-and-mutex-coordin.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:33.888Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "plan-raspi-reset-hardening-and-legacy-isolation.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-raspi-reset-hardening-and-legacy-isolation.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-raspi-reset-hardening-and-legacy-isolation.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:33.13Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "plan-ir-control-regression-fix-and-awaited-raspi-sequencing.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-ir-control-regression-fix-and-awaited-raspi-sequencing.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-ir-control-regression-fix-and-awaited-raspi-sequencing.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:32.746Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "plan-pipe-server-shutdown-hardening-and-mutex-integration-verification.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-pipe-server-shutdown-hardening-and-mutex-integration-verification.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-pipe-server-shutdown-hardening-and-mutex-integration-verification.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:31.6Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "plan-harden-pipe-server-shutdown-and-verify-log-progression.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-harden-pipe-server-shutdown-and-verify-log-progression.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-harden-pipe-server-shutdown-and-verify-log-progression.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:31.248Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "plan-implement-phase-3-audiopipeline.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-3-audiopipeline.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-3-audiopipeline.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:30.866Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "plan-implement-phase-2-positionpipeline.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-2-positionpipeline.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-2-positionpipeline.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:30.481Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "plan-refine-phase-1-scene-mapping-for-altarpredigt.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-refine-phase-1-scene-mapping-for-altarpredigt.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-refine-phase-1-scene-mapping-for-altarpredigt.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:29.994Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "plan-run-phase-01-regression-tests.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-run-phase-01-regression-tests.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-run-phase-01-regression-tests.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:29.658Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "plan-implement-phase-0-logging-hardening.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-0-logging-hardening.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-0-logging-hardening.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:29.305Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "plan-implement-phase-1-serial-dispatcher-path.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-1-serial-dispatcher-path.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-implement-phase-1-serial-dispatcher-path.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:28.828Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "plan-continue-dispatcher-handoff-integration.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-continue-dispatcher-handoff-integration.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-continue-dispatcher-handoff-integration.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:28.245Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "plan-split-internal-execution-into-audiovideoui-pipelines-with-dispatcher-and-handoff.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-split-internal-execution-into-audiovideoui-pipelines-with-dispatcher-and-handoff.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-split-internal-execution-into-audiovideoui-pipelines-with-dispatcher-and-handoff.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:28.011Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 22,
+              "Title": "plan-separate-audio-and-visual-command-pipelines-for-scene-switches.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-separate-audio-and-visual-command-pipelines-for-scene-switches.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-separate-audio-and-visual-command-pipelines-for-scene-switches.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:27.747Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 23,
+              "Title": "plan-deterministic-audio-profile-mapping-and-awaitable-raspi-dispatch.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-deterministic-audio-profile-mapping-and-awaitable-raspi-dispatch.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-deterministic-audio-profile-mapping-and-awaitable-raspi-dispatch.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:26.953Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 24,
+              "Title": "plan-fix-deterministic-audio-profile-resolution-for-cli-commands.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-fix-deterministic-audio-profile-resolution-for-cli-commands.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-fix-deterministic-audio-profile-resolution-for-cli-commands.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:26.756Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 25,
+              "Title": "plan-stabilize-shutdownmutex-handoff-in-program-and-form1.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-stabilize-shutdownmutex-handoff-in-program-and-form1.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-stabilize-shutdownmutex-handoff-in-program-and-form1.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:26.373Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 26,
+              "Title": "plan-stabilize-single-instance,-queue,-and-eventtimer-handoff-behavior.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-stabilize-single-instance,-queue,-and-eventtimer-handoff-behavior.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-stabilize-single-instance,-queue,-and-eventtimer-handoff-behavior.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:26.018Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 27,
+              "Title": "plan-diagnose-and-stabilize-pausetimer-audio-regression-after-single-instance-queue-r.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-diagnose-and-stabilize-pausetimer-audio-regression-after-single-instance-queue-r.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-diagnose-and-stabilize-pausetimer-audio-regression-after-single-instance-queue-r.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:25.586Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 28,
+              "Title": "plan-analyze-and-stabilize-current-single-instancepipequeue-implementation.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-analyze-and-stabilize-current-single-instancepipequeue-implementation.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-analyze-and-stabilize-current-single-instancepipequeue-implementation.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:25.167Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 29,
+              "Title": "plan-add-lifecycle-diagnostics-for-jokiautomation-and-eventtimer.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-add-lifecycle-diagnostics-for-jokiautomation-and-eventtimer.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-add-lifecycle-diagnostics-for-jokiautomation-and-eventtimer.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:24.423Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 30,
+              "Title": "plan-investigate-eventtimer-launch-regression.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-investigate-eventtimer-launch-regression.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-investigate-eventtimer-launch-regression.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:23.971Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 31,
+              "Title": "plan-fix-eventtimer-start-regression.md [Preview]",
+              "DocumentMoniker": "C:\\Users\\advore0\\.copilot\\plans\\plan-fix-eventtimer-start-regression.md",
+              "ToolTip": "C:\\Users\\advore0\\.copilot\\plans\\plan-fix-eventtimer-start-regression.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T16:13:23.678Z",
+              "EditorCaption": " [Preview]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 32,
+              "Title": "JokiAutomation_Phase2C_Predigt_Analysis.md",
+              "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation_Phase2C_Predigt_Analysis.md",
+              "RelativeDocumentMoniker": "JokiAutomation_Phase2C_Predigt_Analysis.md",
+              "ToolTip": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation_Phase2C_Predigt_Analysis.md",
+              "RelativeToolTip": "JokiAutomation_Phase2C_Predigt_Analysis.md",
+              "ViewState": "AgIAAGkAAAAAAAAAAAAAAGkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-10-31T05:14:52.7Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 34,
               "Title": "InfraredControl.cs",
               "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\InfraredControl.cs",
               "RelativeDocumentMoniker": "JokiAutomation\\InfraredControl.cs",
@@ -487,7 +533,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 32,
+              "DocumentIndex": 33,
               "Title": "RasPi.Async.cs",
               "DocumentMoniker": "I:\\MyGitRepos\\JoKiAutomation\\JokiAutomation\\JokiAutomation\\RasPi.Async.cs",
               "RelativeDocumentMoniker": "JokiAutomation\\RasPi.Async.cs",

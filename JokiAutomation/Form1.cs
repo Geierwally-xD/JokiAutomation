@@ -375,9 +375,20 @@ namespace JokiAutomation
                     return;
                 }
 
-                _logDat?.sendInfoMessage("JokiAutomation\nStartupInit wird ausgeführt...");
+                _logDat?.sendInfoMessage(
+                    "JokiAutomation\nStartupInit wird ausgeführt...");
 
-                TryStartRemoteControlApplication();
+                bool remoteControlReady =
+                    await TryStartRemoteControlApplicationAsync();
+
+                if (!remoteControlReady)
+                {
+                    _logDat?.sendInfoMessage(
+                        "JokiAutomation\nStartupInit abgebrochen: Canon Remote nicht bereit.");
+
+                    return;
+                }
+
                 await Task.Run(() => PowerOnRakutenTv());
 
                 bool rasPiTimeSynced = await _infraredControl.SyncRaspberryPiDateTimeWithWindowsAsync();
@@ -400,30 +411,47 @@ namespace JokiAutomation
             }
         }
 
-        private void TryStartRemoteControlApplication()
+        private async Task<bool> TryStartRemoteControlApplicationAsync()
         {
             const string processName = "CanonRemoteControl";
 
+            _logDat?.sendInfoMessage(
+                "JokiAutomation\nREMOTE_CONTROL_START_BEGIN");
+
             try
             {
-                if (Process.GetProcessesByName(processName).Length > 0)
+                var running =
+                    Process.GetProcessesByName(processName)
+                           .FirstOrDefault();
+
+                if (running != null)
                 {
-                    _logDat?.sendInfoMessage("JokiAutomation\nRemote Control läuft bereits.");
-                    return;
+                    _logDat?.sendInfoMessage(
+                        $"JokiAutomation\nRemote Control läuft bereits. PID={running.Id}");
+
+                    return true;
                 }
 
                 string[] candidatePaths =
                 {
-                    Path.Combine(Application.StartupPath, "CanonRemoteControl.exe"),
-                    Path.GetFullPath(Path.Combine(Application.StartupPath, @"..\..\..\..\CanonRemoteControl\bin\x64\Release\CanonRemoteControl.exe")),
-                    Path.GetFullPath(Path.Combine(Application.StartupPath, @"..\..\..\..\CanonRemoteControl\bin\Release\CanonRemoteControl.exe"))
-                };
+            Path.Combine(Application.StartupPath, "CanonRemoteControl.exe"),
+            Path.GetFullPath(Path.Combine(
+                Application.StartupPath,
+                @"..\..\..\..\CanonRemoteControl\bin\x64\Release\CanonRemoteControl.exe")),
+            Path.GetFullPath(Path.Combine(
+                Application.StartupPath,
+                @"..\..\..\..\CanonRemoteControl\bin\Release\CanonRemoteControl.exe"))
+        };
 
-                string remoteControlPath = candidatePaths.FirstOrDefault(File.Exists);
+                string remoteControlPath =
+                    candidatePaths.FirstOrDefault(File.Exists);
+
                 if (string.IsNullOrWhiteSpace(remoteControlPath))
                 {
-                    _logDat?.sendInfoMessage("JokiAutomation\nRemote Control konnte nicht gestartet werden: CanonRemoteControl.exe nicht gefunden.");
-                    return;
+                    _logDat?.sendInfoMessage(
+                        "JokiAutomation\nREMOTE_CONTROL_START_FAILED CanonRemoteControl.exe nicht gefunden.");
+
+                    return false;
                 }
 
                 Process.Start(new ProcessStartInfo
@@ -434,11 +462,55 @@ namespace JokiAutomation
                     WindowStyle = ProcessWindowStyle.Minimized
                 });
 
-                _logDat?.sendInfoMessage($"JokiAutomation\nRemote Control minimiert gestartet: {remoteControlPath}");
+                _logDat?.sendInfoMessage(
+                    $"JokiAutomation\nRemote Control minimiert gestartet: {remoteControlPath}");
+
+                var sw = Stopwatch.StartNew();
+
+                while (sw.ElapsedMilliseconds < 5000)
+                {
+                    var process =
+                        Process.GetProcessesByName(processName)
+                               .FirstOrDefault();
+
+                    if (process != null)
+                    {
+                        process.Refresh();
+
+                        if (process.HasExited)
+                        {
+                            _logDat?.sendInfoMessage(
+                                "JokiAutomation\nREMOTE_CONTROL_START_FAILED ProcessExited");
+
+                            return false;
+                        }
+
+                        if (process.MainWindowHandle != IntPtr.Zero)
+                        {
+                            _logDat?.sendInfoMessage(
+                                $"JokiAutomation\nREMOTE_CONTROL_WINDOW_FOUND PID={process.Id}");
+
+                            _logDat?.sendInfoMessage(
+                                "JokiAutomation\nREMOTE_CONTROL_START_SUCCESS");
+
+                            return true;
+                        }
+                    }
+
+                    await Task.Delay(100);
+                }
+
+                _logDat?.sendInfoMessage(
+                    "JokiAutomation\nREMOTE_CONTROL_START_TIMEOUT");
+
+                return false;
             }
             catch (Exception ex)
             {
-                _logDat?.sendInfoMessage($"JokiAutomation\nFehler beim Starten von Remote Control: {ex.Message}");
+                _logDat?.sendInfoMessage(
+                    $"JokiAutomation\nREMOTE_CONTROL_START_FAILED {ex.Message}");
+
+                return false;
             }
         }
 
@@ -1187,17 +1259,9 @@ namespace JokiAutomation
                                 break;
                             }
 
-                            if (_isPtzCameraMode && _canonPtzController != null)
+                            if (IsActivePtzPositionControlMode())
                             {
-                                var ptzOrchestrator = new PositionControlPtzAudioOrchestrator(
-                                    commandId => _audioMix.ExecuteAudioAsync(commandId),
-                                    (positionId, coverInput, targetInput) => ExecuteCameraSwitchSequenceAsync(positionId, coverInput, targetInput),
-                                    message => _logDat?.sendInfoMessage(message));
-
-                                await ptzOrchestrator.ExecuteAsync(
-                                    commands[2],
-                                    commands[3],
-                                    listBoxCamPosControl.Items.Cast<object>().Select(item => item?.ToString()).ToList());
+                                await ExecutePositionControlPtzAsync(commands[2], commands[3]);
                             }
                             else
                             {
@@ -3003,6 +3067,122 @@ private async Task SwitchATEMInputAsync(
     {
         _logDat?.sendInfoMessage($"[CAMSWITCH_END] Id={switchId} Source={source} Input={sourceName}");
     }
+}
+
+/// <summary>
+/// Phase 2C: explicit, fully-awaitable video execution hook for the "Predigt" scene used by the
+/// ScenePlan/CommandDispatcher VideoCommand executor. Encapsulates exactly today's "Predigt" visual
+/// sequence (DisablePictureInPictureAsync -> SwitchATEMInputAsync(CanonPtzPreacher) ->
+/// DisablePictureInPictureAsync), unchanged in order and behavior. Does not change SwitchATEMInputAsync's
+/// existing error handling: ATEM exceptions remain logged internally and are not rethrown here.
+/// </summary>
+internal async Task ExecutePredigtVideoAsync()
+{
+    await DisablePictureInPictureAsync();
+    await SwitchATEMInputAsync(ATEMInput.CanonPtzPreacher);
+    // Ensure final state stays PiP-off after source switch.
+    await DisablePictureInPictureAsync();
+}
+
+/// <summary>
+/// Phase 2F: single source of truth for the "active PTZ" condition that selects between the
+/// production PTZ orchestrator path and the legacy RasPi positioning path. Reused identically by
+/// both the legacy CommandInterpreterAsync branch and the ScenePlan/PositionCommand executor so the
+/// two paths can never diverge.
+/// </summary>
+internal bool IsActivePtzPositionControlMode()
+{
+    return _isPtzCameraMode && _canonPtzController != null;
+}
+
+/// <summary>
+/// Phase 2F: ScenePlan/CommandDispatcher PositionCommand executor entry point for active PTZ
+/// PositionControl requests. Reuses the existing, unchanged PositionControlPtzAudioOrchestrator
+/// (Audio -> Cover -> PTZ MoveToPosAsync -> Final) and the existing production arguments
+/// (position name, profile code) without reinterpreting them.
+/// </summary>
+internal Task ExecutePositionControlPtzAsync(string positionName, string profileCode)
+{
+    var ptzOrchestrator = new PositionControlPtzAudioOrchestrator(
+        commandId => _audioMix.ExecuteAudioAsync(commandId),
+        (positionId, coverInput, targetInput) => ExecuteCameraSwitchSequenceAsync(positionId, coverInput, targetInput),
+        message => _logDat?.sendInfoMessage(message));
+
+    return ptzOrchestrator.ExecuteAsync(
+        positionName,
+        profileCode,
+        listBoxCamPosControl.Items.Cast<object>().Select(item => item?.ToString()).ToList());
+}
+
+/// <summary>
+/// Phase 2D: resolves the optional PiP source parameter the same way the legacy multiview cases
+/// (Gebet/BandMulti/LesungMulti) do via <see cref="ResolveMultiViewPiPInput"/>, but from a
+/// ScenePlan/PipelineCommand argument list (Arguments[0]=command name, Arguments[1]=optional PiP
+/// parameter) instead of the raw CommandInterpreterAsync commands array (commands[0]=exe,
+/// commands[1]=command, commands[2]=optional PiP parameter). Reuses the existing resolver so the
+/// PiP-selection logic itself is not duplicated or changed.
+/// </summary>
+private ATEMInput ResolveMultiViewPiPInputFromCommandArguments(IReadOnlyList<string> arguments, string commandName)
+{
+    if (arguments == null || arguments.Count < 2 || string.IsNullOrWhiteSpace(arguments[1]))
+    {
+        return ATEMInput.GoPro;
+    }
+
+    string[] legacyStyleCommands = { "JokiAutomation.exe", arguments[0], arguments[1] };
+    return ResolveMultiViewPiPInput(legacyStyleCommands, commandName);
+}
+
+/// <summary>
+/// Phase 2D: explicit, fully-awaitable video execution hook shared by the migrated "Gebet",
+/// "BandMulti" and "LesungMulti" ScenePlan VideoCommands. All three legacy cases share the exact
+/// same visual sequence (DisablePictureInPicture -> SwitchATEMInputAsync(Laptop) ->
+/// Task.Delay(1000) -> EnablePictureInPicture(pipInput)); this method reproduces that sequence,
+/// order and delay unchanged, only parameterized by the resolved PiP input and the command name
+/// used for log correlation.
+/// </summary>
+private async Task ExecuteMultiViewVideoAsync(ATEMInput pipInput, string commandName)
+{
+    DisablePictureInPicture();
+    _logDat?.sendInfoMessage($"JokiAutomation\n[VISUAL_PIPE] Diashow/PiP sofort ausblenden ({commandName})");
+    _logDat?.sendInfoMessage($"JokiAutomation\n[VISUAL_PIPE] Starte Bild/Kamera-Kommandos parallel zum Audio-Fade ({commandName})");
+    _logDat?.sendInfoMessage("JokiAutomation\n[PIPE_PARALLEL] VisualStart RequestId='" + _activeCommandRequestId.Value + "' Command='" + commandName + "'");
+    await SwitchATEMInputAsync(ATEMInput.Laptop);
+    await Task.Delay(1000); // Kurze Verzögerung, um sicherzustellen, dass der ATEM die Eingangsquelle gewechselt hat
+    EnablePictureInPicture(pipInput);
+    _logDat?.sendInfoMessage("JokiAutomation\n[PIPE_PARALLEL] VisualCompleted RequestId='" + _activeCommandRequestId.Value + "' Command='" + commandName + "'");
+}
+
+/// <summary>
+/// Phase 2D: ScenePlan VideoCommand executor entry point for the migrated multiview scenes
+/// ("Gebet", "BandMulti", "LesungMulti"). Resolves the PiP input exactly as the legacy case does
+/// and then runs the exact same, unchanged visual sequence via
+/// <see cref="ExecuteMultiViewVideoAsync"/>.
+/// </summary>
+internal Task ExecuteSceneVideoAsync(string commandName, IReadOnlyList<string> arguments)
+{
+    ATEMInput pipInput = ResolveMultiViewPiPInputFromCommandArguments(arguments, commandName);
+    return ExecuteMultiViewVideoAsync(pipInput, commandName);
+}
+
+/// <summary>
+/// Phase 2E: explicit, fully-awaitable video execution hook for the migrated "Text" ScenePlan
+/// VideoCommand. Unlike the multiview scenes (Gebet/BandMulti/LesungMulti), the legacy "Text" case
+/// never enables Picture-in-Picture again; it only disables PiP, switches to the Laptop input, and
+/// disables PiP a second time (DisablePictureInPictureAsync -> SwitchATEMInputAsync(Laptop) ->
+/// DisablePictureInPictureAsync). Order and calls preserved unchanged from the legacy case. Does not
+/// change SwitchATEMInputAsync's existing error handling: ATEM exceptions remain logged internally
+/// and are not rethrown here.
+/// </summary>
+internal async Task ExecuteTextVideoAsync()
+{
+    await DisablePictureInPictureAsync();
+    _logDat?.sendInfoMessage("JokiAutomation\\n[VISUAL_PIPE] Diashow/PiP sofort ausblenden (Text)");
+    _logDat?.sendInfoMessage("JokiAutomation\\n[VISUAL_PIPE] Starte Bild/Kamera-Kommandos parallel zum Audio-Fade (Text)");
+    _logDat?.sendInfoMessage("JokiAutomation\\n[PIPE_PARALLEL] VisualStart RequestId='" + _activeCommandRequestId.Value + "' Command='Text'");
+    await SwitchATEMInputAsync(ATEMInput.Laptop);
+    await DisablePictureInPictureAsync();
+    _logDat?.sendInfoMessage("JokiAutomation\\n[PIPE_PARALLEL] VisualCompleted RequestId='" + _activeCommandRequestId.Value + "' Command='Text'");
 }
 
 private async Task SetATEMProgramInputAsync(
